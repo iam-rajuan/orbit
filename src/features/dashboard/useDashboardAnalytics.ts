@@ -7,7 +7,6 @@ import {
   startOfYear,
   endOfYear,
   eachDayOfInterval,
-  isWithinInterval,
   format,
   subDays,
 } from 'date-fns';
@@ -20,11 +19,11 @@ import {
   parseDateKey,
   formatDateKey,
   isRoutineScheduledForDate,
-  getTodayKey,
 } from '../../utils/date';
 import { BarDataPoint } from './components/ActivityBarChart';
 import { DonutSegment } from './components/DonutChart';
 import { RingData } from './components/MultiRingGauge';
+import { AreaDataPoint } from './components/AreaChart';
 import { formatCurrency } from '../../utils/currency';
 
 export type TimeframeMode = 'TODAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'CUSTOM';
@@ -118,7 +117,39 @@ export function useDashboardAnalytics(
     return expenses.filter((e) => daySet.has(e.date));
   }, [expenses, daysInPeriod]);
 
-  // Compute Routine Habit Metrics
+  // ─── Daily Breakdowns for Trend Charts ────────────────────────────────
+
+  /**
+   * Compute daily breakdown data, intelligently chunked for large ranges.
+   * Returns data points for both bar charts and area/line charts.
+   */
+  const buildChunkedData = useMemo(() => {
+    const shouldChunk =
+      timeframe === 'YEAR' || (timeframe === 'MONTH' && daysInPeriod.length > 14) ||
+      (timeframe === 'CUSTOM' && daysInPeriod.length > 14);
+
+    if (shouldChunk) {
+      // Chunk by weeks for MONTH, by months for YEAR
+      const chunkSize =
+        timeframe === 'YEAR'
+          ? Math.max(1, Math.ceil(daysInPeriod.length / 12))
+          : Math.max(1, Math.ceil(daysInPeriod.length / 7));
+
+      const chunks: string[][] = [];
+      for (let i = 0; i < daysInPeriod.length; i += chunkSize) {
+        chunks.push(daysInPeriod.slice(i, i + chunkSize));
+      }
+      return { chunks, isChunked: true };
+    }
+
+    return {
+      chunks: daysInPeriod.map((d) => [d]),
+      isChunked: false,
+    };
+  }, [daysInPeriod, timeframe]);
+
+  // ─── Routine Analytics ────────────────────────────────────────────────
+
   const routineAnalytics = useMemo(() => {
     let totalScheduled = 0;
     let totalCompleted = 0;
@@ -138,7 +169,7 @@ export function useDashboardAnalytics(
     const percentage =
       totalScheduled > 0 ? Math.round((totalCompleted / totalScheduled) * 100) : 0;
 
-    // Daily breakdown for Bar Chart
+    // Daily breakdown for Bar Chart (preserved)
     let barData: BarDataPoint[] = [];
 
     if (timeframe === 'TODAY' || timeframe === 'WEEK' || (timeframe === 'CUSTOM' && daysInPeriod.length <= 14)) {
@@ -160,7 +191,6 @@ export function useDashboardAnalytics(
         };
       });
     } else {
-      // Chunk by weeks or months if wider interval
       const chunkSize = Math.max(1, Math.floor(daysInPeriod.length / 7));
       for (let i = 0; i < daysInPeriod.length; i += chunkSize) {
         const slice = daysInPeriod.slice(i, i + chunkSize);
@@ -182,15 +212,39 @@ export function useDashboardAnalytics(
       }
     }
 
+    // Area chart trend data (chunked)
+    const trendData: AreaDataPoint[] = buildChunkedData.chunks.map((chunk) => {
+      let sCount = 0;
+      let cCount = 0;
+      chunk.forEach((dk) => {
+        sCount += routines.filter((r) => isRoutineScheduledForDate(r.repeatDays, dk)).length;
+        cCount += completions.filter((c) => c.date === dk && c.completed).length;
+      });
+      const pct = sCount > 0 ? Math.round((cCount / sCount) * 100) : 0;
+      const firstDay = parseDateKey(chunk[0]);
+
+      const label = buildChunkedData.isChunked
+        ? format(firstDay, timeframe === 'YEAR' ? 'MMM' : 'dd MMM')
+        : format(firstDay, 'EEE');
+
+      return { label, value: pct, displayValue: `${pct}%` };
+    });
+
+    // Sparkline data (just percentages array)
+    const sparklineData = trendData.map((t) => t.value);
+
     return {
       totalScheduled,
       totalCompleted,
       percentage,
       barData,
+      trendData,
+      sparklineData,
     };
-  }, [routines, completions, daysInPeriod, timeframe, selectedDate]);
+  }, [routines, completions, daysInPeriod, timeframe, selectedDate, buildChunkedData]);
 
-  // Compute Task Metrics & Priority Donut
+  // ─── Task Analytics ───────────────────────────────────────────────────
+
   const taskAnalytics = useMemo(() => {
     const total = periodTasks.length;
     const completed = periodTasks.filter((t) => t.completed).length;
@@ -214,6 +268,22 @@ export function useDashboardAnalytics(
       categoryMap[t.category] = (categoryMap[t.category] || 0) + 1;
     });
 
+    // Area chart: daily completion count
+    const trendData: AreaDataPoint[] = buildChunkedData.chunks.map((chunk) => {
+      const daySet = new Set(chunk);
+      const chunkTasks = periodTasks.filter((t) => daySet.has(t.date));
+      const done = chunkTasks.filter((t) => t.completed).length;
+      const firstDay = parseDateKey(chunk[0]);
+
+      const label = buildChunkedData.isChunked
+        ? format(firstDay, timeframe === 'YEAR' ? 'MMM' : 'dd MMM')
+        : format(firstDay, 'EEE');
+
+      return { label, value: done, displayValue: `${done} done` };
+    });
+
+    const sparklineData = trendData.map((t) => t.value);
+
     return {
       total,
       completed,
@@ -221,10 +291,13 @@ export function useDashboardAnalytics(
       percentage,
       prioritySegments,
       categoryMap,
+      trendData,
+      sparklineData,
     };
-  }, [periodTasks]);
+  }, [periodTasks, buildChunkedData, timeframe]);
 
-  // Compute Expense Metrics & Needs vs Wants Donut
+  // ─── Expense Analytics ────────────────────────────────────────────────
+
   const expenseAnalytics = useMemo(() => {
     const total = periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const needTotal = periodExpenses
@@ -268,6 +341,26 @@ export function useDashboardAnalytics(
 
     const dailyBurnAverage = daysInPeriod.length > 0 ? total / daysInPeriod.length : total;
 
+    // Area chart: daily spending
+    const trendData: AreaDataPoint[] = buildChunkedData.chunks.map((chunk) => {
+      const daySet = new Set(chunk);
+      const chunkExpenses = periodExpenses.filter((ex) => daySet.has(ex.date));
+      const chunkTotal = chunkExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const firstDay = parseDateKey(chunk[0]);
+
+      const label = buildChunkedData.isChunked
+        ? format(firstDay, timeframe === 'YEAR' ? 'MMM' : 'dd MMM')
+        : format(firstDay, 'EEE');
+
+      return {
+        label,
+        value: Math.round(chunkTotal * 100) / 100,
+        displayValue: formatCurrency(chunkTotal, settings.currency),
+      };
+    });
+
+    const sparklineData = trendData.map((t) => t.value);
+
     return {
       total,
       needTotal,
@@ -278,21 +371,24 @@ export function useDashboardAnalytics(
       categoryList,
       dailyBurnAverage,
       count: periodExpenses.length,
+      trendData,
+      sparklineData,
     };
-  }, [periodExpenses, daysInPeriod, settings.currency]);
+  }, [periodExpenses, daysInPeriod, settings.currency, buildChunkedData, timeframe]);
 
-  // Overall Productivity & Health Score
+  // ─── Overall Score ────────────────────────────────────────────────────
+
   const overallScore = useMemo(() => {
     const habitScore = routineAnalytics.percentage;
     const taskScore = taskAnalytics.percentage;
-    // Budget health: Needs >= 50% is generally healthy, or ratio score
     const budgetScore = expenseAnalytics.total > 0 ? Math.min(100, Math.max(20, expenseAnalytics.needPct)) : 100;
 
     const weighted = Math.round(habitScore * 0.45 + taskScore * 0.45 + budgetScore * 0.1);
     return Math.min(100, Math.max(0, weighted));
   }, [routineAnalytics, taskAnalytics, expenseAnalytics]);
 
-  // MultiRing gauge dataset
+  // ─── MultiRing Gauge ──────────────────────────────────────────────────
+
   const multiRings: [RingData, RingData, RingData] = useMemo(() => {
     return [
       {

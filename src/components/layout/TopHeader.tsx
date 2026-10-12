@@ -43,8 +43,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           style={[
             styles.themeToggleBtn,
             {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
+              backgroundColor: isDark
+                ? 'rgba(251, 191, 36, 0.12)'
+                : '#18181B',
             },
           ]}
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -52,7 +53,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {isDark ? (
             <Sun size={17} color="#FBBF24" />
           ) : (
-            <Moon size={17} color="#52525B" />
+            <Moon size={17} color="#FAFAFA" />
           )}
         </TouchableOpacity>
 
@@ -107,7 +108,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer' as any,

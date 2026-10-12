@@ -14,9 +14,10 @@ import {
   Receipt,
   Calendar,
   ArrowRight,
-  SlidersHorizontal,
-  Flame,
-  CheckCircle2,
+  TrendingUp,
+  Activity,
+  Zap,
+  Target,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -26,10 +27,10 @@ import {
   TimeframeMode,
   CustomDateRange,
 } from './useDashboardAnalytics';
-import { MultiRingGauge } from './components/MultiRingGauge';
-import { DonutChart } from './components/DonutChart';
-import { ActivityBarChart } from './components/ActivityBarChart';
-import { ShowcaseCard } from './components/ShowcaseCard';
+import { ScoreOverview } from './components/ScoreOverview';
+import { AreaChart } from './components/AreaChart';
+import { Sparkline } from './components/Sparkline';
+import { MetricCard } from './components/MetricCard';
 import { formatCurrency } from '../../utils/currency';
 import { offsetDateKey, getTodayKey } from '../../utils/date';
 
@@ -37,10 +38,10 @@ export const DashboardOverview: React.FC = () => {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
 
   const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
-
   const { settings } = useSettingsStore();
 
   const [timeframe, setTimeframe] = useState<TimeframeMode>('WEEK');
@@ -56,56 +57,59 @@ export const DashboardOverview: React.FC = () => {
     taskAnalytics,
     expenseAnalytics,
     overallScore,
-    multiRings,
   } = useDashboardAnalytics(timeframe, timeframe === 'CUSTOM' ? customRange : undefined);
 
   const timeframes: { label: string; mode: TimeframeMode }[] = [
     { label: 'Today', mode: 'TODAY' },
-    { label: 'This Week', mode: 'WEEK' },
-    { label: 'This Month', mode: 'MONTH' },
-    { label: 'This Year', mode: 'YEAR' },
-    { label: 'Custom Range', mode: 'CUSTOM' },
+    { label: 'Week', mode: 'WEEK' },
+    { label: 'Month', mode: 'MONTH' },
+    { label: 'Year', mode: 'YEAR' },
+    { label: 'Custom', mode: 'CUSTOM' },
   ];
 
   const customPresets = [
     { label: 'Last 7 Days', start: offsetDateKey(getTodayKey(), -6), end: getTodayKey() },
     { label: 'Last 14 Days', start: offsetDateKey(getTodayKey(), -13), end: getTodayKey() },
     { label: 'Last 30 Days', start: offsetDateKey(getTodayKey(), -29), end: getTodayKey() },
-    { label: 'Ref Oct 6-8', start: '2026-10-06', end: '2026-10-08' },
   ];
+
+  // Score feedback
+  const scoreStatus =
+    overallScore >= 80
+      ? { text: 'Excellent Performance', color: isDark ? '#34D399' : '#059669' }
+      : overallScore >= 50
+        ? { text: 'Steady Progress', color: isDark ? '#FBBF24' : '#D97706' }
+        : { text: 'Needs Attention', color: isDark ? '#FB7185' : '#E11D48' };
+
 
   return (
     <ScrollView
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { maxWidth: isDesktop ? 1200 : undefined },
+      ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* 1. Header & Timeframe Switcher */}
+      {/* ── Section 1: Header ───────────────────────────── */}
       <View style={styles.headerSection}>
-        <View style={styles.headerTitleRow}>
-          <View>
-            <View style={styles.brandRow}>
-              <View
-                style={[
-                  styles.heroSparkle,
-                  { backgroundColor: isDark ? 'rgba(99,102,241,0.18)' : '#EEF2FF' },
-                ]}
-              >
-                <Flame size={18} color={theme.primary} />
-              </View>
-              <Text style={[styles.heroPreTitle, { color: theme.primary }]}>EXECUTIVE PERFORMANCE</Text>
-            </View>
-            <Text style={[styles.heroTitle, { color: theme.textPrimary }]}>Command Center</Text>
-            <Text style={[styles.periodBadgeText, { color: theme.textSecondary }]}>
-              Tracking: {periodLabel}
-            </Text>
-          </View>
+        <View>
+          <Text style={[styles.greeting, { color: theme.textMuted }]}>
+            DASHBOARD
+          </Text>
+          <Text style={[styles.heroTitle, { color: theme.textPrimary }]}>
+            Overview
+          </Text>
         </View>
 
-        {/* Time Horizon Selector Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.timeframePillsRow}
+        {/* Timeframe Pills */}
+        <View
+          style={[
+            styles.pillContainer,
+            {
+              backgroundColor: theme.surfaceSubtle,
+              borderColor: theme.border,
+            },
+          ]}
         >
           {timeframes.map((tf) => {
             const active = timeframe === tf.mode;
@@ -115,25 +119,23 @@ export const DashboardOverview: React.FC = () => {
                 activeOpacity={0.8}
                 onPress={() => setTimeframe(tf.mode)}
                 style={[
-                  styles.timeframePill,
-                  {
-                    backgroundColor: active
-                      ? (isDark ? '#FAFAFA' : '#18181B')
-                      : theme.surface,
-                    borderColor: active
-                      ? (isDark ? '#FAFAFA' : '#18181B')
-                      : theme.border,
+                  styles.pill,
+                  active && {
+                    backgroundColor: theme.surface,
+                    shadowColor: theme.shadowColor,
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isDark ? 0.4 : 0.08,
+                    shadowRadius: 4,
+                    elevation: 2,
                   },
                 ]}
               >
                 <Text
                   style={[
-                    styles.timeframePillText,
+                    styles.pillText,
                     {
-                      color: active
-                        ? (isDark ? '#09090B' : '#FFFFFF')
-                        : theme.textSecondary,
-                      fontWeight: active ? '700' : '600',
+                      color: active ? theme.textPrimary : theme.textMuted,
+                      fontWeight: active ? '700' : '500',
                     },
                   ]}
                 >
@@ -142,200 +144,134 @@ export const DashboardOverview: React.FC = () => {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
-        {/* Custom Range Presets Bar */}
+        {/* Custom Presets */}
         {timeframe === 'CUSTOM' && (
-          <View
-            style={[
-              styles.customPresetsCard,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-              },
-            ]}
-          >
-            <View style={styles.customPresetHeader}>
-              <SlidersHorizontal size={14} color={theme.textMuted} />
-              <Text style={[styles.customPresetTitle, { color: theme.textSecondary }]}>
-                Select Custom Preset
-              </Text>
-            </View>
-            <View style={styles.customPresetsRow}>
-              {customPresets.map((preset) => {
-                const isSelected =
-                  customRange.startDate === preset.start &&
-                  customRange.endDate === preset.end;
-                return (
-                  <TouchableOpacity
-                    key={preset.label}
-                    activeOpacity={0.7}
-                    onPress={() =>
-                      setCustomRange({ startDate: preset.start, endDate: preset.end })
-                    }
+          <View style={styles.customPresetsRow}>
+            {customPresets.map((preset) => {
+              const isSelected =
+                customRange.startDate === preset.start &&
+                customRange.endDate === preset.end;
+              return (
+                <TouchableOpacity
+                  key={preset.label}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    setCustomRange({ startDate: preset.start, endDate: preset.end })
+                  }
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isSelected
+                        ? (isDark ? 'rgba(99,102,241,0.2)' : '#EEF2FF')
+                        : theme.surfaceSubtle,
+                      borderColor: isSelected ? theme.primary : theme.border,
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.presetChip,
+                      styles.presetChipText,
                       {
-                        backgroundColor: isSelected
-                          ? (isDark ? 'rgba(99,102,241,0.2)' : '#EEF2FF')
-                          : theme.surfaceSubtle,
-                        borderColor: isSelected ? theme.primary : theme.border,
+                        color: isSelected ? theme.primary : theme.textSecondary,
+                        fontWeight: isSelected ? '700' : '500',
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.presetChipText,
-                        {
-                          color: isSelected ? theme.primary : theme.textSecondary,
-                          fontWeight: isSelected ? '700' : '600',
-                        },
-                      ]}
-                    >
-                      {preset.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    {preset.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
+
+        {/* Period label */}
+        <Text style={[styles.periodLabel, { color: theme.textMuted }]}>
+          {periodLabel}
+        </Text>
       </View>
 
-      {/* 2. Hero Unified Score & Multi-Ring Gauge */}
+      {/* ── Section 2: Overall Score & Progress ────── */}
       <View
         style={[
-          styles.heroScoreCard,
+          styles.scoreSection,
           {
             backgroundColor: theme.surface,
             borderColor: theme.border,
           },
         ]}
       >
-        <View style={[styles.heroContent, isDesktop ? styles.heroContentDesktop : null]}>
-          {/* Concentric Multi-Ring */}
-          <View style={styles.gaugeWrapper}>
-            <MultiRingGauge
-              rings={multiRings}
-              overallScore={overallScore}
-              scoreLabel="Productivity"
-              size={190}
-              strokeWidth={13}
-            />
-          </View>
-
-          {/* Quick Insights List */}
-          <View style={styles.heroInsightsColumn}>
-            <View
-              style={[
-                styles.statusPill,
-                {
-                  backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
-                },
-              ]}
-            >
-              <CheckCircle2 size={14} color="#059669" />
-              <Text
-                style={[
-                  styles.statusPillText,
-                  { color: isDark ? '#34D399' : '#059669' },
-                ]}
-              >
-                {overallScore >= 80
-                  ? 'Optimal Execution • Consistent Pace'
-                  : overallScore >= 50
-                  ? 'Steady Progress • Balanced Flow'
-                  : 'Action Needed • Low Velocity'}
-              </Text>
-            </View>
-
-            <View style={styles.insightStatsList}>
-              <View
-                style={[
-                  styles.insightStatRow,
-                  {
-                    backgroundColor: theme.surfaceSubtle,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={[styles.statDot, { backgroundColor: '#10B981' }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Habits Consistency</Text>
-                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
-                    {routineAnalytics.totalCompleted} of {routineAnalytics.totalScheduled} completed ({routineAnalytics.percentage}%)
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={[
-                  styles.insightStatRow,
-                  {
-                    backgroundColor: theme.surfaceSubtle,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={[styles.statDot, { backgroundColor: '#4F46E5' }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Task Velocity</Text>
-                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
-                    {taskAnalytics.completed} of {taskAnalytics.total} completed ({taskAnalytics.percentage}%)
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={[
-                  styles.insightStatRow,
-                  {
-                    backgroundColor: theme.surfaceSubtle,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={[styles.statDot, { backgroundColor: '#F59E0B' }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Financial Spend</Text>
-                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
-                    {formatCurrency(expenseAnalytics.total, settings.currency)} • {expenseAnalytics.needPct}% Needs
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
+        <ScoreOverview
+          score={overallScore}
+          scoreLabel="Productivity"
+          statusText={scoreStatus.text}
+          statusColor={scoreStatus.color}
+          metrics={[
+            {
+              label: 'Habits',
+              value: routineAnalytics.percentage,
+              color: '#10B981',
+              displayValue: `${routineAnalytics.totalCompleted}/${routineAnalytics.totalScheduled} • ${routineAnalytics.percentage}%`,
+            },
+            {
+              label: 'Tasks',
+              value: taskAnalytics.percentage,
+              color: theme.primary,
+              displayValue: `${taskAnalytics.completed}/${taskAnalytics.total} • ${taskAnalytics.percentage}%`,
+            },
+            {
+              label: 'Budget Health',
+              value: expenseAnalytics.needPct,
+              color: '#F59E0B',
+              displayValue: `${formatCurrency(expenseAnalytics.total, settings.currency)} • ${expenseAnalytics.needPct}% needs`,
+            },
+          ]}
+        />
       </View>
 
-      {/* 3. Deep Analytics Visualizations Grid */}
-      <View style={[styles.analyticsGrid, isDesktop ? styles.analyticsGridDesktop : null]}>
-        {/* Habit Consistency Bar Chart */}
+      {/* ── Section 3: Trend Charts ──────────────────── */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <Activity size={16} color={theme.textMuted} />
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Trends
+          </Text>
+        </View>
+        <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>
+          Performance across {daysCount} days
+        </Text>
+      </View>
+
+      <View style={[styles.chartsGrid, (isDesktop || isTablet) && styles.chartsGridWide]}>
+        {/* Habit Consistency Chart */}
         <View
           style={[
-            styles.analyticsCard,
+            styles.chartCard,
             {
               backgroundColor: theme.surface,
               borderColor: theme.border,
             },
+            (isDesktop || isTablet) && styles.chartCardHalf,
           ]}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleGroup}>
+          <View style={styles.chartCardHeader}>
+            <View style={styles.chartCardTitleRow}>
               <View
                 style={[
-                  styles.cardIconBadge,
-                  {
-                    backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
-                  },
+                  styles.chartIconBadge,
+                  { backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5' },
                 ]}
               >
-                <Clock size={16} color="#059669" />
+                <Clock size={14} color="#10B981" />
               </View>
-              <View>
-                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Habits Activity</Text>
-                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
-                  {routineAnalytics.percentage}% consistency • {daysCount} day interval
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chartTitle, { color: theme.textPrimary }]}>
+                  Habit Consistency
+                </Text>
+                <Text style={[styles.chartSubtitle, { color: theme.textMuted }]}>
+                  {routineAnalytics.totalCompleted} of {routineAnalytics.totalScheduled} completed
                 </Text>
               </View>
             </View>
@@ -343,53 +279,50 @@ export const DashboardOverview: React.FC = () => {
               activeOpacity={0.7}
               onPress={() => router.push('/routine' as any)}
               style={[
-                styles.cardActionBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
-                },
+                styles.chartCta,
+                { backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5' },
               ]}
             >
-              <Text style={[styles.cardActionText, { color: theme.primary }]}>Schedule</Text>
-              <ArrowRight size={13} color={theme.primary} />
+              <ArrowRight size={14} color="#10B981" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.chartWrapper}>
-            <ActivityBarChart
-              data={routineAnalytics.barData}
-              primaryColor="#10B981"
-              secondaryColor={isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5'}
-              unitLabel="Completion Velocity"
-            />
-          </View>
+          <AreaChart
+            data={routineAnalytics.trendData}
+            height={140}
+            color="#10B981"
+            gradientOpacity={isDark ? 0.15 : 0.2}
+            yAxisSuffix="%"
+          />
         </View>
 
-        {/* Task Priority Donut Chart */}
+        {/* Task Completion Chart */}
         <View
           style={[
-            styles.analyticsCard,
+            styles.chartCard,
             {
               backgroundColor: theme.surface,
               borderColor: theme.border,
             },
+            (isDesktop || isTablet) && styles.chartCardHalf,
           ]}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleGroup}>
+          <View style={styles.chartCardHeader}>
+            <View style={styles.chartCardTitleRow}>
               <View
                 style={[
-                  styles.cardIconBadge,
-                  {
-                    backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
-                  },
+                  styles.chartIconBadge,
+                  { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF' },
                 ]}
               >
-                <CheckSquare size={16} color={theme.primary} />
+                <CheckSquare size={14} color={theme.primary} />
               </View>
-              <View>
-                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Task Priority Share</Text>
-                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
-                  {taskAnalytics.total} total • {taskAnalytics.pending} pending
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chartTitle, { color: theme.textPrimary }]}>
+                  Task Completion
+                </Text>
+                <Text style={[styles.chartSubtitle, { color: theme.textMuted }]}>
+                  {taskAnalytics.percentage}% completion rate
                 </Text>
               </View>
             </View>
@@ -397,54 +330,48 @@ export const DashboardOverview: React.FC = () => {
               activeOpacity={0.7}
               onPress={() => router.push('/tasks' as any)}
               style={[
-                styles.cardActionBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
-                },
+                styles.chartCta,
+                { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF' },
               ]}
             >
-              <Text style={[styles.cardActionText, { color: theme.primary }]}>Board</Text>
-              <ArrowRight size={13} color={theme.primary} />
+              <ArrowRight size={14} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.chartWrapper}>
-            <DonutChart
-              segments={taskAnalytics.prioritySegments}
-              size={170}
-              strokeWidth={18}
-              centerTitle={`${taskAnalytics.percentage}%`}
-              centerSubtitle="Complete"
-            />
-          </View>
+          <AreaChart
+            data={taskAnalytics.trendData}
+            height={140}
+            color={theme.primary}
+            gradientOpacity={isDark ? 0.15 : 0.2}
+          />
         </View>
 
-        {/* Expense Needs vs Wants Donut */}
+        {/* Spending Trend Chart (Full Width) */}
         <View
           style={[
-            styles.analyticsCard,
+            styles.chartCard,
             {
               backgroundColor: theme.surface,
               borderColor: theme.border,
             },
           ]}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleGroup}>
+          <View style={styles.chartCardHeader}>
+            <View style={styles.chartCardTitleRow}>
               <View
                 style={[
-                  styles.cardIconBadge,
-                  {
-                    backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2',
-                  },
+                  styles.chartIconBadge,
+                  { backgroundColor: isDark ? 'rgba(244,63,94,0.12)' : '#FFF1F2' },
                 ]}
               >
-                <Receipt size={16} color="#F43F5E" />
+                <Receipt size={14} color="#F43F5E" />
               </View>
-              <View>
-                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Spending Composition</Text>
-                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
-                  {formatCurrency(expenseAnalytics.total, settings.currency)} • {expenseAnalytics.count} records
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chartTitle, { color: theme.textPrimary }]}>
+                  Spending Trend
+                </Text>
+                <Text style={[styles.chartSubtitle, { color: theme.textMuted }]}>
+                  {formatCurrency(expenseAnalytics.total, settings.currency)} total • {expenseAnalytics.needPct}% essentials
                 </Text>
               </View>
             </View>
@@ -452,96 +379,241 @@ export const DashboardOverview: React.FC = () => {
               activeOpacity={0.7}
               onPress={() => router.push('/expenses' as any)}
               style={[
-                styles.cardActionBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
-                },
+                styles.chartCta,
+                { backgroundColor: isDark ? 'rgba(244,63,94,0.12)' : '#FFF1F2' },
               ]}
             >
-              <Text style={[styles.cardActionText, { color: theme.primary }]}>Ledger</Text>
-              <ArrowRight size={13} color={theme.primary} />
+              <ArrowRight size={14} color="#F43F5E" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.chartWrapper}>
-            <DonutChart
-              segments={expenseAnalytics.typeSegments}
-              size={170}
-              strokeWidth={18}
-              centerTitle={formatCurrency(expenseAnalytics.total, settings.currency)}
-              centerSubtitle="Total Burn"
-            />
+          <AreaChart
+            data={expenseAnalytics.trendData}
+            height={140}
+            color="#F43F5E"
+            gradientOpacity={isDark ? 0.12 : 0.18}
+          />
+
+          {/* Needs vs Wants inline bar */}
+          <View style={styles.needsWantsRow}>
+            <View style={styles.needsWantsBar}>
+              <View
+                style={[
+                  styles.needsFill,
+                  {
+                    width: `${expenseAnalytics.needPct}%`,
+                    backgroundColor: '#10B981',
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.wantsFill,
+                  {
+                    width: `${expenseAnalytics.wantPct}%`,
+                    backgroundColor: '#6366F1',
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.needsWantsLabels}>
+              <View style={styles.needsWantsLabelItem}>
+                <View style={[styles.miniDot, { backgroundColor: '#10B981' }]} />
+                <Text style={[styles.needsWantsText, { color: theme.textSecondary }]}>
+                  Needs {expenseAnalytics.needPct}%
+                </Text>
+              </View>
+              <View style={styles.needsWantsLabelItem}>
+                <View style={[styles.miniDot, { backgroundColor: '#6366F1' }]} />
+                <Text style={[styles.needsWantsText, { color: theme.textSecondary }]}>
+                  Wants {expenseAnalytics.wantPct}%
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
       </View>
 
-      {/* 4. Feature Showcase & Smart Deep-Links Hub */}
-      <View style={styles.showcaseSection}>
+      {/* ── Section 4: Quick Metrics with Sparklines ── */}
+      <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>Application Showcase</Text>
-          <Text style={[styles.sectionSubheading, { color: theme.textSecondary }]}>
-            Instant overview • Tap to open dedicated workspaces
+          <Zap size={16} color={theme.textMuted} />
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Key Metrics
           </Text>
         </View>
-
-        <View style={[styles.showcaseGrid, isDesktop ? styles.showcaseGridDesktop : null]}>
-          <ShowcaseCard
-            title="Daily Habit Routines"
-            subtitle="Recurring daily rhythm & habit consistency"
-            tag="Habits"
-            tagColor="#059669"
-            tagBgColor={isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5'}
-            icon={<Clock size={20} color="#059669" />}
-            iconBgColor={isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5'}
-            metricValue={`${routineAnalytics.totalCompleted} / ${routineAnalytics.totalScheduled}`}
-            metricLabel="Habits completed this period"
-            ctaText="Open Routine"
-            onPress={() => router.push('/routine' as any)}
-          />
-
-          <ShowcaseCard
-            title="Task Workspace"
-            subtitle="Task backlog, priorities, categories & bulk tools"
-            tag="Tasks"
-            tagColor={theme.primary}
-            tagBgColor={isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF'}
-            icon={<CheckSquare size={20} color={theme.primary} />}
-            iconBgColor={isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF'}
-            metricValue={`${taskAnalytics.completed} Done`}
-            metricLabel={`${taskAnalytics.pending} pending tasks remaining`}
-            ctaText="Open Board"
-            onPress={() => router.push('/tasks' as any)}
-          />
-
-          <ShowcaseCard
-            title="Expense Ledger"
-            subtitle="Financial ledger, Needs vs Wants, category split"
-            tag="Finance"
-            tagColor="#BE123C"
-            tagBgColor={isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2'}
-            icon={<Receipt size={20} color="#F43F5E" />}
-            iconBgColor={isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2'}
-            metricValue={formatCurrency(expenseAnalytics.total, settings.currency)}
-            metricLabel={`Avg: ${formatCurrency(expenseAnalytics.dailyBurnAverage, settings.currency)} / day`}
-            ctaText="Open Ledger"
-            onPress={() => router.push('/expenses' as any)}
-          />
-
-          <ShowcaseCard
-            title="Calendar & History"
-            subtitle="Month grid, past records, and trend navigation"
-            tag="Timeline"
-            tagColor="#7C3AED"
-            tagBgColor={isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF'}
-            icon={<Calendar size={20} color="#7C3AED" />}
-            iconBgColor={isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF'}
-            metricValue={`${daysCount} Days`}
-            metricLabel="Explored in current horizon"
-            ctaText="View Calendar"
-            onPress={() => router.push('/calendar' as any)}
-          />
-        </View>
       </View>
+
+      <View style={[styles.metricsGrid, (isDesktop || isTablet) && styles.metricsGridWide]}>
+        <MetricCard
+          title="Habit Consistency"
+          subtitle={`${routineAnalytics.totalCompleted} completed`}
+          value={`${routineAnalytics.percentage}%`}
+          icon={<Clock size={16} color="#10B981" />}
+          accentColor="#10B981"
+          footer={`${routineAnalytics.totalScheduled} scheduled this period`}
+          onPress={() => router.push('/routine' as any)}
+          ctaLabel="Routine"
+          style={(isDesktop || isTablet) ? styles.metricCardHalf : undefined}
+        >
+          <Sparkline
+            data={routineAnalytics.sparklineData}
+            color="#10B981"
+            width={120}
+            height={28}
+          />
+        </MetricCard>
+
+        <MetricCard
+          title="Task Velocity"
+          subtitle={`${taskAnalytics.pending} pending`}
+          value={`${taskAnalytics.completed} / ${taskAnalytics.total}`}
+          icon={<Target size={16} color={theme.primary} />}
+          accentColor={theme.primary}
+          footer={`${taskAnalytics.percentage}% completion rate`}
+          onPress={() => router.push('/tasks' as any)}
+          ctaLabel="Board"
+          style={(isDesktop || isTablet) ? styles.metricCardHalf : undefined}
+        >
+          <Sparkline
+            data={taskAnalytics.sparklineData}
+            color={theme.primary}
+            width={120}
+            height={28}
+          />
+        </MetricCard>
+
+        <MetricCard
+          title="Daily Spend"
+          subtitle={`${expenseAnalytics.count} transactions`}
+          value={formatCurrency(expenseAnalytics.dailyBurnAverage, settings.currency)}
+          icon={<Receipt size={16} color="#F43F5E" />}
+          accentColor="#F43F5E"
+          footer={`Total: ${formatCurrency(expenseAnalytics.total, settings.currency)}`}
+          onPress={() => router.push('/expenses' as any)}
+          ctaLabel="Ledger"
+          style={(isDesktop || isTablet) ? styles.metricCardHalf : undefined}
+        >
+          <Sparkline
+            data={expenseAnalytics.sparklineData}
+            color="#F43F5E"
+            width={120}
+            height={28}
+          />
+        </MetricCard>
+
+        <MetricCard
+          title="Calendar Range"
+          subtitle="Days explored in period"
+          value={`${daysCount} Days`}
+          icon={<Calendar size={16} color="#7C3AED" />}
+          accentColor="#7C3AED"
+          footer={periodLabel}
+          onPress={() => router.push('/calendar' as any)}
+          ctaLabel="Calendar"
+          style={(isDesktop || isTablet) ? styles.metricCardHalf : undefined}
+        />
+      </View>
+
+      {/* ── Section 5: Feature Navigator ────────────── */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <TrendingUp size={16} color={theme.textMuted} />
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Workspaces
+          </Text>
+        </View>
+        <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>
+          Navigate to dedicated feature tabs
+        </Text>
+      </View>
+
+      <View style={[styles.navGrid, (isDesktop || isTablet) && styles.navGridWide]}>
+        {[
+          {
+            title: 'Daily Routines',
+            desc: 'Recurring habits & consistency tracking',
+            icon: <Clock size={18} color="#10B981" />,
+            iconBg: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
+            metric: `${routineAnalytics.percentage}%`,
+            metricLabel: 'consistency',
+            route: '/routine',
+            accentColor: '#10B981',
+          },
+          {
+            title: 'Task Board',
+            desc: 'Priority-based task management',
+            icon: <CheckSquare size={18} color={theme.primary} />,
+            iconBg: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF',
+            metric: `${taskAnalytics.completed}`,
+            metricLabel: 'completed',
+            route: '/tasks',
+            accentColor: theme.primary,
+          },
+          {
+            title: 'Expense Tracker',
+            desc: 'Financial insights & categorization',
+            icon: <Receipt size={18} color="#F43F5E" />,
+            iconBg: isDark ? 'rgba(244,63,94,0.12)' : '#FFF1F2',
+            metric: formatCurrency(expenseAnalytics.total, settings.currency),
+            metricLabel: 'total spend',
+            route: '/expenses',
+            accentColor: '#F43F5E',
+          },
+          {
+            title: 'Calendar',
+            desc: 'Timeline & historical records',
+            icon: <Calendar size={18} color="#7C3AED" />,
+            iconBg: isDark ? 'rgba(124,58,237,0.12)' : '#F5F3FF',
+            metric: `${daysCount}`,
+            metricLabel: 'days tracked',
+            route: '/calendar',
+            accentColor: '#7C3AED',
+          },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.title}
+            activeOpacity={0.7}
+            onPress={() => router.push(item.route as any)}
+            style={[
+              styles.navCard,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+              },
+              (isDesktop || isTablet) && styles.navCardHalf,
+            ]}
+          >
+            <View style={styles.navCardTop}>
+              <View style={[styles.navIcon, { backgroundColor: item.iconBg }]}>
+                {item.icon}
+              </View>
+              <ArrowRight size={16} color={theme.textMuted} />
+            </View>
+            <Text style={[styles.navTitle, { color: theme.textPrimary }]}>
+              {item.title}
+            </Text>
+            <Text
+              style={[styles.navDesc, { color: theme.textMuted }]}
+              numberOfLines={1}
+            >
+              {item.desc}
+            </Text>
+            <View style={[styles.navDivider, { backgroundColor: theme.border }]} />
+            <View style={styles.navMetricRow}>
+              <Text style={[styles.navMetricValue, { color: theme.textPrimary }]}>
+                {item.metric}
+              </Text>
+              <Text style={[styles.navMetricLabel, { color: theme.textMuted }]}>
+                {item.metricLabel}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Bottom spacer for tab bar */}
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 };
@@ -549,74 +621,43 @@ export const DashboardOverview: React.FC = () => {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
+    paddingTop: 8,
     gap: 20,
+    alignSelf: 'center',
+    width: '100%',
   },
+
+  // ── Header ──
   headerSection: {
     gap: 12,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  heroSparkle: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroPreTitle: {
+  greeting: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    letterSpacing: -0.6,
-  },
-  periodBadgeText: {
-    fontSize: 13,
-    fontWeight: '500',
+    letterSpacing: -0.8,
     marginTop: 2,
   },
-  timeframePillsRow: {
+  pillContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
   },
-  timeframePill: {
+  pill: {
+    flex: 1,
     paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 100,
-    borderWidth: 1,
-    cursor: 'pointer' as any,
-  },
-  timeframePillText: {
-    fontSize: 12,
-  },
-  customPresetsCard: {
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 8,
-  },
-  customPresetHeader: {
-    flexDirection: 'row',
+    paddingHorizontal: 8,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 6,
   },
-  customPresetTitle: {
+  pillText: {
     fontSize: 12,
-    fontWeight: '600',
   },
   customPresetsRow: {
     flexDirection: 'row',
@@ -625,170 +666,207 @@ const styles = StyleSheet.create({
   },
   presetChip: {
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    cursor: 'pointer' as any,
   },
   presetChipText: {
     fontSize: 11,
   },
-  heroScoreCard: {
-    borderRadius: 22,
+  periodLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  // ── Score Section ──
+  scoreSection: {
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
+    padding: 20,
   },
-  heroContent: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 24,
+
+  // ── Section Headers ──
+  sectionHeader: {
+    gap: 2,
+    marginTop: 4,
   },
-  heroContentDesktop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  gaugeWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroInsightsColumn: {
-    flex: 1,
-    maxWidth: 500,
-    width: '100%',
-    gap: 16,
-  },
-  statusPill: {
+  sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 100,
-    alignSelf: 'flex-start',
   },
-  statusPillText: {
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  sectionSubtitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
+    marginLeft: 22,
   },
-  insightStatsList: {
+
+  // ── Charts Grid ──
+  chartsGrid: {
+    gap: 14,
+  },
+  chartsGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  chartCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
     gap: 12,
+    width: '100%',
   },
-  insightStatRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+  chartCardHalf: {
+    width: '48.5%',
   },
-  statDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 5,
-  },
-  insightLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  insightValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  analyticsGrid: {
-    flexDirection: 'column',
-    gap: 18,
-  },
-  analyticsGridDesktop: {
-    flexDirection: 'row',
-  },
-  analyticsCard: {
-    flex: 1,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeader: {
+  chartCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
-  cardTitleGroup: {
+  chartCardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
-  cardIconBadge: {
+  chartIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chartTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  chartSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  chartCta: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Needs vs Wants bar ──
+  needsWantsRow: {
+    gap: 6,
+  },
+  needsWantsBar: {
+    flexDirection: 'row',
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  needsFill: {
+    height: '100%',
+    borderTopLeftRadius: 3,
+    borderBottomLeftRadius: 3,
+  },
+  wantsFill: {
+    height: '100%',
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+  },
+  needsWantsLabels: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  needsWantsLabelItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  miniDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  needsWantsText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // ── Metrics Grid ──
+  metricsGrid: {
+    gap: 12,
+  },
+  metricsGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  metricCardHalf: {
+    width: '48.5%',
+  },
+
+  // ── Nav Grid ──
+  navGrid: {
+    gap: 12,
+  },
+  navGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  navCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 6,
+    width: '100%',
+  },
+  navCardHalf: {
+    width: '48.5%',
+  },
+  navCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  navIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: {
+  navTitle: {
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  cardSub: {
-    fontSize: 11,
-    marginTop: 2,
+  navDesc: {
+    fontSize: 12,
+    fontWeight: '500',
   },
-  cardActionBtn: {
+  navDivider: {
+    height: 1,
+    marginVertical: 4,
+  },
+  navMetricRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 100,
   },
-  cardActionText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  chartWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  showcaseSection: {
-    marginTop: 8,
-    gap: 14,
-  },
-  sectionTitleRow: {
-    marginBottom: 4,
-  },
-  sectionHeading: {
+  navMetricValue: {
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  sectionSubheading: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  showcaseGrid: {
-    flexDirection: 'column',
-    gap: 14,
-  },
-  showcaseGridDesktop: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  navMetricLabel: {
+    fontSize: 11,
+    fontWeight: '500',
   },
 });

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'success';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -39,24 +40,32 @@ export const AppButton: React.FC<AppButtonProps> = ({
   textStyle,
   children,
 }) => {
+  const { theme, isDark } = useTheme();
   const isInteractive = !disabled && !loading;
 
   const getVariantStyles = (): { container: ViewStyle; text: TextStyle } => {
     switch (variant) {
       case 'primary':
         return {
-          container: { backgroundColor: '#4F46E5', borderColor: '#4F46E5' },
+          container: { backgroundColor: theme.primary, borderColor: theme.primary },
           text: { color: '#ffffff', fontWeight: '600' },
         };
       case 'secondary':
         return {
-          container: { backgroundColor: '#F4F4F5', borderColor: '#F4F4F5' },
-          text: { color: '#3F3F46', fontWeight: '600' },
+          container: {
+            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F4F4F5',
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#F4F4F5',
+          },
+          text: { color: isDark ? '#E4E4E7' : '#3F3F46', fontWeight: '600' },
         };
       case 'outline':
         return {
-          container: { backgroundColor: 'transparent', borderColor: '#E4E4E7', borderWidth: 1.5 },
-          text: { color: '#52525B', fontWeight: '600' },
+          container: {
+            backgroundColor: 'transparent',
+            borderColor: isDark ? theme.border : '#E4E4E7',
+            borderWidth: 1.5,
+          },
+          text: { color: isDark ? theme.textPrimary : '#52525B', fontWeight: '600' },
         };
       case 'danger':
         return {
@@ -71,11 +80,11 @@ export const AppButton: React.FC<AppButtonProps> = ({
       case 'ghost':
         return {
           container: { backgroundColor: 'transparent', borderColor: 'transparent' },
-          text: { color: '#4F46E5', fontWeight: '600' },
+          text: { color: theme.primary, fontWeight: '600' },
         };
       default:
         return {
-          container: { backgroundColor: '#4F46E5', borderColor: '#4F46E5' },
+          container: { backgroundColor: theme.primary, borderColor: theme.primary },
           text: { color: '#ffffff', fontWeight: '600' },
         };
     }
@@ -152,17 +161,16 @@ const styles = StyleSheet.create({
     cursor: 'pointer' as any,
   },
   textBase: {
-    textAlign: 'center',
-    letterSpacing: -0.1,
-  },
-  disabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed' as any,
+    letterSpacing: -0.2,
   },
   iconLeft: {
     marginRight: 6,
   },
   iconRight: {
     marginLeft: 6,
+  },
+  disabled: {
+    opacity: 0.45,
+    cursor: 'not-allowed' as any,
   },
 });

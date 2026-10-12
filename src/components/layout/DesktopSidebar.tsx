@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface DesktopSidebarProps {
   collapsed: boolean;
@@ -24,6 +25,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   const navItems = [
     { title: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -35,7 +37,16 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   ];
 
   return (
-    <View style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}>
+    <View
+      style={[
+        styles.sidebar,
+        {
+          backgroundColor: theme.surface,
+          borderRightColor: theme.border,
+        },
+        collapsed && styles.sidebarCollapsed,
+      ]}
+    >
       {/* App Branding */}
       <View style={styles.branding}>
         <View style={styles.logoBadge}>
@@ -43,8 +54,8 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         </View>
         {!collapsed && (
           <View style={styles.brandText}>
-            <Text style={styles.appName}>Daily View</Text>
-            <Text style={styles.appSub}>V4 • Productivity</Text>
+            <Text style={[styles.appName, { color: theme.textPrimary }]}>Daily View</Text>
+            <Text style={[styles.appSub, { color: theme.textMuted }]}>V4 • Productivity</Text>
           </View>
         )}
       </View>
@@ -62,20 +73,21 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               onPress={() => router.push(item.path as any)}
               style={[
                 styles.navItem,
-                isActive && styles.navItemActive,
+                isActive && { backgroundColor: theme.primaryBg },
                 collapsed && styles.navItemCollapsed,
               ]}
               accessibilityLabel={item.title}
             >
               <Icon
                 size={18}
-                color={isActive ? '#4F46E5' : '#71717A'}
+                color={isActive ? theme.primary : theme.textSecondary}
                 strokeWidth={isActive ? 2.5 : 2}
               />
               {!collapsed && (
                 <Text
                   style={[
                     styles.navTitle,
+                    { color: isActive ? theme.primary : theme.textSecondary },
                     isActive && styles.navTitleActive,
                   ]}
                 >
@@ -88,18 +100,18 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       </View>
 
       {/* Collapse button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={onToggleCollapse}
           style={styles.collapseBtn}
         >
           {collapsed ? (
-            <ChevronRight size={18} color="#71717A" />
+            <ChevronRight size={18} color={theme.textSecondary} />
           ) : (
             <>
-              <ChevronLeft size={18} color="#71717A" />
-              <Text style={styles.collapseText}>Collapse</Text>
+              <ChevronLeft size={18} color={theme.textSecondary} />
+              <Text style={[styles.collapseText, { color: theme.textSecondary }]}>Collapse</Text>
             </>
           )}
         </TouchableOpacity>
@@ -111,9 +123,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 const styles = StyleSheet.create({
   sidebar: {
     width: 220,
-    backgroundColor: '#ffffff',
     borderRightWidth: 1,
-    borderRightColor: '#F4F4F5',
     flexDirection: 'column',
     justifyContent: 'space-between',
     paddingVertical: 18,
@@ -148,13 +158,11 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.3,
   },
   appSub: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#71717A',
   },
   navContainer: {
     flex: 1,
@@ -174,21 +182,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     gap: 0,
   },
-  navItemActive: {
-    backgroundColor: '#EEF2FF',
-  },
   navTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#52525B',
   },
   navTitleActive: {
-    color: '#4338CA',
     fontWeight: '700',
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
     paddingTop: 12,
   },
   collapseBtn: {
@@ -203,6 +205,5 @@ const styles = StyleSheet.create({
   collapseText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#71717A',
   },
 });

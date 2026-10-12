@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { ArrowRight, ChevronRight } from 'lucide-react-native';
+import { useTheme } from '../../../theme/ThemeContext';
 
 interface ShowcaseCardProps {
   title: string;
@@ -21,54 +22,74 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
   title,
   subtitle,
   tag,
-  tagColor = '#4F46E5',
-  tagBgColor = '#EEF2FF',
+  tagColor,
+  tagBgColor,
   icon,
-  iconBgColor = '#F4F4F5',
+  iconBgColor,
   metricValue,
   metricLabel,
   ctaText = 'View Details',
   onPress,
   style,
 }) => {
+  const { theme, isDark } = useTheme();
+
+  const effectiveTagColor = tagColor || theme.primary;
+  const effectiveTagBgColor = tagBgColor || (isDark ? 'rgba(99,102,241,0.18)' : '#EEF2FF');
+  const effectiveIconBgColor = iconBgColor || (isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5');
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      style={[styles.card, style]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+        },
+        style,
+      ]}
     >
       <View style={styles.topRow}>
         <View style={styles.headerLeft}>
-          <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
+          <View style={[styles.iconContainer, { backgroundColor: effectiveIconBgColor }]}>
             {icon}
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
               {tag ? (
-                <View style={[styles.tagBadge, { backgroundColor: tagBgColor }]}>
-                  <Text style={[styles.tagText, { color: tagColor }]}>{tag}</Text>
+                <View style={[styles.tagBadge, { backgroundColor: effectiveTagBgColor }]}>
+                  <Text style={[styles.tagText, { color: effectiveTagColor }]}>{tag}</Text>
                 </View>
               ) : null}
             </View>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
               {subtitle}
             </Text>
           </View>
         </View>
 
-        <ChevronRight size={18} color="#A1A1AA" />
+        <ChevronRight size={18} color={theme.textMuted} />
       </View>
 
-      <View style={styles.footerRow}>
+      <View style={[styles.footerRow, { borderTopColor: theme.border }]}>
         <View>
-          <Text style={styles.metricVal}>{metricValue}</Text>
-          <Text style={styles.metricLbl}>{metricLabel}</Text>
+          <Text style={[styles.metricVal, { color: theme.textPrimary }]}>{metricValue}</Text>
+          <Text style={[styles.metricLbl, { color: theme.textMuted }]}>{metricLabel}</Text>
         </View>
 
-        <View style={styles.ctaRow}>
-          <Text style={styles.ctaText}>{ctaText}</Text>
-          <ArrowRight size={14} color="#4F46E5" />
+        <View
+          style={[
+            styles.ctaRow,
+            {
+              backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+            },
+          ]}
+        >
+          <Text style={[styles.ctaText, { color: theme.primary }]}>{ctaText}</Text>
+          <ArrowRight size={14} color={theme.primary} />
         </View>
       </View>
     </TouchableOpacity>
@@ -77,14 +98,12 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 18,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
     cursor: 'pointer' as any,
@@ -112,11 +131,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   title: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#18181B',
     letterSpacing: -0.2,
   },
   tagBadge: {
@@ -131,7 +150,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: '#71717A',
     marginTop: 2,
   },
   footerRow: {
@@ -139,26 +157,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#FAFAFA',
     paddingTop: 12,
   },
   metricVal: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   metricLbl: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EEF2FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 100,
@@ -166,6 +180,5 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#4F46E5',
   },
 });

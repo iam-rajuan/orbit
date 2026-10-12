@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface AppModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export const AppModal: React.FC<AppModalProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
+  const { theme } = useTheme();
 
   return (
     <Modal
@@ -44,28 +46,34 @@ export const AppModal: React.FC<AppModalProps> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        <View style={[styles.backdrop, { backgroundColor: theme.backdrop }]}>
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={[
                 styles.modalCard,
-                { maxWidth: isMobile ? '100%' : maxWidth },
+                {
+                  maxWidth: isMobile ? '100%' : maxWidth,
+                  backgroundColor: theme.surface,
+                  shadowColor: theme.shadowColor,
+                  borderWidth: theme.isDark ? 1 : 0,
+                  borderColor: theme.border,
+                },
                 isMobile && styles.modalCardMobile,
                 style,
               ]}
             >
-              <View style={styles.header}>
+              <View style={[styles.header, { borderBottomColor: theme.border }]}>
                 <View style={styles.titleContainer}>
-                  <Text style={styles.title}>{title}</Text>
-                  {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+                  <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
+                  {subtitle ? <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text> : null}
                 </View>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={onClose}
-                  style={styles.closeBtn}
+                  style={[styles.closeBtn, { backgroundColor: theme.surfaceSubtle }]}
                 >
-                  <X size={18} color="#71717A" />
+                  <X size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -86,7 +94,6 @@ export const AppModal: React.FC<AppModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(9, 9, 11, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -94,10 +101,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxHeight: '90%',
-    backgroundColor: '#ffffff',
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.12,
     shadowRadius: 40,
@@ -121,7 +126,6 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
   },
   titleContainer: {
     flex: 1,
@@ -130,18 +134,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#18181B',
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,
-    color: '#A1A1AA',
     marginTop: 3,
   },
   closeBtn: {
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: '#F4F4F5',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer' as any,
   },
   body: {

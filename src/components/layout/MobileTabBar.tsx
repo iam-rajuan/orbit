@@ -8,10 +8,12 @@ import {
   Receipt,
   Menu,
 } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 export const MobileTabBar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   const tabs = [
     { title: 'Home', path: '/dashboard', icon: LayoutDashboard },
@@ -22,7 +24,17 @@ export const MobileTabBar: React.FC = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+          shadowColor: theme.shadowColor,
+          shadowOpacity: theme.shadowOpacity,
+        },
+      ]}
+    >
       {tabs.map((tab) => {
         const isActive =
           tab.path === '/calendar'
@@ -40,12 +52,13 @@ export const MobileTabBar: React.FC = () => {
           >
             <Icon
               size={20}
-              color={isActive ? '#4F46E5' : '#71717A'}
+              color={isActive ? theme.primary : theme.textMuted}
               strokeWidth={isActive ? 2.5 : 2}
             />
             <Text
               style={[
                 styles.tabTitle,
+                { color: isActive ? theme.primary : theme.textMuted },
                 isActive && styles.tabTitleActive,
               ]}
             >
@@ -61,16 +74,12 @@ export const MobileTabBar: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     height: 60,
-    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 8,
-    shadowColor: '#18181B',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 3,
   },
@@ -84,11 +93,9 @@ const styles = StyleSheet.create({
   tabTitle: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 4,
   },
   tabTitleActive: {
     fontWeight: '700',
-    color: '#4F46E5',
   },
 });

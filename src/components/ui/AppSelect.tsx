@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 export interface SelectOption {
   label: string;
@@ -39,31 +40,36 @@ export const AppSelect: React.FC<AppSelectProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
+  const { theme } = useTheme();
 
   const selectedOption = options.find((o) => o.value === value);
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text> : null}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => setModalVisible(true)}
         style={[
           styles.selectBox,
-          error ? styles.selectBoxError : null,
+          {
+            backgroundColor: theme.surfaceSubtle,
+            borderColor: error ? theme.danger : theme.border,
+          },
+          error ? { backgroundColor: theme.dangerBg } : null,
         ]}
       >
         <Text
           style={[
             styles.valueText,
-            !selectedOption ? styles.placeholderText : null,
+            { color: selectedOption ? theme.textPrimary : theme.textMuted },
           ]}
         >
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
-        <ChevronDown size={16} color="#A1A1AA" />
+        <ChevronDown size={16} color={theme.textMuted} />
       </TouchableOpacity>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text> : null}
 
       <Modal
         visible={modalVisible}
@@ -72,14 +78,22 @@ export const AppSelect: React.FC<AppSelectProps> = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.backdrop }]}>
             <TouchableWithoutFeedback>
-              <View style={[
-                styles.modalContent,
-                isMobile && styles.modalContentMobile,
-              ]}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{label || 'Select'}</Text>
+              <View
+                style={[
+                  styles.modalContent,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    borderWidth: theme.isDark ? 1 : 0,
+                    shadowColor: theme.shadowColor,
+                  },
+                  isMobile && styles.modalContentMobile,
+                ]}
+              >
+                <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                  <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{label || 'Select'}</Text>
                 </View>
                 <FlatList
                   data={options}
@@ -95,18 +109,22 @@ export const AppSelect: React.FC<AppSelectProps> = ({
                         }}
                         style={[
                           styles.optionItem,
-                          isSelected && styles.optionItemSelected,
+                          {
+                            borderBottomColor: theme.border,
+                            backgroundColor: isSelected ? theme.primaryBg : 'transparent',
+                          },
                         ]}
                       >
                         <Text
                           style={[
                             styles.optionText,
+                            { color: isSelected ? theme.primary : theme.textPrimary },
                             isSelected && styles.optionTextSelected,
                           ]}
                         >
                           {item.label}
                         </Text>
-                        {isSelected && <Check size={16} color="#4F46E5" />}
+                        {isSelected && <Check size={16} color={theme.primary} />}
                       </TouchableOpacity>
                     );
                   }}
@@ -127,7 +145,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3F3F46',
     marginBottom: 6,
     letterSpacing: -0.1,
   },
@@ -135,34 +152,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAFAFA',
     borderWidth: 1.5,
-    borderColor: '#E4E4E7',
     borderRadius: 10,
     paddingHorizontal: 12,
     minHeight: 44,
     cursor: 'pointer' as any,
   },
-  selectBoxError: {
-    borderColor: '#F43F5E',
-    backgroundColor: '#FFF1F2',
-  },
   valueText: {
     fontSize: 14,
-    color: '#18181B',
-  },
-  placeholderText: {
-    color: '#A1A1AA',
   },
   errorText: {
     fontSize: 12,
-    color: '#F43F5E',
     marginTop: 4,
     fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(9, 9, 11, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -171,10 +176,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     maxHeight: 400,
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
@@ -194,12 +197,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
   },
   modalTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#18181B',
     letterSpacing: -0.2,
   },
   optionItem: {
@@ -209,18 +210,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 13,
     borderBottomWidth: 1,
-    borderBottomColor: '#FAFAFA',
     cursor: 'pointer' as any,
-  },
-  optionItemSelected: {
-    backgroundColor: '#EEF2FF',
   },
   optionText: {
     fontSize: 14,
-    color: '#3F3F46',
   },
   optionTextSelected: {
-    color: '#4F46E5',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

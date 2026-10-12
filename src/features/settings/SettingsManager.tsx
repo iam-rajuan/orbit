@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import {
   Settings,
@@ -15,16 +14,18 @@ import {
   RefreshCw,
   Trash2,
   CheckCircle2,
-  Shield,
   Info,
-  DollarSign,
-  Palette,
   FileSpreadsheet,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
 } from 'lucide-react-native';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
+import { useTheme, ThemeMode } from '../../theme/ThemeContext';
 import { AppSelect } from '../../components/ui/AppSelect';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppInput } from '../../components/ui/AppInput';
@@ -42,6 +43,8 @@ export const SettingsManager: React.FC = () => {
     resetSampleData,
     clearAllData,
   } = useSettingsStore();
+
+  const { theme, themeMode, setThemeMode, isDark } = useTheme();
 
   const { loadTasks, createTask } = useTaskStore();
   const { loadRoutines } = useRoutineStore();
@@ -191,41 +194,136 @@ export const SettingsManager: React.FC = () => {
     setNewExpenseCategory('');
   };
 
+  const themeOptions: { id: ThemeMode; label: string; desc: string; icon: React.ReactNode }[] = [
+    {
+      id: 'light',
+      label: 'Light Mode',
+      desc: 'Crisp, high-contrast clean daylight palette',
+      icon: <Sun size={20} color={themeMode === 'light' ? theme.primary : theme.textSecondary} />,
+    },
+    {
+      id: 'dark',
+      label: 'Dark Mode',
+      desc: 'Deep zinc & obsidian for low light comfort',
+      icon: <Moon size={20} color={themeMode === 'dark' ? theme.primary : theme.textSecondary} />,
+    },
+    {
+      id: 'system',
+      label: 'System Sync',
+      desc: 'Follows your operating system theme settings',
+      icon: <Laptop size={20} color={themeMode === 'system' ? theme.primary : theme.textSecondary} />,
+    },
+  ];
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
       {/* Title Card */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <View style={styles.titleInfo}>
-          <View style={styles.iconCircle}>
-            <Settings size={20} color="#4f46e5" />
+          <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' }]}>
+            <Settings size={20} color={theme.primary} />
           </View>
           <View>
-            <Text style={styles.pageTitle}>Application Settings</Text>
-            <Text style={styles.pageSubtitle}>
-              Preferences, Custom Categories & Data Management
+            <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Application Settings</Text>
+            <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
+              Theme, Preferences, Categories & Data Management
             </Text>
           </View>
         </View>
 
         {statusMessage && (
-          <View style={styles.statusBanner}>
+          <View
+            style={[
+              styles.statusBanner,
+              {
+                backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
+                borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
+              },
+            ]}
+          >
             <CheckCircle2 size={16} color="#059669" />
-            <Text style={styles.statusText}>{statusMessage}</Text>
+            <Text style={[styles.statusText, { color: isDark ? '#34D399' : '#047857' }]}>
+              {statusMessage}
+            </Text>
           </View>
         )}
       </View>
 
-      {/* 1. General Preferences */}
-      <View style={styles.card}>
-        <Text style={styles.sectionHeader}>Preferences & Localization</Text>
+      {/* 1. Appearance & Theme (Production Grade Theme Selector) */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Appearance & Theme</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSecondary }]}>
+          Customize how Daily View looks on your device. Currently active: <Text style={{ fontWeight: '700', color: theme.primary }}>{themeMode === 'system' ? `System (${isDark ? 'Dark' : 'Light'})` : themeMode === 'dark' ? 'Dark' : 'Light'}</Text>
+        </Text>
 
-        <View style={styles.settingRow}>
+        <View style={styles.themeGrid}>
+          {themeOptions.map((opt) => {
+            const isSelected = themeMode === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  styles.themeOptionCard,
+                  {
+                    backgroundColor: isSelected
+                      ? (isDark ? 'rgba(99,102,241,0.14)' : '#EEF2FF')
+                      : theme.surfaceSubtle,
+                    borderColor: isSelected ? theme.primary : theme.border,
+                  },
+                ]}
+                onPress={() => setThemeMode(opt.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.themeOptionHeader}>
+                  <View
+                    style={[
+                      styles.themeOptionIcon,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(99,102,241,0.25)' : '#E0E7FF')
+                          : (isDark ? 'rgba(255,255,255,0.05)' : '#F4F4F5'),
+                      },
+                    ]}
+                  >
+                    {opt.icon}
+                  </View>
+                  {isSelected && (
+                    <View style={[styles.activeCheck, { backgroundColor: theme.primary }]}>
+                      <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                    </View>
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.themeOptionLabel,
+                    {
+                      color: isSelected ? theme.primary : theme.textPrimary,
+                      fontWeight: isSelected ? '700' : '600',
+                    },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+                <Text style={[styles.themeOptionDesc, { color: theme.textMuted }]}>
+                  {opt.desc}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* 2. General Preferences */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Preferences & Localization</Text>
+
+        <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
           <View style={styles.settingText}>
-            <Text style={styles.settingTitle}>Default Currency Symbol</Text>
-            <Text style={styles.settingSub}>
+            <Text style={[styles.settingTitle, { color: theme.textPrimary }]}>Default Currency Symbol</Text>
+            <Text style={[styles.settingSub, { color: theme.textSecondary }]}>
               Used across all daily expense tables and summaries
             </Text>
           </View>
@@ -244,10 +342,10 @@ export const SettingsManager: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.settingRow}>
+        <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
           <View style={styles.settingText}>
-            <Text style={styles.settingTitle}>Time Display Format</Text>
-            <Text style={styles.settingSub}>12-hour AM/PM vs 24-hour military</Text>
+            <Text style={[styles.settingTitle, { color: theme.textPrimary }]}>Time Display Format</Text>
+            <Text style={[styles.settingSub, { color: theme.textSecondary }]}>12-hour AM/PM vs 24-hour military</Text>
           </View>
           <View style={{ width: 140 }}>
             <AppSelect
@@ -262,13 +360,19 @@ export const SettingsManager: React.FC = () => {
         </View>
       </View>
 
-      {/* 2. Custom Categories Management */}
-      <View style={styles.card}>
-        <Text style={styles.sectionHeader}>Task Categories</Text>
+      {/* 3. Custom Categories Management */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Task Categories</Text>
         <View style={styles.pillList}>
           {settings.taskCategories.map((cat) => (
-            <View key={cat} style={styles.pill}>
-              <Text style={styles.pillText}>{cat}</Text>
+            <View
+              key={cat}
+              style={[
+                styles.pill,
+                { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.pillText, { color: theme.textSecondary }]}>{cat}</Text>
             </View>
           ))}
         </View>
@@ -289,11 +393,17 @@ export const SettingsManager: React.FC = () => {
 
         <View style={{ height: 16 }} />
 
-        <Text style={styles.sectionHeader}>Expense Categories</Text>
+        <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Expense Categories</Text>
         <View style={styles.pillList}>
           {settings.expenseCategories.map((cat) => (
-            <View key={cat} style={styles.pill}>
-              <Text style={styles.pillText}>{cat}</Text>
+            <View
+              key={cat}
+              style={[
+                styles.pill,
+                { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.pillText, { color: theme.textSecondary }]}>{cat}</Text>
             </View>
           ))}
         </View>
@@ -313,10 +423,10 @@ export const SettingsManager: React.FC = () => {
         </View>
       </View>
 
-      {/* 3. Data Backup, Restore & CSV Import */}
-      <View style={styles.card}>
-        <Text style={styles.sectionHeader}>Backup & Data Portability</Text>
-        <Text style={styles.sectionDesc}>
+      {/* 4. Data Backup, Restore & CSV Import */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Backup & Data Portability</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSecondary }]}>
           Export your complete productivity database to JSON or import your spreadsheet CSV files.
         </Text>
 
@@ -324,26 +434,26 @@ export const SettingsManager: React.FC = () => {
           <AppButton
             title="Export Backup (JSON)"
             variant="outline"
-            icon={<Download size={16} color="#475569" />}
+            icon={<Download size={16} color={theme.textSecondary} />}
             onPress={handleExportJson}
           />
 
           <AppButton
             title="Import Backup (JSON)"
             variant="outline"
-            icon={<Upload size={16} color="#475569" />}
+            icon={<Upload size={16} color={theme.textSecondary} />}
             onPress={handleImportJson}
           />
 
           <AppButton
             title="Import Spreadsheet CSV"
             variant="secondary"
-            icon={<FileSpreadsheet size={16} color="#4f46e5" />}
+            icon={<FileSpreadsheet size={16} color={theme.primary} />}
             onPress={handleImportCsv}
           />
         </View>
 
-        <View style={styles.dangerZone}>
+        <View style={[styles.dangerZone, { borderTopColor: theme.border }]}>
           <Text style={styles.dangerTitle}>Data Management & Reset</Text>
           <View style={styles.buttonGrid}>
             <AppButton
@@ -362,13 +472,13 @@ export const SettingsManager: React.FC = () => {
         </View>
       </View>
 
-      {/* 4. About & Version Info */}
-      <View style={styles.card}>
+      {/* 5. About & Version Info */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <View style={styles.aboutRow}>
-          <Info size={18} color="#71717A" />
+          <Info size={18} color={theme.textMuted} />
           <View>
-            <Text style={styles.aboutTitle}>Daily View — ToDo App</Text>
-            <Text style={styles.aboutSub}>
+            <Text style={[styles.aboutTitle, { color: theme.textPrimary }]}>Daily View — ToDo App</Text>
+            <Text style={[styles.aboutSub, { color: theme.textSecondary }]}>
               Version 4.0.0 (Phase 1 Frontend Architecture) • Local-First IndexedDB & AsyncStorage
             </Text>
           </View>
@@ -420,14 +530,12 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -440,28 +548,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#A7F3D0',
     padding: 12,
     borderRadius: 10,
     marginTop: 12,
@@ -470,19 +573,57 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#047857',
   },
   sectionHeader: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#18181B',
-    marginBottom: 8,
+    marginBottom: 6,
     letterSpacing: -0.2,
   },
   sectionDesc: {
     fontSize: 13,
-    color: '#71717A',
-    marginBottom: 14,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  themeOptionCard: {
+    flex: 1,
+    minWidth: 140,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 16,
+  },
+  themeOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  themeOptionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeOptionLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  themeOptionDesc: {
+    fontSize: 11,
+    lineHeight: 15,
   },
   settingRow: {
     flexDirection: 'row',
@@ -490,7 +631,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
     flexWrap: 'wrap',
     gap: 8,
   },
@@ -501,11 +641,9 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#18181B',
   },
   settingSub: {
     fontSize: 12,
-    color: '#71717A',
     marginTop: 2,
   },
   pillList: {
@@ -515,16 +653,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   pill: {
-    backgroundColor: '#F4F4F5',
     borderWidth: 1,
-    borderColor: '#E4E4E7',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 100,
   },
   pillText: {
     fontSize: 12,
-    color: '#52525B',
     fontWeight: '600',
   },
   addInputRow: {
@@ -541,7 +676,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
   },
   dangerTitle: {
     fontSize: 13,
@@ -557,11 +691,9 @@ const styles = StyleSheet.create({
   aboutTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#18181B',
   },
   aboutSub: {
     fontSize: 12,
-    color: '#71717A',
     marginTop: 2,
   },
 });

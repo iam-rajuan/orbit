@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { AppModal } from '../../components/ui/AppModal';
@@ -5,6 +6,7 @@ import { AppInput } from '../../components/ui/AppInput';
 import { AppButton } from '../../components/ui/AppButton';
 import { RoutineItem } from '../../types';
 import { useRoutineStore } from '../../stores/useRoutineStore';
+import { useTheme } from '../../theme/ThemeContext';
 import { generateId } from '../../utils/id';
 
 interface RoutineFormModalProps {
@@ -29,6 +31,8 @@ export const RoutineFormModal: React.FC<RoutineFormModalProps> = ({
   routineToEdit,
 }) => {
   const { routines, createRoutine, updateRoutine } = useRoutineStore();
+  const { theme } = useTheme();
+
 
   const [time, setTime] = useState('');
   const [title, setTitle] = useState('');
@@ -132,7 +136,7 @@ export const RoutineFormModal: React.FC<RoutineFormModalProps> = ({
       />
 
       <View style={styles.daysContainer}>
-        <Text style={styles.daysLabel}>Repeat Days</Text>
+        <Text style={[styles.daysLabel, { color: theme.textPrimary }]}>Repeat Days</Text>
         <View style={styles.daysRow}>
           {DAYS_OF_WEEK.map((item) => {
             const active = repeatDays.includes(item.day);
@@ -141,9 +145,25 @@ export const RoutineFormModal: React.FC<RoutineFormModalProps> = ({
                 key={item.day}
                 activeOpacity={0.7}
                 onPress={() => toggleDay(item.day)}
-                style={[styles.dayPill, active && styles.dayPillActive]}
+                style={[
+                  styles.dayPill,
+                  {
+                    backgroundColor: active
+                      ? theme.primary
+                      : theme.surfaceSubtle,
+                    borderColor: active ? theme.primary : theme.border,
+                  },
+                ]}
               >
-                <Text style={[styles.dayText, active && styles.dayTextActive]}>
+                <Text
+                  style={[
+                    styles.dayText,
+                    {
+                      color: active ? '#ffffff' : theme.textSecondary,
+                      fontWeight: active ? '700' : '600',
+                    },
+                  ]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -182,7 +202,6 @@ const styles = StyleSheet.create({
   daysLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#18181B',
     marginBottom: 8,
   },
   daysRow: {
@@ -194,24 +213,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: '#E4E4E7',
-    backgroundColor: '#FAFAFA',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer' as any,
   },
-  dayPillActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
-  },
   dayText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#52525B',
-  },
-  dayTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
   errText: {
     fontSize: 12,
@@ -228,3 +235,4 @@ const styles = StyleSheet.create({
     minWidth: 110,
   },
 });
+

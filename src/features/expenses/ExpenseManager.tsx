@@ -14,14 +14,12 @@ import {
   Search,
   Trash2,
   Edit2,
-  Wallet,
-  PieChart,
   X,
-  CreditCard,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useTheme } from '../../theme/ThemeContext';
 import { AppBadge } from '../../components/ui/AppBadge';
 import { AppButton } from '../../components/ui/AppButton';
 import { formatCurrency } from '../../utils/currency';
@@ -33,16 +31,15 @@ export const ExpenseManager: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 860;
 
+  const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
   const {
     searchQuery,
     filterCategory,
     filterType,
-    filterPayment,
     setSearchQuery,
     setFilterCategory,
     setFilterType,
-    setFilterPayment,
     deleteExpense,
     getFilteredExpenses,
     getDailySummary,
@@ -63,15 +60,28 @@ export const ExpenseManager: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* 1. Header Card with Daily Financial Metrics */}
-      <View style={styles.headerCard}>
+      <View
+        style={[
+          styles.headerCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.headerTop}>
           <View style={styles.titleInfo}>
-            <View style={[styles.iconCircle, { backgroundColor: '#FFF1F2' }]}>
+            <View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2' },
+              ]}
+            >
               <Receipt size={20} color="#F43F5E" />
             </View>
             <View>
-              <Text style={styles.pageTitle}>Daily Expenses</Text>
-              <Text style={styles.pageSubtitle}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Daily Expenses</Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
                 Expenditure tracking for {selectedDate}
               </Text>
             </View>
@@ -90,30 +100,54 @@ export const ExpenseManager: React.FC = () => {
 
         {/* Financial KPI Summary Cards */}
         <View style={styles.kpiRow}>
-          <View style={[styles.kpiBox, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-            <Text style={styles.kpiLabel}>Daily Total</Text>
-            <Text style={[styles.kpiValue, { color: '#BE123C' }]}>
+          <View
+            style={[
+              styles.kpiBox,
+              {
+                backgroundColor: isDark ? 'rgba(244,63,94,0.12)' : '#FFF1F2',
+                borderColor: isDark ? 'rgba(244,63,94,0.3)' : '#FECDD3',
+              },
+            ]}
+          >
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Daily Total</Text>
+            <Text style={[styles.kpiValue, { color: '#F43F5E' }]}>
               {formatCurrency(summary.total, settings.currency)}
             </Text>
-            <Text style={styles.kpiSub}>{summary.count} items recorded</Text>
+            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>{summary.count} items recorded</Text>
           </View>
 
-          <View style={[styles.kpiBox, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-            <Text style={styles.kpiLabel}>Needs (Essential)</Text>
-            <Text style={[styles.kpiValue, { color: '#047857' }]}>
+          <View
+            style={[
+              styles.kpiBox,
+              {
+                backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
+                borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
+              },
+            ]}
+          >
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Needs (Essential)</Text>
+            <Text style={[styles.kpiValue, { color: isDark ? '#34D399' : '#047857' }]}>
               {formatCurrency(summary.needTotal, settings.currency)}
             </Text>
-            <Text style={styles.kpiSub}>
+            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>
               {summary.total > 0 ? `${Math.round((summary.needTotal / summary.total) * 100)}% of total` : '0%'}
             </Text>
           </View>
 
-          <View style={[styles.kpiBox, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
-            <Text style={styles.kpiLabel}>Wants (Discretionary)</Text>
-            <Text style={[styles.kpiValue, { color: '#7C3AED' }]}>
+          <View
+            style={[
+              styles.kpiBox,
+              {
+                backgroundColor: isDark ? 'rgba(124,58,237,0.12)' : '#F5F3FF',
+                borderColor: isDark ? 'rgba(124,58,237,0.3)' : '#DDD6FE',
+              },
+            ]}
+          >
+            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Wants (Discretionary)</Text>
+            <Text style={[styles.kpiValue, { color: isDark ? '#A78BFA' : '#7C3AED' }]}>
               {formatCurrency(summary.wantTotal, settings.currency)}
             </Text>
-            <Text style={styles.kpiSub}>
+            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>
               {summary.total > 0 ? `${Math.round((summary.wantTotal / summary.total) * 100)}% of total` : '0%'}
             </Text>
           </View>
@@ -121,20 +155,36 @@ export const ExpenseManager: React.FC = () => {
       </View>
 
       {/* 2. Search & Filter Bar */}
-      <View style={styles.toolbarCard}>
+      <View
+        style={[
+          styles.toolbarCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Search size={16} color="#71717A" style={{ marginRight: 8 }} />
+          <View
+            style={[
+              styles.searchBox,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <Search size={16} color={theme.textMuted} style={{ marginRight: 8 }} />
             <TextInput
               placeholder="Search expenses, notes, categories..."
-              placeholderTextColor="#A1A1AA"
+              placeholderTextColor={theme.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.textPrimary }]}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={16} color="#71717A" />
+                <X size={16} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -148,36 +198,80 @@ export const ExpenseManager: React.FC = () => {
         >
           <TouchableOpacity
             onPress={() => setFilterType('ALL')}
-            style={[styles.filterPill, filterType === 'ALL' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterType === 'ALL' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterType === 'ALL' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterType === 'ALL' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterType === 'ALL' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               All Types
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilterType('Need')}
-            style={[styles.filterPill, filterType === 'Need' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterType === 'Need' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterType === 'Need' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterType === 'Need' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterType === 'Need' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               Need
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilterType('Want')}
-            style={[styles.filterPill, filterType === 'Want' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterType === 'Want' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterType === 'Want' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterType === 'Want' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterType === 'Want' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               Want
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <TouchableOpacity
             onPress={() => setFilterCategory('ALL')}
-            style={[styles.filterPill, filterCategory === 'ALL' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterCategory === 'ALL' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterCategory === 'ALL' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterCategory === 'ALL' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterCategory === 'ALL' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               All Categories
             </Text>
           </TouchableOpacity>
@@ -185,9 +279,20 @@ export const ExpenseManager: React.FC = () => {
             <TouchableOpacity
               key={cat}
               onPress={() => setFilterCategory(cat === filterCategory ? 'ALL' : cat)}
-              style={[styles.filterPill, filterCategory === cat && styles.filterPillActive]}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: filterCategory === cat ? theme.primary : theme.surfaceSubtle,
+                  borderColor: filterCategory === cat ? theme.primary : theme.border,
+                },
+              ]}
             >
-              <Text style={[styles.filterPillText, filterCategory === cat && styles.filterPillTextActive]}>
+              <Text
+                style={[
+                  styles.filterPillText,
+                  { color: filterCategory === cat ? '#ffffff' : theme.textSecondary },
+                ]}
+              >
                 {cat}
               </Text>
             </TouchableOpacity>
@@ -198,46 +303,68 @@ export const ExpenseManager: React.FC = () => {
       {/* 3. Expense List (Desktop Spreadsheet Table vs Mobile Cards) */}
       {isDesktop ? (
         /* Desktop Compact Table */
-        <View style={styles.tableCard}>
-          <View style={styles.tableHeader}>
+        <View
+          style={[
+            styles.tableCard,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.tableHeader,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderBottomColor: theme.border,
+              },
+            ]}
+          >
             <View style={[styles.thCell, { width: 45 }]}>
-              <Text style={styles.thText}>#</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>#</Text>
             </View>
             <View style={[styles.thCell, { width: 120 }]}>
-              <Text style={styles.thText}>Category</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Category</Text>
             </View>
             <View style={[styles.thCell, { width: 100 }]}>
-              <Text style={styles.thText}>Payment</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Payment</Text>
             </View>
             <View style={[styles.thCell, { width: 85 }]}>
-              <Text style={styles.thText}>Type</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Type</Text>
             </View>
             <View style={[styles.thCell, { flex: 1.2 }]}>
-              <Text style={styles.thText}>Expense Item</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Expense Item</Text>
             </View>
             <View style={[styles.thCell, { flex: 1.5 }]}>
-              <Text style={styles.thText}>Notes / Description</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Notes / Description</Text>
             </View>
             <View style={[styles.thCell, { width: 120, justifyContent: 'flex-end' }]}>
-              <Text style={styles.thText}>Amount ({settings.currency})</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Amount ({settings.currency})</Text>
             </View>
             <View style={[styles.thCell, { width: 80, justifyContent: 'flex-end' }]}>
-              <Text style={styles.thText}>Actions</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Actions</Text>
             </View>
           </View>
 
           {filteredExpenses.length === 0 ? (
             <View style={styles.emptyTable}>
-              <Text style={styles.emptyText}>No expenses found for this date.</Text>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>No expenses found for this date.</Text>
             </View>
           ) : (
             filteredExpenses.map((expense, idx) => (
               <View
                 key={expense.id}
-                style={[styles.tableRow, idx % 2 === 1 && styles.tableRowEven]}
+                style={[
+                  styles.tableRow,
+                  {
+                    backgroundColor: theme.surface,
+                    borderBottomColor: theme.border,
+                  },
+                ]}
               >
                 <View style={[styles.tdCell, { width: 45 }]}>
-                  <Text style={styles.tdTextMuted}>{expense.itemNumber || idx + 1}</Text>
+                  <Text style={[styles.tdTextMuted, { color: theme.textMuted }]}>{expense.itemNumber || idx + 1}</Text>
                 </View>
 
                 <View style={[styles.tdCell, { width: 120 }]}>
@@ -245,7 +372,17 @@ export const ExpenseManager: React.FC = () => {
                 </View>
 
                 <View style={[styles.tdCell, { width: 100 }]}>
-                  <Text style={styles.tdTextPayment}>{expense.paymentMethod}</Text>
+                  <Text
+                    style={[
+                      styles.tdTextPayment,
+                      {
+                        backgroundColor: theme.surfaceSubtle,
+                        color: theme.textSecondary,
+                      },
+                    ]}
+                  >
+                    {expense.paymentMethod}
+                  </Text>
                 </View>
 
                 <View style={[styles.tdCell, { width: 85 }]}>
@@ -253,17 +390,17 @@ export const ExpenseManager: React.FC = () => {
                 </View>
 
                 <View style={[styles.tdCell, { flex: 1.2 }]}>
-                  <Text style={styles.tdTextTitle}>{expense.title}</Text>
+                  <Text style={[styles.tdTextTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
                 </View>
 
                 <View style={[styles.tdCell, { flex: 1.5 }]}>
-                  <Text style={styles.tdTextNotes} numberOfLines={2}>
+                  <Text style={[styles.tdTextNotes, { color: theme.textSecondary }]} numberOfLines={2}>
                     {expense.description || '—'}
                   </Text>
                 </View>
 
                 <View style={[styles.tdCell, { width: 120, justifyContent: 'flex-end' }]}>
-                  <Text style={styles.tdTextAmount}>
+                  <Text style={[styles.tdTextAmount, { color: theme.textPrimary }]}>
                     {formatCurrency(expense.amount, settings.currency)}
                   </Text>
                 </View>
@@ -275,14 +412,14 @@ export const ExpenseManager: React.FC = () => {
                       setEditingExpense(expense);
                       setModalOpen(true);
                     }}
-                    style={styles.actionBtn}
+                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
                   >
-                    <Edit2 size={15} color="#71717A" />
+                    <Edit2 size={15} color={theme.textMuted} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => setDeleteConfirmId(expense.id)}
-                    style={styles.actionBtn}
+                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
                   >
                     <Trash2 size={15} color="#F43F5E" />
                   </TouchableOpacity>
@@ -292,12 +429,20 @@ export const ExpenseManager: React.FC = () => {
           )}
 
           {/* Table Footer with Total */}
-          <View style={styles.tableFooter}>
-            <Text style={styles.tableFooterLabel}>Total Daily Expenses</Text>
-            <Text style={styles.tableFooterCount}>
+          <View
+            style={[
+              styles.tableFooter,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderTopColor: theme.border,
+              },
+            ]}
+          >
+            <Text style={[styles.tableFooterLabel, { color: theme.textPrimary }]}>Total Daily Expenses</Text>
+            <Text style={[styles.tableFooterCount, { color: theme.textMuted }]}>
               {summary.count} items recorded
             </Text>
-            <Text style={styles.tableFooterTotal}>
+            <Text style={[styles.tableFooterTotal, { color: theme.primary }]}>
               {formatCurrency(summary.total, settings.currency)}
             </Text>
           </View>
@@ -307,16 +452,35 @@ export const ExpenseManager: React.FC = () => {
         <View style={styles.mobileCardList}>
           {filteredExpenses.length === 0 ? (
             <View style={styles.emptyTable}>
-              <Text style={styles.emptyText}>No expenses recorded for this day.</Text>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>No expenses recorded for this day.</Text>
             </View>
           ) : (
             filteredExpenses.map((expense) => (
-              <View key={expense.id} style={styles.mobileExpenseCard}>
+              <View
+                key={expense.id}
+                style={[
+                  styles.mobileExpenseCard,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
                 <View style={styles.mobileCardTop}>
                   <View style={styles.mobileBadges}>
                     <AppBadge label={expense.category} variant="category" size="sm" />
                     <AppBadge label={expense.type} variant="expenseType" size="sm" />
-                    <Text style={styles.mobilePayment}>{expense.paymentMethod}</Text>
+                    <Text
+                      style={[
+                        styles.mobilePayment,
+                        {
+                          backgroundColor: theme.surfaceSubtle,
+                          color: theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {expense.paymentMethod}
+                    </Text>
                   </View>
                   <View style={styles.mobileActions}>
                     <TouchableOpacity
@@ -324,13 +488,13 @@ export const ExpenseManager: React.FC = () => {
                         setEditingExpense(expense);
                         setModalOpen(true);
                       }}
-                      style={styles.actionBtn}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
                     >
-                      <Edit2 size={15} color="#71717A" />
+                      <Edit2 size={15} color={theme.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => setDeleteConfirmId(expense.id)}
-                      style={styles.actionBtn}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
                     >
                       <Trash2 size={15} color="#F43F5E" />
                     </TouchableOpacity>
@@ -338,14 +502,14 @@ export const ExpenseManager: React.FC = () => {
                 </View>
 
                 <View style={styles.mobileCardMiddle}>
-                  <Text style={styles.mobileTitle}>{expense.title}</Text>
-                  <Text style={styles.mobileAmount}>
+                  <Text style={[styles.mobileTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
+                  <Text style={[styles.mobileAmount, { color: theme.textPrimary }]}>
                     {formatCurrency(expense.amount, settings.currency)}
                   </Text>
                 </View>
 
                 {expense.description ? (
-                  <Text style={styles.mobileDesc}>{expense.description}</Text>
+                  <Text style={[styles.mobileDesc, { color: theme.textSecondary }]}>{expense.description}</Text>
                 ) : null}
               </View>
             ))
@@ -386,12 +550,10 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -414,20 +576,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#FFF1F2',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   kpiRow: {
@@ -445,7 +604,6 @@ const styles = StyleSheet.create({
   kpiLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -458,17 +616,14 @@ const styles = StyleSheet.create({
   kpiSub: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 4,
   },
   toolbarCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 14,
     gap: 10,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -482,9 +637,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 40,
@@ -492,7 +645,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: '#18181B',
     outlineStyle: 'none' as any,
   },
   filterPillsRow: {
@@ -505,34 +657,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 100,
-    backgroundColor: '#F4F4F5',
+    borderWidth: 1,
     cursor: 'pointer' as any,
-  },
-  filterPillActive: {
-    backgroundColor: '#4F46E5',
   },
   filterPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#52525B',
-  },
-  filterPillTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
   divider: {
     width: 1,
     height: 18,
-    backgroundColor: '#E4E4E7',
     marginHorizontal: 4,
   },
   tableCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     overflow: 'hidden',
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -541,9 +682,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
     paddingVertical: 11,
     paddingHorizontal: 14,
   },
@@ -555,7 +694,6 @@ const styles = StyleSheet.create({
   thText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -565,11 +703,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
-    backgroundColor: '#ffffff',
-  },
-  tableRowEven: {
-    backgroundColor: '#FFFFFF',
   },
   tdCell: {
     paddingHorizontal: 4,
@@ -577,12 +710,9 @@ const styles = StyleSheet.create({
   },
   tdTextMuted: {
     fontSize: 12,
-    color: '#71717A',
   },
   tdTextPayment: {
     fontSize: 12,
-    color: '#52525B',
-    backgroundColor: '#F4F4F5',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -592,46 +722,37 @@ const styles = StyleSheet.create({
   tdTextTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#18181B',
   },
   tdTextNotes: {
     fontSize: 12,
-    color: '#71717A',
   },
   tdTextAmount: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#18181B',
   },
   tableFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAFAFA',
     borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
   tableFooterLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#18181B',
   },
   tableFooterCount: {
     fontSize: 12,
-    color: '#71717A',
     fontWeight: '500',
   },
   tableFooterTotal: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#4F46E5',
   },
   actionBtn: {
     padding: 7,
     borderRadius: 8,
-    backgroundColor: '#F4F4F5',
     cursor: 'pointer' as any,
   },
   emptyTable: {
@@ -641,19 +762,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: '#A1A1AA',
   },
   mobileCardList: {
     gap: 10,
   },
   mobileExpenseCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 14,
     gap: 10,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -672,8 +790,6 @@ const styles = StyleSheet.create({
   },
   mobilePayment: {
     fontSize: 11,
-    color: '#52525B',
-    backgroundColor: '#F4F4F5',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -692,17 +808,14 @@ const styles = StyleSheet.create({
   mobileTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#18181B',
     flex: 1,
   },
   mobileAmount: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#18181B',
     marginLeft: 8,
   },
   mobileDesc: {
     fontSize: 12,
-    color: '#71717A',
   },
 });

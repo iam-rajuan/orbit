@@ -7,6 +7,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface AppInputProps extends TextInputProps {
   label?: string;
@@ -27,27 +28,33 @@ export const AppInput: React.FC<AppInputProps> = ({
   style,
   ...props
 }) => {
+  const { theme } = useTheme();
+
   return (
     <View style={[styles.container, containerStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text> : null}
       <View
         style={[
           styles.inputWrapper,
-          error ? styles.inputWrapperError : null,
+          {
+            backgroundColor: theme.surfaceSubtle,
+            borderColor: error ? theme.danger : theme.border,
+          },
+          error ? { backgroundColor: theme.dangerBg } : null,
         ]}
       >
         {leftIcon ? <View style={styles.leftIcon}>{leftIcon}</View> : null}
         <TextInput
-          placeholderTextColor="#A1A1AA"
-          style={[styles.input, style]}
+          placeholderTextColor={theme.textMuted}
+          style={[styles.input, { color: theme.textPrimary }, style]}
           {...props}
         />
         {rightIcon ? <View style={styles.rightIcon}>{rightIcon}</View> : null}
       </View>
       {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
       ) : helperText ? (
-        <Text style={styles.helperText}>{helperText}</Text>
+        <Text style={[styles.helperText, { color: theme.textMuted }]}>{helperText}</Text>
       ) : null}
     </View>
   );
@@ -60,28 +67,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3F3F46',
     marginBottom: 6,
     letterSpacing: -0.1,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     borderWidth: 1.5,
-    borderColor: '#E4E4E7',
     borderRadius: 10,
     paddingHorizontal: 12,
     minHeight: 44,
   },
-  inputWrapperError: {
-    borderColor: '#F43F5E',
-    backgroundColor: '#FFF1F2',
-  },
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#18181B',
     paddingVertical: 8,
     outlineStyle: 'none' as any,
   },
@@ -93,13 +92,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#F43F5E',
     marginTop: 4,
     fontWeight: '500',
   },
   helperText: {
     fontSize: 12,
-    color: '#A1A1AA',
     marginTop: 4,
   },
 });

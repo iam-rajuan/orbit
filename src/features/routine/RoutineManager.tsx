@@ -13,23 +13,20 @@ import {
   Trash2,
   Edit2,
   CheckCircle2,
-  Calendar,
-  Sparkles,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
+import { useTheme } from '../../theme/ThemeContext';
 import { AppCheckbox } from '../../components/ui/AppCheckbox';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppProgressBar } from '../../components/ui/AppProgressBar';
 import { RoutineFormModal } from './RoutineFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { RoutineItem } from '../../types';
-import { isRoutineScheduledForDate, getTodayKey } from '../../utils/date';
+import { isRoutineScheduledForDate } from '../../utils/date';
 
 export const RoutineManager: React.FC = () => {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 768;
-
+  const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
   const {
     routines,
@@ -44,7 +41,7 @@ export const RoutineManager: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const progress = getRoutineProgress(selectedDate);
-  const isToday = selectedDate === getTodayKey();
+
 
   const dayScheduledRoutines = routines.filter((r) =>
     isRoutineScheduledForDate(r.repeatDays, selectedDate)
@@ -56,15 +53,28 @@ export const RoutineManager: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* Header Card */}
-      <View style={styles.headerCard}>
+      <View
+        style={[
+          styles.headerCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.headerTop}>
           <View style={styles.titleInfo}>
-            <View style={styles.iconCircle}>
+            <View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
+              ]}
+            >
               <Clock size={20} color="#059669" />
             </View>
             <View>
-              <Text style={styles.pageTitle}>Daily Habits & Routine</Text>
-              <Text style={styles.pageSubtitle}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Daily Habits & Routine</Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
                 Fixed recurring habits for {selectedDate}
               </Text>
             </View>
@@ -84,13 +94,20 @@ export const RoutineManager: React.FC = () => {
         {/* Progress Bar & Stats */}
         <View style={styles.progressSection}>
           <View style={styles.progressLabels}>
-            <Text style={styles.progressPercentText}>
+            <Text style={[styles.progressPercentText, { color: isDark ? '#34D399' : '#059669' }]}>
               Routine Progress: {progress.completed} / {progress.total} ({progress.percentage}%)
             </Text>
             {progress.completed === progress.total && progress.total > 0 && (
-              <View style={styles.completeBadge}>
+              <View
+                style={[
+                  styles.completeBadge,
+                  { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
+                ]}
+              >
                 <CheckCircle2 size={14} color="#059669" />
-                <Text style={styles.completeBadgeText}>All Completed</Text>
+                <Text style={[styles.completeBadgeText, { color: isDark ? '#34D399' : '#059669' }]}>
+                  All Completed
+                </Text>
               </View>
             )}
           </View>
@@ -115,12 +132,31 @@ export const RoutineManager: React.FC = () => {
               key={routine.id}
               style={[
                 styles.routineCard,
+                {
+                  backgroundColor: isDone
+                    ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
+                    : theme.surface,
+                  borderColor: theme.border,
+                },
                 isDone && styles.routineCardCompleted,
               ]}
             >
               <View style={styles.cardLeft}>
-                <View style={styles.timeTag}>
-                  <Text style={[styles.timeText, isDone && styles.timeTextDone]}>
+                <View
+                  style={[
+                    styles.timeTag,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.timeText,
+                      { color: theme.textSecondary },
+                      isDone && styles.timeTextDone,
+                    ]}
+                  >
                     {routine.time}
                   </Text>
                 </View>
@@ -129,13 +165,16 @@ export const RoutineManager: React.FC = () => {
                   <Text
                     style={[
                       styles.routineTitle,
+                      { color: theme.textPrimary },
                       isDone && styles.routineTitleDone,
                     ]}
                   >
                     {routine.title}
                   </Text>
                   {routine.description ? (
-                    <Text style={styles.routineDesc}>{routine.description}</Text>
+                    <Text style={[styles.routineDesc, { color: theme.textMuted }]}>
+                      {routine.description}
+                    </Text>
                   ) : null}
                 </View>
               </View>
@@ -152,14 +191,20 @@ export const RoutineManager: React.FC = () => {
                     setEditingRoutine(routine);
                     setModalOpen(true);
                   }}
-                  style={styles.iconBtn}
+                  style={[
+                    styles.iconBtn,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' },
+                  ]}
                 >
-                  <Edit2 size={16} color="#71717A" />
+                  <Edit2 size={16} color={theme.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => setDeleteConfirmId(routine.id)}
-                  style={styles.iconBtn}
+                  style={[
+                    styles.iconBtn,
+                    { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' },
+                  ]}
                 >
                   <Trash2 size={16} color="#F43F5E" />
                 </TouchableOpacity>
@@ -202,12 +247,10 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -230,20 +273,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   progressSection: {
@@ -257,12 +297,10 @@ const styles = StyleSheet.create({
   progressPercentText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#059669',
   },
   completeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 100,
@@ -271,7 +309,6 @@ const styles = StyleSheet.create({
   completeBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#059669',
   },
   timelineList: {
     gap: 10,
@@ -280,21 +317,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 16,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
     elevation: 1,
   },
   routineCardCompleted: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#F4F4F5',
-    opacity: 0.8,
+    opacity: 0.75,
   },
   cardLeft: {
     flexDirection: 'row',
@@ -303,7 +336,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   timeTag: {
-    backgroundColor: '#F4F4F5',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -313,7 +345,6 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#52525B',
   },
   timeTextDone: {
     color: '#059669',
@@ -324,7 +355,6 @@ const styles = StyleSheet.create({
   routineTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#18181B',
     letterSpacing: -0.2,
   },
   routineTitleDone: {
@@ -333,7 +363,6 @@ const styles = StyleSheet.create({
   },
   routineDesc: {
     fontSize: 12,
-    color: '#71717A',
     marginTop: 2,
   },
   cardRight: {
@@ -344,7 +373,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F4F4F5',
     cursor: 'pointer' as any,
   },
 });

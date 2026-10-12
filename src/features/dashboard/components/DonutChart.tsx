@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import Svg, { G, Circle } from 'react-native-svg';
+import { useTheme } from '../../../theme/ThemeContext';
 
 export interface DonutSegment {
   label: string;
@@ -28,6 +29,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   style,
   showLegend = true,
 }) => {
+  const { theme, isDark } = useTheme();
   const total = segments.reduce((acc, s) => acc + s.value, 0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -45,7 +47,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
               cx={center}
               cy={center}
               r={radius}
-              stroke="#F4F4F5"
+              stroke={isDark ? '#27272A' : '#F4F4F5'}
               strokeWidth={strokeWidth}
               fill="transparent"
             />
@@ -77,8 +79,12 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 
         {/* Center Text */}
         <View style={styles.centerTextContainer}>
-          {centerTitle ? <Text style={styles.centerTitle}>{centerTitle}</Text> : null}
-          {centerSubtitle ? <Text style={styles.centerSubtitle}>{centerSubtitle}</Text> : null}
+          {centerTitle ? (
+            <Text style={[styles.centerTitle, { color: theme.textPrimary }]}>{centerTitle}</Text>
+          ) : null}
+          {centerSubtitle ? (
+            <Text style={[styles.centerSubtitle, { color: theme.textMuted }]}>{centerSubtitle}</Text>
+          ) : null}
         </View>
       </View>
 
@@ -88,12 +94,21 @@ export const DonutChart: React.FC<DonutChartProps> = ({
           {segments.map((seg, i) => {
             const pct = total > 0 ? Math.round((seg.value / total) * 100) : 0;
             return (
-              <View key={i} style={styles.legendItem}>
+              <View
+                key={i}
+                style={[
+                  styles.legendItem,
+                  {
+                    backgroundColor: theme.surfaceSubtle,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
                 <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
-                <Text style={styles.legendLabel} numberOfLines={1}>
+                <Text style={[styles.legendLabel, { color: theme.textSecondary }]} numberOfLines={1}>
                   {seg.label}
                 </Text>
-                <Text style={styles.legendVal}>
+                <Text style={[styles.legendVal, { color: theme.textPrimary }]}>
                   {seg.formattedValue ? seg.formattedValue : `${pct}%`}
                 </Text>
               </View>
@@ -119,13 +134,11 @@ const styles = StyleSheet.create({
   centerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.5,
   },
   centerSubtitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 2,
@@ -142,12 +155,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FAFAFA',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
   },
   legendDot: {
     width: 8,
@@ -157,11 +168,9 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#52525B',
   },
   legendVal: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#18181B',
   },
 });

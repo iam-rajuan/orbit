@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { AppModal } from '../../components/ui/AppModal';
+
 import { AppInput } from '../../components/ui/AppInput';
 import { AppTextarea } from '../../components/ui/AppTextarea';
 import { AppSelect } from '../../components/ui/AppSelect';

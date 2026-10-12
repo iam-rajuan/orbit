@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { AppModal } from '../ui/AppModal';
 import { AppButton } from '../ui/AppButton';
 import { AlertTriangle } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -25,15 +26,24 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
   destructive = true,
 }) => {
+  const { theme, isDark } = useTheme();
+
   return (
     <AppModal visible={visible} onClose={onCancel} title={title} maxWidth={420}>
       <View style={styles.body}>
         {destructive && (
-          <View style={styles.iconCircle}>
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2',
+              },
+            ]}
+          >
             <AlertTriangle size={24} color="#F43F5E" />
           </View>
         )}
-        <Text style={styles.message}>{message}</Text>
+        <Text style={[styles.message, { color: theme.textSecondary }]}>{message}</Text>
       </View>
       <View style={styles.buttonRow}>
         <AppButton
@@ -62,14 +72,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFF1F2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   message: {
     fontSize: 14,
-    color: '#52525B',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -83,3 +91,4 @@ const styles = StyleSheet.create({
     minWidth: 96,
   },
 });
+

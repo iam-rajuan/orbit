@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, useWindowDimensions, Text } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
+
 import { DateNavigator } from './DateNavigator';
 import { AppButton } from '../ui/AppButton';
-import { Plus, CheckSquare, Receipt, Sparkles } from 'lucide-react-native';
+import { Plus, Receipt, Sun, Moon } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface TopHeaderProps {
   onAddTask?: () => void;
@@ -17,35 +19,66 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const { theme, isDark, toggleTheme } = useTheme();
 
   return (
-    <View style={styles.header}>
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: theme.surface,
+          borderBottomColor: theme.border,
+        },
+      ]}
+    >
       <View style={styles.left}>
         <DateNavigator />
       </View>
 
-      {!isMobile && (
-        <View style={styles.actions}>
-          {onAddTask && (
-            <AppButton
-              title="Add Task"
-              variant="primary"
-              size="sm"
-              icon={<Plus size={15} color="#ffffff" />}
-              onPress={onAddTask}
-            />
+      <View style={styles.actions}>
+        {/* Quick Theme Toggle Button */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={toggleTheme}
+          style={[
+            styles.themeToggleBtn,
+            {
+              backgroundColor: theme.surfaceSubtle,
+              borderColor: theme.border,
+            },
+          ]}
+          accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {isDark ? (
+            <Sun size={17} color="#FBBF24" />
+          ) : (
+            <Moon size={17} color="#52525B" />
           )}
-          {onAddExpense && (
-            <AppButton
-              title="Add Expense"
-              variant="secondary"
-              size="sm"
-              icon={<Receipt size={15} color="#52525B" />}
-              onPress={onAddExpense}
-            />
-          )}
-        </View>
-      )}
+        </TouchableOpacity>
+
+        {!isMobile && (
+          <>
+            {onAddTask && (
+              <AppButton
+                title="Add Task"
+                variant="primary"
+                size="sm"
+                icon={<Plus size={15} color="#ffffff" />}
+                onPress={onAddTask}
+              />
+            )}
+            {onAddExpense && (
+              <AppButton
+                title="Add Expense"
+                variant="secondary"
+                size="sm"
+                icon={<Receipt size={15} color={theme.textSecondary} />}
+                onPress={onAddExpense}
+              />
+            )}
+          </>
+        )}
+      </View>
     </View>
   );
 };
@@ -53,9 +86,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 const styles = StyleSheet.create({
   header: {
     minHeight: 60,
-    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -71,5 +102,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  themeToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer' as any,
   },
 });

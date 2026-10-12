@@ -3,7 +3,19 @@ import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Platform } from 'react-native';
+import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import '../global.css';
+
+function ThemedRoot() {
+  const { theme, isDark } = useTheme();
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.background }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Slot />
+    </GestureHandlerRootView>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -18,9 +30,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#09090B' }}>
-      <StatusBar style="light" />
-      <Slot />
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <ThemedRoot />
+    </ThemeProvider>
   );
 }

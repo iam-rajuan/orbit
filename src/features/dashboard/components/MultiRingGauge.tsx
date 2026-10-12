@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import Svg, { G, Circle } from 'react-native-svg';
+import { useTheme } from '../../../theme/ThemeContext';
 
 export interface RingData {
   label: string;
@@ -29,6 +30,7 @@ export const MultiRingGauge: React.FC<MultiRingGaugeProps> = ({
   scoreLabel = 'Score',
   style,
 }) => {
+  const { theme, isDark } = useTheme();
   const center = size / 2;
 
   // Radius for the 3 concentric rings (outer, middle, inner)
@@ -48,6 +50,7 @@ export const MultiRingGauge: React.FC<MultiRingGaugeProps> = ({
               const circumference = 2 * Math.PI * r;
               const pct = Math.min(100, Math.max(0, ring.percentage));
               const strokeDashoffset = circumference - (circumference * pct) / 100;
+              const effectiveTrackColor = isDark ? 'rgba(255,255,255,0.06)' : ring.bgColor;
 
               return (
                 <React.Fragment key={idx}>
@@ -56,7 +59,7 @@ export const MultiRingGauge: React.FC<MultiRingGaugeProps> = ({
                     cx={center}
                     cy={center}
                     r={r}
-                    stroke={ring.bgColor}
+                    stroke={effectiveTrackColor}
                     strokeWidth={strokeWidth}
                     fill="transparent"
                   />
@@ -80,21 +83,30 @@ export const MultiRingGauge: React.FC<MultiRingGaugeProps> = ({
 
         {/* Center Score */}
         <View style={styles.centerContainer}>
-          <Text style={styles.scoreText}>
+          <Text style={[styles.scoreText, { color: theme.textPrimary }]}>
             {overallScore !== undefined ? `${overallScore}%` : '—'}
           </Text>
-          <Text style={styles.scoreLabel}>{scoreLabel}</Text>
+          <Text style={[styles.scoreLabel, { color: theme.textMuted }]}>{scoreLabel}</Text>
         </View>
       </View>
 
       {/* Ring Legend Pills */}
       <View style={styles.legendContainer}>
         {rings.map((ring, i) => (
-          <View key={i} style={styles.legendPill}>
+          <View
+            key={i}
+            style={[
+              styles.legendPill,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
             <View style={[styles.colorBar, { backgroundColor: ring.color }]} />
             <View>
-              <Text style={styles.ringLabel}>{ring.label}</Text>
-              <Text style={styles.ringVal}>{ring.valueDisplay}</Text>
+              <Text style={[styles.ringLabel, { color: theme.textSecondary }]}>{ring.label}</Text>
+              <Text style={[styles.ringVal, { color: theme.textPrimary }]}>{ring.valueDisplay}</Text>
             </View>
           </View>
         ))}
@@ -116,13 +128,11 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#18181B',
     letterSpacing: -1,
   },
   scoreLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginTop: 2,
@@ -139,12 +149,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FAFAFA',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
   },
   colorBar: {
     width: 4,
@@ -154,11 +162,9 @@ const styles = StyleSheet.create({
   ringLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#71717A',
   },
   ringVal: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#18181B',
   },
 });

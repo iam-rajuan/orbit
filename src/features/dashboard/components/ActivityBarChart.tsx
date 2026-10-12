@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { useTheme } from '../../../theme/ThemeContext';
 
 export interface BarDataPoint {
   label: string; // e.g. "Mon", "Tue", "Jan", etc.
@@ -24,13 +25,19 @@ interface ActivityBarChartProps {
 export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
   data,
   height = 130,
-  primaryColor = '#4F46E5',
-  secondaryColor = '#EEF2FF',
+  primaryColor,
+  secondaryColor,
   maxExpectedValue,
   unitLabel,
   onSelectBar,
   style,
 }) => {
+  const { theme, isDark } = useTheme();
+
+  const effectivePrimary = primaryColor || theme.primary;
+  const effectiveSecondary =
+    secondaryColor || (isDark ? 'rgba(255,255,255,0.06)' : '#EEF2FF');
+
   const calculatedMax = Math.max(
     ...data.map((d) => Math.max(d.value, d.secondaryValue || 0)),
     maxExpectedValue || 1
@@ -38,7 +45,9 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {unitLabel && <Text style={styles.unitText}>{unitLabel}</Text>}
+      {unitLabel && (
+        <Text style={[styles.unitText, { color: theme.textMuted }]}>{unitLabel}</Text>
+      )}
 
       <View style={[styles.barsContainer, { height }]}>
         {data.map((point, idx) => {
@@ -64,7 +73,7 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
                   numberOfLines={1}
                   style={[
                     styles.displayValueText,
-                    point.isHighlighted && styles.displayValueHighlighted,
+                    { color: point.isHighlighted ? theme.textPrimary : theme.textMuted },
                   ]}
                 >
                   {point.displayValue}
@@ -78,7 +87,7 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
                     styles.barTrack,
                     {
                       height: `${trackHeightPercent || 100}%`,
-                      backgroundColor: secondaryColor,
+                      backgroundColor: effectiveSecondary,
                     },
                   ]}
                 >
@@ -87,7 +96,9 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
                       styles.barFill,
                       {
                         height: `${(barHeightPercent / (trackHeightPercent || 100)) * 100}%`,
-                        backgroundColor: point.isHighlighted ? '#18181B' : primaryColor,
+                        backgroundColor: point.isHighlighted
+                          ? (isDark ? '#FAFAFA' : '#18181B')
+                          : effectivePrimary,
                       },
                     ]}
                   />
@@ -99,13 +110,18 @@ export const ActivityBarChart: React.FC<ActivityBarChartProps> = ({
                 <Text
                   style={[
                     styles.barLabel,
-                    point.isHighlighted && styles.barLabelHighlighted,
+                    {
+                      color: point.isHighlighted ? theme.textPrimary : theme.textSecondary,
+                      fontWeight: point.isHighlighted ? '800' : '600',
+                    },
                   ]}
                 >
                   {point.label}
                 </Text>
                 {point.subLabel ? (
-                  <Text style={styles.barSubLabel}>{point.subLabel}</Text>
+                  <Text style={[styles.barSubLabel, { color: theme.textMuted }]}>
+                    {point.subLabel}
+                  </Text>
                 ) : null}
               </View>
             </TouchableOpacity>
@@ -123,7 +139,6 @@ const styles = StyleSheet.create({
   unitText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -144,12 +159,8 @@ const styles = StyleSheet.create({
   displayValueText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#71717A',
     marginBottom: 4,
     textAlign: 'center',
-  },
-  displayValueHighlighted: {
-    color: '#18181B',
   },
   barTrackWrapper: {
     width: '100%',
@@ -174,16 +185,9 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#71717A',
-  },
-  barLabelHighlighted: {
-    color: '#18181B',
-    fontWeight: '800',
   },
   barSubLabel: {
     fontSize: 10,
-    color: '#A1A1AA',
     marginTop: 1,
   },
 });

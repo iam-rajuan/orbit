@@ -13,19 +13,14 @@ import {
   CheckSquare,
   Receipt,
   Calendar,
-  Sparkles,
-  TrendingUp,
-  Activity,
   ArrowRight,
   SlidersHorizontal,
   Flame,
   CheckCircle2,
-  PieChart,
-  BarChart3,
-  Layers,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useTheme } from '../../theme/ThemeContext';
 import {
   useDashboardAnalytics,
   TimeframeMode,
@@ -42,9 +37,10 @@ export const DashboardOverview: React.FC = () => {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
 
-  const { selectedDate, setSelectedDate } = useDateStore();
+  const { theme, isDark } = useTheme();
+  const { selectedDate } = useDateStore();
+
   const { settings } = useSettingsStore();
 
   const [timeframe, setTimeframe] = useState<TimeframeMode>('WEEK');
@@ -88,13 +84,20 @@ export const DashboardOverview: React.FC = () => {
         <View style={styles.headerTitleRow}>
           <View>
             <View style={styles.brandRow}>
-              <View style={styles.heroSparkle}>
-                <Flame size={18} color="#4F46E5" />
+              <View
+                style={[
+                  styles.heroSparkle,
+                  { backgroundColor: isDark ? 'rgba(99,102,241,0.18)' : '#EEF2FF' },
+                ]}
+              >
+                <Flame size={18} color={theme.primary} />
               </View>
-              <Text style={styles.heroPreTitle}>EXECUTIVE PERFORMANCE</Text>
+              <Text style={[styles.heroPreTitle, { color: theme.primary }]}>EXECUTIVE PERFORMANCE</Text>
             </View>
-            <Text style={styles.heroTitle}>Command Center</Text>
-            <Text style={styles.periodBadgeText}>Tracking: {periodLabel}</Text>
+            <Text style={[styles.heroTitle, { color: theme.textPrimary }]}>Command Center</Text>
+            <Text style={[styles.periodBadgeText, { color: theme.textSecondary }]}>
+              Tracking: {periodLabel}
+            </Text>
           </View>
         </View>
 
@@ -111,12 +114,27 @@ export const DashboardOverview: React.FC = () => {
                 key={tf.mode}
                 activeOpacity={0.8}
                 onPress={() => setTimeframe(tf.mode)}
-                style={[styles.timeframePill, active && styles.timeframePillActive]}
+                style={[
+                  styles.timeframePill,
+                  {
+                    backgroundColor: active
+                      ? (isDark ? '#FAFAFA' : '#18181B')
+                      : theme.surface,
+                    borderColor: active
+                      ? (isDark ? '#FAFAFA' : '#18181B')
+                      : theme.border,
+                  },
+                ]}
               >
                 <Text
                   style={[
                     styles.timeframePillText,
-                    active && styles.timeframePillTextActive,
+                    {
+                      color: active
+                        ? (isDark ? '#09090B' : '#FFFFFF')
+                        : theme.textSecondary,
+                      fontWeight: active ? '700' : '600',
+                    },
                   ]}
                 >
                   {tf.label}
@@ -128,10 +146,20 @@ export const DashboardOverview: React.FC = () => {
 
         {/* Custom Range Presets Bar */}
         {timeframe === 'CUSTOM' && (
-          <View style={styles.customPresetsCard}>
+          <View
+            style={[
+              styles.customPresetsCard,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+              },
+            ]}
+          >
             <View style={styles.customPresetHeader}>
-              <SlidersHorizontal size={14} color="#71717A" />
-              <Text style={styles.customPresetTitle}>Select Custom Preset</Text>
+              <SlidersHorizontal size={14} color={theme.textMuted} />
+              <Text style={[styles.customPresetTitle, { color: theme.textSecondary }]}>
+                Select Custom Preset
+              </Text>
             </View>
             <View style={styles.customPresetsRow}>
               {customPresets.map((preset) => {
@@ -147,13 +175,21 @@ export const DashboardOverview: React.FC = () => {
                     }
                     style={[
                       styles.presetChip,
-                      isSelected && styles.presetChipActive,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(99,102,241,0.2)' : '#EEF2FF')
+                          : theme.surfaceSubtle,
+                        borderColor: isSelected ? theme.primary : theme.border,
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.presetChipText,
-                        isSelected && styles.presetChipTextActive,
+                        {
+                          color: isSelected ? theme.primary : theme.textSecondary,
+                          fontWeight: isSelected ? '700' : '600',
+                        },
                       ]}
                     >
                       {preset.label}
@@ -167,7 +203,15 @@ export const DashboardOverview: React.FC = () => {
       </View>
 
       {/* 2. Hero Unified Score & Multi-Ring Gauge */}
-      <View style={styles.heroScoreCard}>
+      <View
+        style={[
+          styles.heroScoreCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={[styles.heroContent, isDesktop ? styles.heroContentDesktop : null]}>
           {/* Concentric Multi-Ring */}
           <View style={styles.gaugeWrapper}>
@@ -182,9 +226,21 @@ export const DashboardOverview: React.FC = () => {
 
           {/* Quick Insights List */}
           <View style={styles.heroInsightsColumn}>
-            <View style={styles.statusPill}>
+            <View
+              style={[
+                styles.statusPill,
+                {
+                  backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
+                },
+              ]}
+            >
               <CheckCircle2 size={14} color="#059669" />
-              <Text style={styles.statusPillText}>
+              <Text
+                style={[
+                  styles.statusPillText,
+                  { color: isDark ? '#34D399' : '#059669' },
+                ]}
+              >
                 {overallScore >= 80
                   ? 'Optimal Execution • Consistent Pace'
                   : overallScore >= 50
@@ -194,31 +250,55 @@ export const DashboardOverview: React.FC = () => {
             </View>
 
             <View style={styles.insightStatsList}>
-              <View style={styles.insightStatRow}>
+              <View
+                style={[
+                  styles.insightStatRow,
+                  {
+                    backgroundColor: theme.surfaceSubtle,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
                 <View style={[styles.statDot, { backgroundColor: '#10B981' }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.insightLabel}>Habits Consistency</Text>
-                  <Text style={styles.insightValue}>
+                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Habits Consistency</Text>
+                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
                     {routineAnalytics.totalCompleted} of {routineAnalytics.totalScheduled} completed ({routineAnalytics.percentage}%)
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.insightStatRow}>
+              <View
+                style={[
+                  styles.insightStatRow,
+                  {
+                    backgroundColor: theme.surfaceSubtle,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
                 <View style={[styles.statDot, { backgroundColor: '#4F46E5' }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.insightLabel}>Task Velocity</Text>
-                  <Text style={styles.insightValue}>
+                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Task Velocity</Text>
+                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
                     {taskAnalytics.completed} of {taskAnalytics.total} completed ({taskAnalytics.percentage}%)
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.insightStatRow}>
+              <View
+                style={[
+                  styles.insightStatRow,
+                  {
+                    backgroundColor: theme.surfaceSubtle,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
                 <View style={[styles.statDot, { backgroundColor: '#F59E0B' }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.insightLabel}>Financial Spend</Text>
-                  <Text style={styles.insightValue}>
+                  <Text style={[styles.insightLabel, { color: theme.textMuted }]}>Financial Spend</Text>
+                  <Text style={[styles.insightValue, { color: theme.textPrimary }]}>
                     {formatCurrency(expenseAnalytics.total, settings.currency)} • {expenseAnalytics.needPct}% Needs
                   </Text>
                 </View>
@@ -231,15 +311,30 @@ export const DashboardOverview: React.FC = () => {
       {/* 3. Deep Analytics Visualizations Grid */}
       <View style={[styles.analyticsGrid, isDesktop ? styles.analyticsGridDesktop : null]}>
         {/* Habit Consistency Bar Chart */}
-        <View style={styles.analyticsCard}>
+        <View
+          style={[
+            styles.analyticsCard,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleGroup}>
-              <View style={[styles.cardIconBadge, { backgroundColor: '#ECFDF5' }]}>
+              <View
+                style={[
+                  styles.cardIconBadge,
+                  {
+                    backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
+                  },
+                ]}
+              >
                 <Clock size={16} color="#059669" />
               </View>
               <View>
-                <Text style={styles.cardTitle}>Habits Activity</Text>
-                <Text style={styles.cardSub}>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Habits Activity</Text>
+                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
                   {routineAnalytics.percentage}% consistency • {daysCount} day interval
                 </Text>
               </View>
@@ -247,10 +342,15 @@ export const DashboardOverview: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push('/routine' as any)}
-              style={styles.cardActionBtn}
+              style={[
+                styles.cardActionBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                },
+              ]}
             >
-              <Text style={styles.cardActionText}>Schedule</Text>
-              <ArrowRight size={13} color="#4F46E5" />
+              <Text style={[styles.cardActionText, { color: theme.primary }]}>Schedule</Text>
+              <ArrowRight size={13} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
@@ -258,27 +358,37 @@ export const DashboardOverview: React.FC = () => {
             <ActivityBarChart
               data={routineAnalytics.barData}
               primaryColor="#10B981"
-              secondaryColor="#ECFDF5"
+              secondaryColor={isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5'}
               unitLabel="Completion Velocity"
-              onSelectBar={(point) => {
-                if (point.subLabel) {
-                  // user tapped a day
-                }
-              }}
             />
           </View>
         </View>
 
         {/* Task Priority Donut Chart */}
-        <View style={styles.analyticsCard}>
+        <View
+          style={[
+            styles.analyticsCard,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleGroup}>
-              <View style={[styles.cardIconBadge, { backgroundColor: '#EEF2FF' }]}>
-                <CheckSquare size={16} color="#4F46E5" />
+              <View
+                style={[
+                  styles.cardIconBadge,
+                  {
+                    backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                  },
+                ]}
+              >
+                <CheckSquare size={16} color={theme.primary} />
               </View>
               <View>
-                <Text style={styles.cardTitle}>Task Priority Share</Text>
-                <Text style={styles.cardSub}>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Task Priority Share</Text>
+                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
                   {taskAnalytics.total} total • {taskAnalytics.pending} pending
                 </Text>
               </View>
@@ -286,10 +396,15 @@ export const DashboardOverview: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push('/tasks' as any)}
-              style={styles.cardActionBtn}
+              style={[
+                styles.cardActionBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                },
+              ]}
             >
-              <Text style={styles.cardActionText}>Board</Text>
-              <ArrowRight size={13} color="#4F46E5" />
+              <Text style={[styles.cardActionText, { color: theme.primary }]}>Board</Text>
+              <ArrowRight size={13} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
@@ -305,15 +420,30 @@ export const DashboardOverview: React.FC = () => {
         </View>
 
         {/* Expense Needs vs Wants Donut */}
-        <View style={styles.analyticsCard}>
+        <View
+          style={[
+            styles.analyticsCard,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleGroup}>
-              <View style={[styles.cardIconBadge, { backgroundColor: '#FFF1F2' }]}>
+              <View
+                style={[
+                  styles.cardIconBadge,
+                  {
+                    backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2',
+                  },
+                ]}
+              >
                 <Receipt size={16} color="#F43F5E" />
               </View>
               <View>
-                <Text style={styles.cardTitle}>Spending Composition</Text>
-                <Text style={styles.cardSub}>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Spending Composition</Text>
+                <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
                   {formatCurrency(expenseAnalytics.total, settings.currency)} • {expenseAnalytics.count} records
                 </Text>
               </View>
@@ -321,10 +451,15 @@ export const DashboardOverview: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push('/expenses' as any)}
-              style={styles.cardActionBtn}
+              style={[
+                styles.cardActionBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                },
+              ]}
             >
-              <Text style={styles.cardActionText}>Ledger</Text>
-              <ArrowRight size={13} color="#4F46E5" />
+              <Text style={[styles.cardActionText, { color: theme.primary }]}>Ledger</Text>
+              <ArrowRight size={13} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
@@ -343,8 +478,8 @@ export const DashboardOverview: React.FC = () => {
       {/* 4. Feature Showcase & Smart Deep-Links Hub */}
       <View style={styles.showcaseSection}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionHeading}>Application Showcase</Text>
-          <Text style={styles.sectionSubheading}>
+          <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>Application Showcase</Text>
+          <Text style={[styles.sectionSubheading, { color: theme.textSecondary }]}>
             Instant overview • Tap to open dedicated workspaces
           </Text>
         </View>
@@ -355,9 +490,9 @@ export const DashboardOverview: React.FC = () => {
             subtitle="Recurring daily rhythm & habit consistency"
             tag="Habits"
             tagColor="#059669"
-            tagBgColor="#ECFDF5"
+            tagBgColor={isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5'}
             icon={<Clock size={20} color="#059669" />}
-            iconBgColor="#ECFDF5"
+            iconBgColor={isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5'}
             metricValue={`${routineAnalytics.totalCompleted} / ${routineAnalytics.totalScheduled}`}
             metricLabel="Habits completed this period"
             ctaText="Open Routine"
@@ -368,10 +503,10 @@ export const DashboardOverview: React.FC = () => {
             title="Task Workspace"
             subtitle="Task backlog, priorities, categories & bulk tools"
             tag="Tasks"
-            tagColor="#4F46E5"
-            tagBgColor="#EEF2FF"
-            icon={<CheckSquare size={20} color="#4F46E5" />}
-            iconBgColor="#EEF2FF"
+            tagColor={theme.primary}
+            tagBgColor={isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF'}
+            icon={<CheckSquare size={20} color={theme.primary} />}
+            iconBgColor={isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF'}
             metricValue={`${taskAnalytics.completed} Done`}
             metricLabel={`${taskAnalytics.pending} pending tasks remaining`}
             ctaText="Open Board"
@@ -383,9 +518,9 @@ export const DashboardOverview: React.FC = () => {
             subtitle="Financial ledger, Needs vs Wants, category split"
             tag="Finance"
             tagColor="#BE123C"
-            tagBgColor="#FFF1F2"
+            tagBgColor={isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2'}
             icon={<Receipt size={20} color="#F43F5E" />}
-            iconBgColor="#FFF1F2"
+            iconBgColor={isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2'}
             metricValue={formatCurrency(expenseAnalytics.total, settings.currency)}
             metricLabel={`Avg: ${formatCurrency(expenseAnalytics.dailyBurnAverage, settings.currency)} / day`}
             ctaText="Open Ledger"
@@ -397,9 +532,9 @@ export const DashboardOverview: React.FC = () => {
             subtitle="Month grid, past records, and trend navigation"
             tag="Timeline"
             tagColor="#7C3AED"
-            tagBgColor="#F5F3FF"
+            tagBgColor={isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF'}
             icon={<Calendar size={20} color="#7C3AED" />}
-            iconBgColor="#F5F3FF"
+            iconBgColor={isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF'}
             metricValue={`${daysCount} Days`}
             metricLabel="Explored in current horizon"
             ctaText="View Calendar"
@@ -434,26 +569,22 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroPreTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#4F46E5',
     letterSpacing: 1.2,
   },
   heroTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#18181B',
     letterSpacing: -0.6,
   },
   periodBadgeText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   timeframePillsRow: {
@@ -466,30 +597,16 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 100,
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#E4E4E7',
     cursor: 'pointer' as any,
-  },
-  timeframePillActive: {
-    backgroundColor: '#18181B',
-    borderColor: '#18181B',
   },
   timeframePillText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#52525B',
-  },
-  timeframePillTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
   customPresetsCard: {
-    backgroundColor: '#ffffff',
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     gap: 8,
   },
   customPresetHeader: {
@@ -500,7 +617,6 @@ const styles = StyleSheet.create({
   customPresetTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#71717A',
   },
   customPresetsRow: {
     flexDirection: 'row',
@@ -511,31 +627,17 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     cursor: 'pointer' as any,
-  },
-  presetChipActive: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
   },
   presetChipText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#52525B',
-  },
-  presetChipTextActive: {
-    color: '#4338CA',
-    fontWeight: '700',
   },
   heroScoreCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 24,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
@@ -565,7 +667,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ECFDF5',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 100,
@@ -574,7 +675,6 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#059669',
   },
   insightStatsList: {
     gap: 12,
@@ -583,11 +683,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: '#FAFAFA',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
   },
   statDot: {
     width: 8,
@@ -598,14 +696,12 @@ const styles = StyleSheet.create({
   insightLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   insightValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#18181B',
     marginTop: 2,
   },
   analyticsGrid: {
@@ -617,12 +713,10 @@ const styles = StyleSheet.create({
   },
   analyticsCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 18,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -650,19 +744,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#18181B',
     letterSpacing: -0.2,
   },
   cardSub: {
     fontSize: 11,
-    color: '#71717A',
     marginTop: 2,
   },
   cardActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 100,
@@ -670,7 +761,6 @@ const styles = StyleSheet.create({
   cardActionText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#4F46E5',
   },
   chartWrapper: {
     alignItems: 'center',
@@ -687,12 +777,10 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.3,
   },
   sectionSubheading: {
     fontSize: 13,
-    color: '#71717A',
     marginTop: 2,
   },
   showcaseGrid: {

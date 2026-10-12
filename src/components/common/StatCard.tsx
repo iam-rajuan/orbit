@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface StatCardProps {
   title: string;
@@ -18,37 +19,53 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   subtitle,
   icon,
-  iconBgColor = '#eef2ff',
+  iconBgColor,
   progressPercentage,
-  progressColor = '#4f46e5',
+  progressColor,
   onPress,
   style,
 }) => {
+  const { theme } = useTheme();
+
+  const finalIconBgColor = iconBgColor || theme.primaryBg;
+  const finalProgressColor = progressColor || theme.primary;
+
   const content = (
-    <View style={[styles.card, style]}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+          shadowColor: theme.shadowColor,
+          shadowOpacity: theme.shadowOpacity,
+        },
+        style,
+      ]}
+    >
       <View style={styles.topRow}>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.value}>{value}</Text>
+          <Text style={[styles.title, { color: theme.textMuted }]}>{title}</Text>
+          <Text style={[styles.value, { color: theme.textPrimary }]}>{value}</Text>
         </View>
         {icon && (
-          <View style={[styles.iconWrapper, { backgroundColor: iconBgColor }]}>
+          <View style={[styles.iconWrapper, { backgroundColor: finalIconBgColor }]}>
             {icon}
           </View>
         )}
       </View>
 
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {subtitle ? <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text> : null}
 
       {progressPercentage !== undefined && (
         <View style={styles.progressContainer}>
-          <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarTrack, { backgroundColor: theme.surfaceSubtle }]}>
             <View
               style={[
                 styles.progressBarFill,
                 {
                   width: `${Math.min(100, Math.max(0, progressPercentage))}%`,
-                  backgroundColor: progressColor,
+                  backgroundColor: finalProgressColor,
                 },
               ]}
             />
@@ -71,14 +88,10 @@ export const StatCard: React.FC<StatCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 18,
-    shadowColor: '#18181B',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
     flex: 1,
@@ -95,14 +108,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   value: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#18181B',
     marginTop: 4,
     letterSpacing: -0.5,
   },
@@ -117,7 +128,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 6,
   },
   progressContainer: {
@@ -125,7 +135,6 @@ const styles = StyleSheet.create({
   },
   progressBarTrack: {
     height: 5,
-    backgroundColor: '#F4F4F5',
     borderRadius: 10,
     overflow: 'hidden',
   },

@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -27,13 +26,13 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isSameDay,
 } from 'date-fns';
 import { useDateStore } from '../../stores/useDateStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useTheme } from '../../theme/ThemeContext';
 import {
   formatDateKey,
   parseDateKey,
@@ -45,6 +44,7 @@ import { AppButton } from '../../components/ui/AppButton';
 
 export const CalendarView: React.FC = () => {
   const router = useRouter();
+  const { theme, isDark } = useTheme();
   const { selectedDate, setSelectedDate, goToToday } = useDateStore();
   const { getRoutineProgress } = useRoutineStore();
   const { tasks, getTaskProgress } = useTaskStore();
@@ -78,17 +78,31 @@ export const CalendarView: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* Month Navigator Header Card */}
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.monthHeader}>
           <View style={styles.monthTitleGroup}>
-            <CalendarIcon size={20} color="#4F46E5" />
-            <Text style={styles.monthTitle}>
+            <CalendarIcon size={20} color={theme.primary} />
+            <Text style={[styles.monthTitle, { color: theme.textPrimary }]}>
               {format(currentMonthDate, 'MMMM yyyy')}
             </Text>
           </View>
           <View style={styles.monthControls}>
-            <TouchableOpacity onPress={prevMonth} style={styles.monthArrow}>
-              <ChevronLeft size={18} color="#52525B" />
+            <TouchableOpacity
+              onPress={prevMonth}
+              style={[
+                styles.monthArrow,
+                { backgroundColor: theme.surfaceSubtle },
+              ]}
+            >
+              <ChevronLeft size={18} color={theme.textSecondary} />
             </TouchableOpacity>
             <AppButton
               title="Today"
@@ -99,17 +113,23 @@ export const CalendarView: React.FC = () => {
                 setCurrentMonthDate(new Date());
               }}
             />
-            <TouchableOpacity onPress={nextMonth} style={styles.monthArrow}>
-              <ChevronRight size={18} color="#52525B" />
+            <TouchableOpacity
+              onPress={nextMonth}
+              style={[
+                styles.monthArrow,
+                { backgroundColor: theme.surfaceSubtle },
+              ]}
+            >
+              <ChevronRight size={18} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Days of week */}
-        <View style={styles.weekRow}>
+        <View style={[styles.weekRow, { borderBottomColor: theme.border }]}>
           {weekDays.map((day) => (
             <View key={day} style={styles.weekHeaderCell}>
-              <Text style={styles.weekHeaderText}>{day}</Text>
+              <Text style={[styles.weekHeaderText, { color: theme.textMuted }]}>{day}</Text>
             </View>
           ))}
         </View>
@@ -135,17 +155,27 @@ export const CalendarView: React.FC = () => {
                 onPress={() => setSelectedDate(dateKey)}
                 style={[
                   styles.dayCell,
-                  !isCurrentMonth && styles.dayCellOutside,
-                  isSelected && styles.dayCellSelected,
-                  isToday && !isSelected && styles.dayCellToday,
+                  { borderColor: theme.border },
+                  !isCurrentMonth && {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA',
+                  },
+                  isSelected && {
+                    backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : '#EEF2FF',
+                    borderColor: theme.primary,
+                    borderRadius: 10,
+                  },
+                  isToday && !isSelected && {
+                    borderColor: theme.primary,
+                  },
                 ]}
               >
                 <Text
                   style={[
                     styles.dayNumber,
-                    !isCurrentMonth && styles.dayNumberOutside,
-                    isSelected && styles.dayNumberSelected,
-                    isToday && !isSelected && styles.dayNumberToday,
+                    { color: theme.textPrimary },
+                    !isCurrentMonth && { color: theme.textMuted },
+                    isSelected && { color: theme.primary, fontWeight: '800' },
+                    isToday && !isSelected && { color: theme.primary, fontWeight: '700' },
                   ]}
                 >
                   {format(day, 'd')}
@@ -157,7 +187,7 @@ export const CalendarView: React.FC = () => {
                     <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
                   )}
                   {dayTaskCount > 0 && (
-                    <View style={[styles.dot, { backgroundColor: '#4F46E5' }]} />
+                    <View style={[styles.dot, { backgroundColor: theme.primary }]} />
                   )}
                   {dayExpTotal > 0 && (
                     <View style={[styles.dot, { backgroundColor: '#F43F5E' }]} />
@@ -176,13 +206,21 @@ export const CalendarView: React.FC = () => {
       </View>
 
       {/* Selected Day Quick Summary Card */}
-      <View style={styles.selectedDayCard}>
+      <View
+        style={[
+          styles.selectedDayCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.selectedDayHeader}>
           <View>
-            <Text style={styles.selectedDayTitle}>
+            <Text style={[styles.selectedDayTitle, { color: theme.textPrimary }]}>
               {formatDisplayDate(selectedDate)}
             </Text>
-            <Text style={styles.selectedDaySub}>Selected Date Overview</Text>
+            <Text style={[styles.selectedDaySub, { color: theme.textSecondary }]}>Selected Date Overview</Text>
           </View>
           <AppButton
             title="Open Day Dashboard"
@@ -195,37 +233,76 @@ export const CalendarView: React.FC = () => {
         </View>
 
         <View style={styles.selectedMetricsRow}>
-          <View style={styles.metricItem}>
-            <View style={[styles.metricIcon, { backgroundColor: '#ECFDF5' }]}>
+          <View
+            style={[
+              styles.metricItem,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
+              ]}
+            >
               <Clock size={16} color="#059669" />
             </View>
             <View>
-              <Text style={styles.metricLabel}>Routine Habits</Text>
-              <Text style={styles.metricVal}>
+              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Routine Habits</Text>
+              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
                 {selectedProgress.completed} / {selectedProgress.total} ({selectedProgress.percentage}%)
               </Text>
             </View>
           </View>
 
-          <View style={styles.metricItem}>
-            <View style={[styles.metricIcon, { backgroundColor: '#EEF2FF' }]}>
-              <CheckSquare size={16} color="#4F46E5" />
+          <View
+            style={[
+              styles.metricItem,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' },
+              ]}
+            >
+              <CheckSquare size={16} color={theme.primary} />
             </View>
             <View>
-              <Text style={styles.metricLabel}>Tasks Completed</Text>
-              <Text style={styles.metricVal}>
+              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Tasks Completed</Text>
+              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
                 {selectedTasks.completed} / {selectedTasks.total} ({selectedTasks.pending} pending)
               </Text>
             </View>
           </View>
 
-          <View style={styles.metricItem}>
-            <View style={[styles.metricIcon, { backgroundColor: '#FFF1F2' }]}>
+          <View
+            style={[
+              styles.metricItem,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                { backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2' },
+              ]}
+            >
               <Receipt size={16} color="#F43F5E" />
             </View>
             <View>
-              <Text style={styles.metricLabel}>Daily Expenses</Text>
-              <Text style={styles.metricVal}>
+              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Daily Expenses</Text>
+              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
                 {formatCurrency(selectedExpenses.total, settings.currency)} ({selectedExpenses.count} items)
               </Text>
             </View>
@@ -242,12 +319,10 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -267,7 +342,6 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   monthControls: {
@@ -278,13 +352,11 @@ const styles = StyleSheet.create({
   monthArrow: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#F4F4F5',
     cursor: 'pointer' as any,
   },
   weekRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
     paddingBottom: 10,
     marginBottom: 8,
   },
@@ -295,7 +367,6 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -308,36 +379,12 @@ const styles = StyleSheet.create({
     minHeight: 72,
     padding: 4,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     alignItems: 'center',
     cursor: 'pointer' as any,
-  },
-  dayCellOutside: {
-    backgroundColor: '#FAFAFA',
-  },
-  dayCellSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
-    borderRadius: 10,
-  },
-  dayCellToday: {
-    borderColor: '#C7D2FE',
   },
   dayNumber: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#18181B',
-  },
-  dayNumberOutside: {
-    color: '#D4D4D8',
-  },
-  dayNumberSelected: {
-    color: '#4338CA',
-    fontWeight: '800',
-  },
-  dayNumberToday: {
-    color: '#4F46E5',
-    fontWeight: '700',
   },
   dotRow: {
     flexDirection: 'row',
@@ -352,18 +399,16 @@ const styles = StyleSheet.create({
   miniExpenseText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#BE123C',
+    color: '#F43F5E',
     marginTop: 4,
     textAlign: 'center',
   },
   selectedDayCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
     gap: 16,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -379,13 +424,11 @@ const styles = StyleSheet.create({
   selectedDayTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.3,
   },
   selectedDaySub: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   selectedMetricsRow: {
@@ -399,11 +442,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FAFAFA',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
   },
   metricIcon: {
     width: 36,
@@ -415,12 +456,10 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717A',
   },
   metricVal: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#18181B',
     marginTop: 2,
   },
 });

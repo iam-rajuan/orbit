@@ -12,16 +12,15 @@ import {
   CheckSquare,
   Plus,
   Search,
-  Filter,
   Trash2,
   Edit2,
-  CheckCircle2,
   Check,
   X,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useTheme } from '../../theme/ThemeContext';
 import { AppCheckbox } from '../../components/ui/AppCheckbox';
 import { AppBadge } from '../../components/ui/AppBadge';
 import { AppButton } from '../../components/ui/AppButton';
@@ -34,6 +33,7 @@ export const TaskManager: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
+  const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
   const {
     tasks,
@@ -77,15 +77,28 @@ export const TaskManager: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* 1. Header Card with Metrics */}
-      <View style={styles.headerCard}>
+      <View
+        style={[
+          styles.headerCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.headerTop}>
           <View style={styles.titleInfo}>
-            <View style={styles.iconCircle}>
-              <CheckSquare size={20} color="#4f46e5" />
+            <View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' },
+              ]}
+            >
+              <CheckSquare size={20} color={theme.primary} />
             </View>
             <View>
-              <Text style={styles.pageTitle}>Daily Tasks</Text>
-              <Text style={styles.pageSubtitle}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Daily Tasks</Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
                 Productivity tasks for {selectedDate}
               </Text>
             </View>
@@ -105,7 +118,7 @@ export const TaskManager: React.FC = () => {
         {/* Task progress bar */}
         <View style={styles.progressSection}>
           <View style={styles.progressLabels}>
-            <Text style={styles.progressPercentText}>
+            <Text style={[styles.progressPercentText, { color: theme.primary }]}>
               Task Progress: {progress.completed} / {progress.total} completed ({progress.percentage}%)
             </Text>
             <Text style={styles.pendingText}>
@@ -114,27 +127,43 @@ export const TaskManager: React.FC = () => {
           </View>
           <AppProgressBar
             progress={progress.percentage}
-            color="#4f46e5"
+            color={theme.primary}
             height={10}
           />
         </View>
       </View>
 
       {/* 2. Search, Filter, and Bulk Action Toolbar */}
-      <View style={styles.toolbarCard}>
+      <View
+        style={[
+          styles.toolbarCard,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Search size={16} color="#71717A" style={{ marginRight: 8 }} />
+          <View
+            style={[
+              styles.searchBox,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <Search size={16} color={theme.textMuted} style={{ marginRight: 8 }} />
             <TextInput
               placeholder="Search tasks, descriptions, notes, projects..."
-              placeholderTextColor="#A1A1AA"
+              placeholderTextColor={theme.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.textPrimary }]}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={16} color="#71717A" />
+                <X size={16} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -148,36 +177,80 @@ export const TaskManager: React.FC = () => {
         >
           <TouchableOpacity
             onPress={() => setFilterStatus('ALL')}
-            style={[styles.filterPill, filterStatus === 'ALL' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterStatus === 'ALL' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterStatus === 'ALL' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterStatus === 'ALL' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterStatus === 'ALL' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               All Status
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilterStatus('PENDING')}
-            style={[styles.filterPill, filterStatus === 'PENDING' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterStatus === 'PENDING' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterStatus === 'PENDING' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterStatus === 'PENDING' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterStatus === 'PENDING' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               Pending ({progress.pending})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilterStatus('COMPLETED')}
-            style={[styles.filterPill, filterStatus === 'COMPLETED' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterStatus === 'COMPLETED' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterStatus === 'COMPLETED' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterStatus === 'COMPLETED' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterStatus === 'COMPLETED' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               Completed ({progress.completed})
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <TouchableOpacity
             onPress={() => setFilterCategory('ALL')}
-            style={[styles.filterPill, filterCategory === 'ALL' && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: filterCategory === 'ALL' ? theme.primary : theme.surfaceSubtle,
+                borderColor: filterCategory === 'ALL' ? theme.primary : theme.border,
+              },
+            ]}
           >
-            <Text style={[styles.filterPillText, filterCategory === 'ALL' && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                { color: filterCategory === 'ALL' ? '#ffffff' : theme.textSecondary },
+              ]}
+            >
               All Categories
             </Text>
           </TouchableOpacity>
@@ -185,9 +258,20 @@ export const TaskManager: React.FC = () => {
             <TouchableOpacity
               key={cat}
               onPress={() => setFilterCategory(cat === filterCategory ? 'ALL' : cat)}
-              style={[styles.filterPill, filterCategory === cat && styles.filterPillActive]}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: filterCategory === cat ? theme.primary : theme.surfaceSubtle,
+                  borderColor: filterCategory === cat ? theme.primary : theme.border,
+                },
+              ]}
             >
-              <Text style={[styles.filterPillText, filterCategory === cat && styles.filterPillTextActive]}>
+              <Text
+                style={[
+                  styles.filterPillText,
+                  { color: filterCategory === cat ? '#ffffff' : theme.textSecondary },
+                ]}
+              >
                 {cat}
               </Text>
             </TouchableOpacity>
@@ -196,8 +280,16 @@ export const TaskManager: React.FC = () => {
 
         {/* Bulk Action Bar (Visible when items selected) */}
         {selectedTaskIds.length > 0 && (
-          <View style={styles.bulkActionBar}>
-            <Text style={styles.bulkCountText}>
+          <View
+            style={[
+              styles.bulkActionBar,
+              {
+                backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                borderColor: isDark ? 'rgba(99,102,241,0.3)' : '#C7D2FE',
+              },
+            ]}
+          >
+            <Text style={[styles.bulkCountText, { color: theme.primary }]}>
               {selectedTaskIds.length} task{selectedTaskIds.length > 1 ? 's' : ''} selected
             </Text>
             <View style={styles.bulkButtons}>
@@ -235,8 +327,24 @@ export const TaskManager: React.FC = () => {
       {/* 3. Task List (Desktop Spreadsheet Table vs Mobile Cards) */}
       {isDesktop ? (
         /* Desktop Compact Table */
-        <View style={styles.tableCard}>
-          <View style={styles.tableHeader}>
+        <View
+          style={[
+            styles.tableCard,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.tableHeader,
+              {
+                backgroundColor: theme.surfaceSubtle,
+                borderBottomColor: theme.border,
+              },
+            ]}
+          >
             <View style={[styles.thCell, { width: 50 }]}>
               <AppCheckbox
                 checked={allSelected}
@@ -245,31 +353,31 @@ export const TaskManager: React.FC = () => {
               />
             </View>
             <View style={[styles.thCell, { width: 110 }]}>
-              <Text style={styles.thText}>Category</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Category</Text>
             </View>
             <View style={[styles.thCell, { width: 90 }]}>
-              <Text style={styles.thText}>Type</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Type</Text>
             </View>
             <View style={[styles.thCell, { width: 90 }]}>
-              <Text style={styles.thText}>Priority</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Priority</Text>
             </View>
             <View style={[styles.thCell, { width: 130 }]}>
-              <Text style={styles.thText}>Project / List</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Project / List</Text>
             </View>
             <View style={[styles.thCell, { flex: 1 }]}>
-              <Text style={styles.thText}>Task Description</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Task Description</Text>
             </View>
             <View style={[styles.thCell, { width: 160 }]}>
-              <Text style={styles.thText}>Notes</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Notes</Text>
             </View>
             <View style={[styles.thCell, { width: 80, justifyContent: 'flex-end' }]}>
-              <Text style={styles.thText}>Actions</Text>
+              <Text style={[styles.thText, { color: theme.textMuted }]}>Actions</Text>
             </View>
           </View>
 
           {filteredTasks.length === 0 ? (
             <View style={styles.emptyTable}>
-              <Text style={styles.emptyText}>No matching tasks found for this day.</Text>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>No matching tasks found for this day.</Text>
             </View>
           ) : (
             filteredTasks.map((task, idx) => {
@@ -279,9 +387,15 @@ export const TaskManager: React.FC = () => {
                   key={task.id}
                   style={[
                     styles.tableRow,
-                    idx % 2 === 1 && styles.tableRowEven,
+                    {
+                      backgroundColor: isSelected
+                        ? (isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF')
+                        : task.completed
+                        ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
+                        : theme.surface,
+                      borderBottomColor: theme.border,
+                    },
                     task.completed && styles.tableRowCompleted,
-                    isSelected && styles.tableRowSelected,
                   ]}
                 >
                   <View style={[styles.tdCell, { width: 50, flexDirection: 'row', gap: 6 }]}>
@@ -292,7 +406,8 @@ export const TaskManager: React.FC = () => {
                       <View
                         style={[
                           styles.smallBox,
-                          isSelected && styles.smallBoxSelected,
+                          { borderColor: theme.border },
+                          isSelected && { backgroundColor: theme.primary, borderColor: theme.primary },
                         ]}
                       />
                     </TouchableOpacity>
@@ -308,7 +423,7 @@ export const TaskManager: React.FC = () => {
                   </View>
 
                   <View style={[styles.tdCell, { width: 90 }]}>
-                    <Text style={styles.tdTextMuted}>{task.type}</Text>
+                    <Text style={[styles.tdTextMuted, { color: theme.textSecondary }]}>{task.type}</Text>
                   </View>
 
                   <View style={[styles.tdCell, { width: 90 }]}>
@@ -321,7 +436,7 @@ export const TaskManager: React.FC = () => {
                   </View>
 
                   <View style={[styles.tdCell, { width: 130 }]}>
-                    <Text style={styles.tdTextBold} numberOfLines={1}>
+                    <Text style={[styles.tdTextBold, { color: theme.textPrimary }]} numberOfLines={1}>
                       {task.projectName || '—'}
                     </Text>
                   </View>
@@ -330,6 +445,7 @@ export const TaskManager: React.FC = () => {
                     <Text
                       style={[
                         styles.tdTextTitle,
+                        { color: theme.textPrimary },
                         task.completed && styles.tdTextCompleted,
                       ]}
                     >
@@ -338,7 +454,7 @@ export const TaskManager: React.FC = () => {
                   </View>
 
                   <View style={[styles.tdCell, { width: 160 }]}>
-                    <Text style={styles.tdTextNotes} numberOfLines={2}>
+                    <Text style={[styles.tdTextNotes, { color: theme.textMuted }]} numberOfLines={2}>
                       {task.notes || '—'}
                     </Text>
                   </View>
@@ -350,14 +466,14 @@ export const TaskManager: React.FC = () => {
                         setEditingTask(task);
                         setModalOpen(true);
                       }}
-                      style={styles.actionBtn}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
                     >
-                      <Edit2 size={15} color="#71717A" />
+                      <Edit2 size={15} color={theme.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={() => setDeleteConfirmId(task.id)}
-                      style={styles.actionBtn}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
                     >
                       <Trash2 size={15} color="#F43F5E" />
                     </TouchableOpacity>
@@ -372,7 +488,7 @@ export const TaskManager: React.FC = () => {
         <View style={styles.mobileCardList}>
           {filteredTasks.length === 0 ? (
             <View style={styles.emptyTable}>
-              <Text style={styles.emptyText}>No matching tasks found.</Text>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>No matching tasks found.</Text>
             </View>
           ) : (
             filteredTasks.map((task) => {
@@ -382,8 +498,15 @@ export const TaskManager: React.FC = () => {
                   key={task.id}
                   style={[
                     styles.mobileTaskCard,
+                    {
+                      backgroundColor: isSelected
+                        ? (isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF')
+                        : task.completed
+                        ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
+                        : theme.surface,
+                      borderColor: isSelected ? theme.primary : theme.border,
+                    },
                     task.completed && styles.mobileTaskCardCompleted,
-                    isSelected && styles.mobileTaskCardSelected,
                   ]}
                 >
                   <View style={styles.mobileCardTop}>
@@ -407,13 +530,13 @@ export const TaskManager: React.FC = () => {
                           setEditingTask(task);
                           setModalOpen(true);
                         }}
-                        style={styles.actionBtn}
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
                       >
-                        <Edit2 size={15} color="#71717A" />
+                        <Edit2 size={15} color={theme.textMuted} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => setDeleteConfirmId(task.id)}
-                        style={styles.actionBtn}
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
                       >
                         <Trash2 size={15} color="#F43F5E" />
                       </TouchableOpacity>
@@ -423,6 +546,7 @@ export const TaskManager: React.FC = () => {
                   <Text
                     style={[
                       styles.mobileTaskTitle,
+                      { color: theme.textPrimary },
                       task.completed && styles.mobileTaskTitleCompleted,
                     ]}
                   >
@@ -431,12 +555,12 @@ export const TaskManager: React.FC = () => {
 
                   <View style={styles.mobileCardMeta}>
                     {task.projectName && (
-                      <Text style={styles.mobileProjectText}>
+                      <Text style={[styles.mobileProjectText, { color: theme.textSecondary }]}>
                         📁 {task.projectName} • {task.type}
                       </Text>
                     )}
                     {task.notes ? (
-                      <Text style={styles.mobileNotesText}>
+                      <Text style={[styles.mobileNotesText, { color: theme.textMuted }]}>
                         Note: {task.notes}
                       </Text>
                     ) : null}
@@ -493,12 +617,10 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 20,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -521,20 +643,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#18181B',
     letterSpacing: -0.4,
   },
   pageSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#71717A',
     marginTop: 2,
   },
   progressSection: {
@@ -548,7 +667,6 @@ const styles = StyleSheet.create({
   progressPercentText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4F46E5',
   },
   pendingText: {
     fontSize: 12,
@@ -556,13 +674,11 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
   toolbarCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 14,
     gap: 10,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -576,9 +692,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 40,
@@ -586,7 +700,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: '#18181B',
     outlineStyle: 'none' as any,
   },
   filterPillsRow: {
@@ -599,34 +712,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 100,
-    backgroundColor: '#F4F4F5',
+    borderWidth: 1,
     cursor: 'pointer' as any,
-  },
-  filterPillActive: {
-    backgroundColor: '#4F46E5',
   },
   filterPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#52525B',
-  },
-  filterPillTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
   divider: {
     width: 1,
     height: 18,
-    backgroundColor: '#E4E4E7',
     marginHorizontal: 4,
   },
   bulkActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#EEF2FF',
     borderWidth: 1,
-    borderColor: '#C7D2FE',
     padding: 12,
     borderRadius: 12,
     flexWrap: 'wrap',
@@ -635,7 +737,6 @@ const styles = StyleSheet.create({
   bulkCountText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4338CA',
   },
   bulkButtons: {
     flexDirection: 'row',
@@ -644,12 +745,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tableCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     overflow: 'hidden',
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -658,9 +757,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
     paddingVertical: 11,
     paddingHorizontal: 14,
   },
@@ -672,7 +769,6 @@ const styles = StyleSheet.create({
   thText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#71717A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -682,18 +778,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
-    backgroundColor: '#ffffff',
-  },
-  tableRowEven: {
-    backgroundColor: '#FFFFFF',
   },
   tableRowCompleted: {
-    backgroundColor: '#FAFAFA',
     opacity: 0.75,
-  },
-  tableRowSelected: {
-    backgroundColor: '#EEF2FF',
   },
   tdCell: {
     paddingHorizontal: 4,
@@ -702,11 +789,9 @@ const styles = StyleSheet.create({
   tdTextBold: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#18181B',
   },
   tdTextTitle: {
     fontSize: 13,
-    color: '#18181B',
     fontWeight: '500',
   },
   tdTextCompleted: {
@@ -715,27 +800,19 @@ const styles = StyleSheet.create({
   },
   tdTextMuted: {
     fontSize: 12,
-    color: '#71717A',
   },
   tdTextNotes: {
     fontSize: 12,
-    color: '#71717A',
   },
   smallBox: {
     width: 14,
     height: 14,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#D4D4D8',
-  },
-  smallBoxSelected: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
   },
   actionBtn: {
     padding: 7,
     borderRadius: 8,
-    backgroundColor: '#F4F4F5',
     cursor: 'pointer' as any,
   },
   emptyTable: {
@@ -745,32 +822,23 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: '#A1A1AA',
   },
   mobileCardList: {
     gap: 10,
   },
   mobileTaskCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     padding: 14,
     gap: 10,
-    shadowColor: '#18181B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
     elevation: 1,
   },
   mobileTaskCardCompleted: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#F4F4F5',
     opacity: 0.75,
-  },
-  mobileTaskCardSelected: {
-    borderColor: '#C7D2FE',
-    backgroundColor: '#EEF2FF',
   },
   mobileCardTop: {
     flexDirection: 'row',
@@ -792,7 +860,6 @@ const styles = StyleSheet.create({
   mobileTaskTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#18181B',
   },
   mobileTaskTitleCompleted: {
     textDecorationLine: 'line-through',
@@ -803,11 +870,9 @@ const styles = StyleSheet.create({
   },
   mobileProjectText: {
     fontSize: 12,
-    color: '#71717A',
     fontWeight: '500',
   },
   mobileNotesText: {
     fontSize: 11,
-    color: '#A1A1AA',
   },
 });

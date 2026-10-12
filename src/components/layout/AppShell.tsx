@@ -7,6 +7,7 @@ import { useTaskStore } from '../../stores/useTaskStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
+  const { theme, isDark } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isTablet);
 
   // Initialize data stores once on app shell mount
@@ -42,8 +44,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#09090B' : theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Sidebar on Desktop / Tablet */}
         {!isMobile && (
           <DesktopSidebar
@@ -59,7 +61,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             onAddExpense={onAddExpense}
             onAddRoutine={onAddRoutine}
           />
-          <View style={styles.contentArea}>{children}</View>
+          <View style={[styles.contentArea, { backgroundColor: theme.background }]}>{children}</View>
           {isMobile && <MobileTabBar />}
         </View>
       </View>
@@ -70,12 +72,10 @@ export const AppShell: React.FC<AppShellProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
   },
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#FAFAF9',
   },
   mainColumn: {
     flex: 1,
@@ -84,6 +84,5 @@ const styles = StyleSheet.create({
   },
   contentArea: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
   },
 });

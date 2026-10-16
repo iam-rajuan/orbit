@@ -6,10 +6,11 @@ import {
   StyleSheet,
   ViewStyle,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
-import { formatDisplayDate, getTodayKey, offsetDateKey } from '../../utils/date';
+import { formatAdaptiveDate, getTodayKey, offsetDateKey } from '../../utils/date';
 import { AppButton } from '../ui/AppButton';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -21,11 +22,15 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
   const { selectedDate, setSelectedDate, goToPreviousDay, goToNextDay, goToToday } =
     useDateStore();
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
 
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const isToday = selectedDate === getTodayKey();
-  const formattedDate = formatDisplayDate(selectedDate);
+  const isSmallScreen = width < 420;
+  const isTabletScreen = width >= 420 && width < 768;
+  const dateMode = isSmallScreen ? 'short' : isTabletScreen ? 'medium' : 'full';
+  const formattedDate = formatAdaptiveDate(selectedDate, dateMode);
 
   // Quick picker options
   const quickDates = [
@@ -57,7 +62,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           style={styles.arrowBtn}
           accessibilityLabel="Previous day"
         >
-          <ChevronLeft size={18} color={theme.textSecondary} />
+          <ChevronLeft size={16} color={theme.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -65,9 +70,15 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           onPress={() => setPickerOpen(true)}
           style={styles.dateSelector}
         >
-          <CalendarIcon size={16} color={theme.primary} style={styles.calIcon} />
+          <CalendarIcon size={14} color={theme.primary} style={styles.calIcon} />
           <View style={styles.dateTextContainer}>
-            <Text style={[styles.dateTitle, { color: theme.textPrimary }]}>{formattedDate}</Text>
+            <Text
+              style={[styles.dateTitle, { color: theme.textPrimary }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {formattedDate}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -77,7 +88,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           style={styles.arrowBtn}
           accessibilityLabel="Next day"
         >
-          <ChevronRight size={18} color={theme.textSecondary} />
+          <ChevronRight size={16} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -92,6 +103,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
               borderColor: theme.primaryBorder,
             },
           ]}
+          accessibilityLabel="Jump to today"
         >
           <Text style={[styles.todayText, { color: theme.primary }]}>Today</Text>
         </TouchableOpacity>
@@ -174,21 +186,25 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 1,
+    minWidth: 0,
   },
   navGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 36,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
+    borderRadius: 10,
+    paddingHorizontal: 2,
     shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 1,
+    flexShrink: 1,
   },
   arrowBtn: {
-    padding: 6,
+    width: 28,
+    height: 34,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -197,25 +213,32 @@ const styles = StyleSheet.create({
   dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    height: 34,
+    flexShrink: 1,
+    minWidth: 0,
     cursor: 'pointer' as any,
   },
   calIcon: {
-    marginRight: 8,
+    marginRight: 6,
   },
   dateTextContainer: {
     flexDirection: 'column',
+    flexShrink: 1,
+    minWidth: 0,
   },
   dateTitle: {
     fontSize: 13,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   todayBtn: {
+    height: 36,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
     borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer' as any,
   },
   todayText: {

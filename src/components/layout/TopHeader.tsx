@@ -28,6 +28,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {
           backgroundColor: theme.surface,
           borderBottomColor: theme.border,
+          paddingHorizontal: isMobile ? 14 : 20,
+          minHeight: isMobile ? 54 : 60,
+          paddingVertical: isMobile ? 8 : 10,
         },
       ]}
     >
@@ -86,23 +89,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    minHeight: 60,
     borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 12,
+    gap: 8,
   },
   left: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 0,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   themeToggleBtn: {
     width: 36,

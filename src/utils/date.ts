@@ -41,6 +41,26 @@ export function formatDisplayDate(dateKey: string): string {
 }
 
 /**
+ * Formats a date key adaptively for different viewport widths:
+ * - 'short' (mobile): "Tue, 06 Oct"
+ * - 'medium' (tablet / compact): "Tue, 06 Oct 2026"
+ * - 'full' (desktop): "Tuesday, 06 October 2026"
+ */
+export function formatAdaptiveDate(
+  dateKey: string,
+  mode: 'short' | 'medium' | 'full' = 'full'
+): string {
+  const date = parseDateKey(dateKey);
+  if (mode === 'short') {
+    return format(date, 'EEE, dd MMM');
+  }
+  if (mode === 'medium') {
+    return format(date, 'EEE, dd MMM yyyy');
+  }
+  return format(date, 'EEEE, dd MMMM yyyy');
+}
+
+/**
  * Formats a date key into compact format, e.g. "06-Oct-2026".
  */
 export function formatCompactDate(dateKey: string): string {

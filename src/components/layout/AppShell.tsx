@@ -23,7 +23,6 @@ export const AppShell: React.FC<AppShellProps> = ({
   onAddRoutine,
 }) => {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 

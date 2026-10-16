@@ -55,7 +55,7 @@ export const NutritionView: React.FC = () => {
   // Compute summary for selected day
   const daySummary = useMemo(() => {
     return getDayTotals(selectedDate);
-  }, [selectedDate, getDayTotals, loggedEntries, goals, habits]);
+  }, [selectedDate, getDayTotals]);
 
   // Filter entries for selected day
   const dayEntries = useMemo(() => {

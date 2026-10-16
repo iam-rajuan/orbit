@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import {
@@ -10,11 +10,13 @@ import {
   Menu,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { NavigationMenuModal } from './NavigationMenuModal';
 
 export const MobileTabBar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { theme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const tabs = [
     { title: 'Home', path: '/dashboard', icon: LayoutDashboard },
@@ -22,54 +24,70 @@ export const MobileTabBar: React.FC = () => {
     { title: 'Diet', path: '/nutrition', icon: UtensilsCrossed },
     { title: 'Tasks', path: '/tasks', icon: CheckSquare },
     { title: 'Expenses', path: '/expenses', icon: Receipt },
-    { title: 'More', path: '/calendar', icon: Menu },
+    { title: 'Menu', path: '#menu', icon: Menu },
   ];
 
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-          shadowColor: theme.shadowColor,
-          shadowOpacity: theme.shadowOpacity,
-        },
-      ]}
-    >
-      {tabs.map((tab) => {
-        const isActive =
-          tab.path === '/calendar'
-            ? pathname.startsWith('/calendar') || pathname.startsWith('/settings')
-            : pathname.startsWith(tab.path);
-        const Icon = tab.icon;
+  const handleTabPress = (path: string) => {
+    if (path === '#menu') {
+      setMenuOpen(true);
+    } else {
+      router.push(path as any);
+    }
+  };
 
-        return (
-          <TouchableOpacity
-            key={tab.path}
-            activeOpacity={0.7}
-            onPress={() => router.push(tab.path as any)}
-            style={styles.tabItem}
-            accessibilityLabel={tab.title}
-          >
-            <Icon
-              size={20}
-              color={isActive ? theme.primary : theme.textMuted}
-              strokeWidth={isActive ? 2.5 : 2}
-            />
-            <Text
-              style={[
-                styles.tabTitle,
-                { color: isActive ? theme.primary : theme.textMuted },
-                isActive && styles.tabTitleActive,
-              ]}
+  return (
+    <>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+            shadowColor: theme.shadowColor,
+            shadowOpacity: theme.shadowOpacity,
+          },
+        ]}
+      >
+        {tabs.map((tab) => {
+          const isMenuTab = tab.path === '#menu';
+          const isActive = isMenuTab
+            ? menuOpen || pathname.startsWith('/calendar') || pathname.startsWith('/settings')
+            : pathname.startsWith(tab.path);
+          const Icon = tab.icon;
+
+          return (
+            <TouchableOpacity
+              key={tab.path}
+              activeOpacity={0.7}
+              onPress={() => handleTabPress(tab.path)}
+              style={styles.tabItem}
+              accessibilityLabel={tab.title}
             >
-              {tab.title}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+              <Icon
+                size={20}
+                color={isActive ? theme.primary : theme.textMuted}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+              <Text
+                style={[
+                  styles.tabTitle,
+                  { color: isActive ? theme.primary : theme.textMuted },
+                  isActive && styles.tabTitleActive,
+                ]}
+              >
+                {tab.title}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Merged Navigation Menu Modal */}
+      <NavigationMenuModal
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+    </>
   );
 };
 

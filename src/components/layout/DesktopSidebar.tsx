@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import {
@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   UtensilsCrossed,
+  Sparkles,
 } from 'lucide-react-native';
 import { OrbitLogo } from '../brand/OrbitLogo';
 import { useTheme } from '../../theme/ThemeContext';
+import { NavigationMenuModal } from './NavigationMenuModal';
 
 interface DesktopSidebarProps {
   collapsed: boolean;
@@ -27,6 +29,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { theme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
     { title: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -97,8 +100,20 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         })}
       </View>
 
-      {/* Collapse button */}
+      {/* Hub / Roadmap Trigger & Collapse button */}
       <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setMenuOpen(true)}
+          style={[styles.collapseBtn, { marginBottom: 6 }]}
+          accessibilityLabel="Explore Roadmap & Hub"
+        >
+          <Sparkles size={16} color="#8B5CF6" />
+          {!collapsed && (
+            <Text style={[styles.collapseText, { color: theme.textSecondary }]}>Roadmap</Text>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={onToggleCollapse}
@@ -114,6 +129,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Navigation & Roadmap Hub Modal */}
+      <NavigationMenuModal
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 };

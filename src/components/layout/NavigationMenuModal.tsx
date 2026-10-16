@@ -44,7 +44,28 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
     router.push(path as any);
   };
 
-  const currentModules = [
+  // Primary destinations that migrated from the header/tabbar menu
+  const primaryUtilities = [
+    {
+      title: 'Calendar & History',
+      subtitle: 'Monthly calendar view, historical records & day logs',
+      path: '/calendar',
+      icon: Calendar,
+      color: '#F59E0B',
+      badge: 'History',
+    },
+    {
+      title: 'Settings & Data',
+      subtitle: 'Preferences, backup/export, themes & currency',
+      path: '/settings',
+      icon: Settings,
+      color: '#71717A',
+      badge: 'System',
+    },
+  ];
+
+  // Core application modules
+  const coreModules = [
     {
       title: 'Dashboard',
       subtitle: 'Productivity score, trends & daily pulse',
@@ -83,22 +104,9 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
       icon: Receipt,
       color: '#F43F5E',
     },
-    {
-      title: 'Calendar & History',
-      subtitle: 'Monthly overview & historical log review',
-      path: '/calendar',
-      icon: Calendar,
-      color: '#F59E0B',
-    },
-    {
-      title: 'Settings & Data',
-      subtitle: 'Preferences, export/import, themes & currency',
-      path: '/settings',
-      icon: Settings,
-      color: '#71717A',
-    },
   ];
 
+  // Upcoming features on Orbit's product roadmap
   const upcomingRoadmap = [
     {
       title: 'Workout & Fitness Log',
@@ -151,14 +159,104 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
           </View>
         </View>
 
-        {/* Section 1: Active App Modules */}
+        {/* Section 1: Primary Utilities (Calendar & Settings) */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
-            APPLICATION MODULES
+            CALENDAR & PREFERENCES
           </Text>
 
           <View style={styles.modulesList}>
-            {currentModules.map((mod) => {
+            {primaryUtilities.map((mod) => {
+              const isActive = pathname.startsWith(mod.path);
+              const Icon = mod.icon;
+
+              return (
+                <TouchableOpacity
+                  key={mod.path}
+                  activeOpacity={0.7}
+                  onPress={() => handleNavigate(mod.path)}
+                  style={[
+                    styles.moduleCard,
+                    styles.primaryModuleCard,
+                    {
+                      backgroundColor: isActive
+                        ? isDark
+                          ? 'rgba(99, 102, 241, 0.16)'
+                          : '#EEF2FF'
+                        : theme.surfaceSubtle,
+                      borderColor: isActive ? theme.primary : theme.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.iconBadge,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : '#FFFFFF',
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E4E4E7',
+                      },
+                    ]}
+                  >
+                    <Icon size={19} color={mod.color} />
+                  </View>
+
+                  <View style={styles.moduleTextGroup}>
+                    <View style={styles.moduleTitleRow}>
+                      <Text
+                        style={[
+                          styles.moduleTitle,
+                          { color: isActive ? theme.primary : theme.textPrimary },
+                          isActive && styles.moduleTitleActive,
+                        ]}
+                      >
+                        {mod.title}
+                      </Text>
+                      {mod.badge && (
+                        <View
+                          style={[
+                            styles.badgePill,
+                            {
+                              backgroundColor: isDark
+                                ? 'rgba(245, 158, 11, 0.18)'
+                                : '#FEF3C7',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.badgeText,
+                              {
+                                color: isDark ? '#FBBF24' : '#D97706',
+                              },
+                            ]}
+                          >
+                            {mod.badge}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.moduleSubtitle, { color: theme.textMuted }]} numberOfLines={1}>
+                      {mod.subtitle}
+                    </Text>
+                  </View>
+
+                  <ChevronRight size={16} color={isActive ? theme.primary : theme.textMuted} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Section 2: All Application Modules */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
+            ALL CORE MODULES
+          </Text>
+
+          <View style={styles.modulesList}>
+            {coreModules.map((mod) => {
               const isActive = pathname.startsWith(mod.path);
               const Icon = mod.icon;
 
@@ -250,7 +348,7 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
           </View>
         </View>
 
-        {/* Section 2: Upcoming in Orbit (Roadmap) */}
+        {/* Section 3: Upcoming in Orbit (Roadmap) */}
         <View style={styles.section}>
           <View style={styles.roadmapHeaderRow}>
             <Sparkles size={14} color="#8B5CF6" />
@@ -365,6 +463,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
     cursor: 'pointer' as any,
+  },
+  primaryModuleCard: {
+    paddingVertical: 12,
   },
   iconBadge: {
     width: 36,

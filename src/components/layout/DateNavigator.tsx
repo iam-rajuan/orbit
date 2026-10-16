@@ -62,7 +62,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           style={styles.arrowBtn}
           accessibilityLabel="Previous day"
         >
-          <ChevronLeft size={16} color={theme.textSecondary} />
+          <ChevronLeft size={15} color={theme.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -70,7 +70,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           onPress={() => setPickerOpen(true)}
           style={styles.dateSelector}
         >
-          <CalendarIcon size={14} color={theme.primary} style={styles.calIcon} />
+          <CalendarIcon size={10} color={theme.primary} strokeWidth={2.2} style={styles.calIcon} />
           <View style={styles.dateTextContainer}>
             <Text
               style={[styles.dateTitle, { color: theme.textPrimary }]}
@@ -88,7 +88,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           style={styles.arrowBtn}
           accessibilityLabel="Next day"
         >
-          <ChevronRight size={16} color={theme.textSecondary} />
+          <ChevronRight size={15} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -220,7 +220,8 @@ const styles = StyleSheet.create({
     cursor: 'pointer' as any,
   },
   calIcon: {
-    marginRight: 6,
+    marginRight: 4,
+    opacity: 0.9,
   },
   dateTextContainer: {
     flexDirection: 'column',
@@ -233,16 +234,16 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   todayBtn: {
-    height: 36,
+    height: 28,
     borderWidth: 1,
-    paddingHorizontal: 11,
-    borderRadius: 10,
+    paddingHorizontal: 9,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer' as any,
   },
   todayText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   modalBackdrop: {

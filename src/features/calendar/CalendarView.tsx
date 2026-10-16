@@ -89,7 +89,7 @@ export const CalendarView: React.FC = () => {
       >
         <View style={styles.monthHeader}>
           <View style={styles.monthTitleGroup}>
-            <CalendarIcon size={20} color={theme.primary} />
+            <CalendarIcon size={15} color={theme.primary} strokeWidth={2.2} />
             <Text style={[styles.monthTitle, { color: theme.textPrimary }]}>
               {format(currentMonthDate, 'MMMM yyyy')}
             </Text>

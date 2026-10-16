@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
 
 import { DateNavigator } from './DateNavigator';
 import { AppButton } from '../ui/AppButton';
-import { Plus, Receipt, Sun, Moon, Menu } from 'lucide-react-native';
+import { Plus, Receipt, Sun, Moon } from 'lucide-react-native';
 import { OrbitLogo } from '../brand/OrbitLogo';
 import { useTheme } from '../../theme/ThemeContext';
-import { NavigationMenuModal } from './NavigationMenuModal';
 
 interface TopHeaderProps {
   onAddTask?: () => void;
@@ -22,7 +21,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const { theme, isDark, toggleTheme } = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <View
@@ -38,26 +36,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       ]}
     >
       <View style={styles.left}>
-        {/* Menu Bar Trigger Button */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setMenuOpen(true)}
-          style={[
-            styles.menuBtn,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : '#F4F4F5',
-              borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.1)'
-                : '#E4E4E7',
-            },
-          ]}
-          accessibilityLabel="Open Menu"
-        >
-          <Menu size={18} color={theme.textPrimary} />
-        </TouchableOpacity>
-
         {isMobile && (
           <View style={styles.mobileBrand}>
             <OrbitLogo size={15} />
@@ -114,12 +92,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </>
         )}
       </View>
-
-      {/* Global Navigation Menu Modal (All tabs + upcoming topics) */}
-      <NavigationMenuModal
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
     </View>
   );
 };
@@ -144,15 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flexShrink: 0,
-  },
-  menuBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer' as any,
   },
   themeToggleBtn: {
     width: 36,

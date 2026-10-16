@@ -8,6 +8,7 @@ import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useNutritionStore } from '../../stores/useNutritionStore';
+import { useWishlistStore } from '../../stores/useWishlistStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface AppShellProps {
@@ -36,6 +37,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const { loadExpenses } = useExpenseStore();
   const { loadSettings } = useSettingsStore();
   const { loadNutrition } = useNutritionStore();
+  const { loadWishlist } = useWishlistStore();
 
   useEffect(() => {
     loadSettings();
@@ -43,6 +45,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     loadTasks();
     loadExpenses();
     loadNutrition();
+    loadWishlist();
   }, []);
 
   return (

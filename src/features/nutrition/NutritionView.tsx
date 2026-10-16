@@ -18,7 +18,7 @@ import { FoodLogModal } from './components/FoodLogModal';
 import { MealRoutineModal } from './components/MealRoutineModal';
 import { NutritionGoalsModal } from './components/NutritionGoalsModal';
 import { NutritionAnalyticsView } from './components/NutritionAnalyticsView';
-import { FatLossCalculatorView } from './components/FatLossCalculatorView';
+import { WeightGoalCalculatorView } from './components/WeightGoalCalculatorView';
 import { offsetDateKey } from '../../utils/date';
 import {
   UtensilsCrossed,
@@ -26,7 +26,7 @@ import {
   Sliders,
   Copy,
   CheckCircle2,
-  Flame,
+  Scale,
 } from 'lucide-react-native';
 
 export const NutritionView: React.FC = () => {
@@ -151,7 +151,7 @@ export const NutritionView: React.FC = () => {
               },
             ]}
           >
-            <Flame
+            <Scale
               size={15}
               color={mainTab === 'calculator' ? theme.primary : theme.textSecondary}
             />
@@ -162,7 +162,7 @@ export const NutritionView: React.FC = () => {
                 mainTab === 'calculator' && styles.modeTabTextActive,
               ]}
             >
-              Fat Loss Calculator
+              Weight Planner
             </Text>
           </TouchableOpacity>
         </View>
@@ -279,8 +279,8 @@ export const NutritionView: React.FC = () => {
           /* Analytics Tab */
           <NutritionAnalyticsView />
         ) : (
-          /* Fat Loss Science & Deficit Calculator */
-          <FatLossCalculatorView />
+          /* Weight & Calorie Goal Planner (Lose or Gain) */
+          <WeightGoalCalculatorView />
         )}
       </ScrollView>
 

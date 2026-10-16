@@ -15,7 +15,9 @@ import {
   Trash2,
   Edit2,
   X,
+  Gift,
 } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useDateStore } from '../../stores/useDateStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -26,10 +28,15 @@ import { formatCurrency } from '../../utils/currency';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Expense } from '../../types';
+import { WishlistManager } from '../wishlist/WishlistManager';
 
 export const ExpenseManager: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 860;
+
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [selectedTab, setSelectedTab] = useState<'expenses' | 'wishlist' | null>(null);
+  const activeView = selectedTab ?? (params.tab === 'wishlist' ? 'wishlist' : 'expenses');
 
   const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
@@ -55,10 +62,87 @@ export const ExpenseManager: React.FC = () => {
   const summary = getDailySummary(selectedDate);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.rootWrapper}>
+      {/* 0. Top View Switcher: Daily Expenses vs Wishlist & Buy Later */}
+      <View
+        style={[
+          styles.topBarWrapper,
+          {
+            backgroundColor: theme.background,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.viewSwitchContainer,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.viewSwitchButton,
+              activeView === 'expenses' && [
+                styles.viewSwitchButtonActive,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ],
+            ]}
+            onPress={() => setSelectedTab('expenses')}
+            activeOpacity={0.7}
+          >
+            <Receipt
+              size={16}
+              color={activeView === 'expenses' ? '#F43F5E' : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.viewSwitchText,
+                {
+                  color: activeView === 'expenses' ? theme.textPrimary : theme.textSecondary,
+                  fontWeight: activeView === 'expenses' ? '700' : '500',
+                },
+              ]}
+            >
+              Daily Expenses
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.viewSwitchButton,
+              activeView === 'wishlist' && [
+                styles.viewSwitchButtonActive,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ],
+            ]}
+            onPress={() => setSelectedTab('wishlist')}
+            activeOpacity={0.7}
+          >
+            <Gift
+              size={16}
+              color={activeView === 'wishlist' ? '#EC4899' : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.viewSwitchText,
+                {
+                  color: activeView === 'wishlist' ? theme.textPrimary : theme.textSecondary,
+                  fontWeight: activeView === 'wishlist' ? '700' : '500',
+                },
+              ]}
+            >
+              Wishlist & Buy Later
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {activeView === 'wishlist' ? (
+        <WishlistManager />
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
       {/* 1. Header Card with Daily Financial Metrics */}
       <View
         style={[
@@ -540,11 +624,48 @@ export const ExpenseManager: React.FC = () => {
         }}
         onCancel={() => setDeleteConfirmId(null)}
       />
-    </ScrollView>
+        </ScrollView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootWrapper: {
+    flex: 1,
+  },
+  topBarWrapper: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  viewSwitchContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    gap: 6,
+  },
+  viewSwitchButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  viewSwitchButtonActive: {
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  viewSwitchText: {
+    fontSize: 13,
+  },
   container: {
     padding: 20,
     gap: 18,

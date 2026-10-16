@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppModal } from '../ui/AppModal';
 import { OrbitLogo } from '../brand/OrbitLogo';
+import { BmiCalculatorModal } from '../../features/nutrition/components/BmiCalculatorModal';
 import {
   LayoutDashboard,
   Clock,
@@ -24,6 +25,8 @@ import {
   Cloud,
   ChevronRight,
   Sparkles,
+  Activity,
+  Gift,
 } from 'lucide-react-native';
 
 interface NavigationMenuModalProps {
@@ -38,6 +41,7 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { theme, isDark } = useTheme();
+  const [bmiModalOpen, setBmiModalOpen] = useState(false);
 
   const handleNavigate = (path: string) => {
     onClose();
@@ -47,6 +51,35 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
   // Primary destinations that migrated from the header/tabbar menu
   const primaryUtilities = [
     {
+      id: 'upcoming-tasks',
+      title: 'Future & Upcoming Tasks',
+      subtitle: 'Up-ahead pipeline, headings, rich notes & free-time quick wins',
+      path: '/tasks?tab=upcoming',
+      icon: Sparkles,
+      color: '#8B5CF6',
+      badge: 'Up Ahead',
+    },
+    {
+      id: 'wishlist',
+      title: 'Future Wishlist & Buy Later',
+      subtitle: 'Anti-impulse buy vault, planned items & cooling-off periods',
+      path: '/expenses?tab=wishlist',
+      icon: Gift,
+      color: '#EC4899',
+      badge: 'Smart Vault',
+    },
+    {
+      id: 'bmi',
+      title: 'BMI Speedometer Calculator',
+      subtitle: 'Interactive health gauge meter, healthy weight & body fat',
+      icon: Activity,
+      color: '#10B981',
+      badge: 'Speedometer',
+      isBmiModal: true,
+      path: '#bmi',
+    },
+    {
+      id: 'calendar',
       title: 'Calendar & History',
       subtitle: 'Monthly calendar view, historical records & day logs',
       path: '/calendar',
@@ -55,6 +88,7 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
       badge: 'History',
     },
     {
+      id: 'settings',
       title: 'Settings & Data',
       subtitle: 'Preferences, backup/export, themes & currency',
       path: '/settings',
@@ -167,14 +201,20 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
 
           <View style={styles.modulesList}>
             {primaryUtilities.map((mod) => {
-              const isActive = pathname.startsWith(mod.path);
+              const isActive = !mod.isBmiModal && pathname.startsWith(mod.path);
               const Icon = mod.icon;
 
               return (
                 <TouchableOpacity
-                  key={mod.path}
+                  key={mod.id || mod.path}
                   activeOpacity={0.7}
-                  onPress={() => handleNavigate(mod.path)}
+                  onPress={() => {
+                    if (mod.isBmiModal) {
+                      setBmiModalOpen(true);
+                    } else {
+                      handleNavigate(mod.path);
+                    }
+                  }}
                   style={[
                     styles.moduleCard,
                     styles.primaryModuleCard,
@@ -415,6 +455,12 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
           </View>
         </View>
       </ScrollView>
+
+      {/* Speedometer BMI Calculator Modal */}
+      <BmiCalculatorModal
+        visible={bmiModalOpen}
+        onClose={() => setBmiModalOpen(false)}
+      />
     </AppModal>
   );
 };

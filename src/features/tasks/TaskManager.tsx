@@ -16,7 +16,9 @@ import {
   Edit2,
   Check,
   X,
+  Sparkles,
 } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useDateStore } from '../../stores/useDateStore';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -28,23 +30,25 @@ import { AppProgressBar } from '../../components/ui/AppProgressBar';
 import { TaskFormModal } from './TaskFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Task } from '../../types';
+import { FutureTaskManager } from './FutureTaskManager';
 
 export const TaskManager: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [selectedTab, setSelectedTab] = useState<'today' | 'upcoming' | null>(null);
+  const activeView = selectedTab ?? (params.tab === 'upcoming' ? 'upcoming' : 'today');
+
   const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
   const {
-    tasks,
     searchQuery,
     filterCategory,
-    filterPriority,
     filterStatus,
     selectedTaskIds,
     setSearchQuery,
     setFilterCategory,
-    setFilterPriority,
     setFilterStatus,
     toggleSelectTask,
     selectAllTasks,
@@ -72,10 +76,87 @@ export const TaskManager: React.FC = () => {
     filteredTasks.every((t) => selectedTaskIds.includes(t.id));
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.rootWrapper}>
+      {/* 0. Top View Switcher: Today's Tasks vs Future & Upcoming Tasks */}
+      <View
+        style={[
+          styles.topBarWrapper,
+          {
+            backgroundColor: theme.background,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.viewSwitchContainer,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.viewSwitchButton,
+              activeView === 'today' && [
+                styles.viewSwitchButtonActive,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ],
+            ]}
+            onPress={() => setSelectedTab('today')}
+            activeOpacity={0.7}
+          >
+            <CheckSquare
+              size={16}
+              color={activeView === 'today' ? '#8B5CF6' : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.viewSwitchText,
+                {
+                  color: activeView === 'today' ? theme.textPrimary : theme.textSecondary,
+                  fontWeight: activeView === 'today' ? '700' : '500',
+                },
+              ]}
+            >
+              {"Today's Tasks"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.viewSwitchButton,
+              activeView === 'upcoming' && [
+                styles.viewSwitchButtonActive,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ],
+            ]}
+            onPress={() => setSelectedTab('upcoming')}
+            activeOpacity={0.7}
+          >
+            <Sparkles
+              size={16}
+              color={activeView === 'upcoming' ? '#8B5CF6' : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.viewSwitchText,
+                {
+                  color: activeView === 'upcoming' ? theme.textPrimary : theme.textSecondary,
+                  fontWeight: activeView === 'upcoming' ? '700' : '500',
+                },
+              ]}
+            >
+              Future & Upcoming Tasks
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {activeView === 'upcoming' ? (
+        <FutureTaskManager />
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
       {/* 1. Header Card with Metrics */}
       <View
         style={[
@@ -607,11 +688,48 @@ export const TaskManager: React.FC = () => {
         }}
         onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
-    </ScrollView>
+        </ScrollView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootWrapper: {
+    flex: 1,
+  },
+  topBarWrapper: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  viewSwitchContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    gap: 6,
+  },
+  viewSwitchButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  viewSwitchButtonActive: {
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  viewSwitchText: {
+    fontSize: 13,
+  },
   container: {
     padding: 20,
     gap: 18,

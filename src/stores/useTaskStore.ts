@@ -29,6 +29,7 @@ interface TaskState {
 
   getFilteredTasks: (date: string) => Task[];
   getTaskProgress: (date: string) => { total: number; completed: number; pending: number; percentage: number };
+  moveToToday: (taskId: string, todayDate: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -181,5 +182,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const pending = total - completed;
     const percentage = Math.round((completed / total) * 100);
     return { total, completed, pending, percentage };
+  },
+
+  moveToToday: async (taskId: string, todayDate: string) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target) return;
+
+    const updated: Task = {
+      ...target,
+      date: todayDate,
+      isUpcoming: false,
+      horizon: 'today' as any,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
   },
 }));

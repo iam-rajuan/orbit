@@ -1,6 +1,7 @@
 import { Task } from '../../types';
 import { appStorage } from '../storage/storageAdapter';
 import { SEED_TASKS } from '../../data/seed/initialData';
+import { SEED_FUTURE_TASKS } from '../../data/seed/futureTasksData';
 
 const TASKS_KEY = 'daily_view_tasks_v1';
 const INITIALIZED_KEY = 'daily_view_initialized_v1';
@@ -9,14 +10,22 @@ export class TaskRepository {
   async ensureInitialized(): Promise<void> {
     const initialized = await appStorage.getItem<boolean>(INITIALIZED_KEY);
     if (!initialized) {
-      await appStorage.setItem(TASKS_KEY, SEED_TASKS);
+      await appStorage.setItem(TASKS_KEY, [...SEED_FUTURE_TASKS, ...SEED_TASKS]);
+      await appStorage.setItem(INITIALIZED_KEY, true);
     }
   }
 
   async getAllTasks(): Promise<Task[]> {
     await this.ensureInitialized();
     const data = await appStorage.getItem<Task[]>(TASKS_KEY);
-    return data || SEED_TASKS;
+    const existing = data || [...SEED_FUTURE_TASKS, ...SEED_TASKS];
+    const hasUpcoming = existing.some((t) => t.isUpcoming || t.horizon);
+    if (!hasUpcoming) {
+      const merged = [...SEED_FUTURE_TASKS, ...existing];
+      await this.saveAllTasks(merged);
+      return merged;
+    }
+    return existing;
   }
 
   async getTasksByDate(date: string): Promise<Task[]> {

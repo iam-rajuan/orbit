@@ -17,8 +17,11 @@ export type TaskType =
   | 'Meeting'
   | string;
 
+export type TaskHorizon = 'next_7_days' | 'this_month' | 'someday';
+
 export interface Task {
   id: string;
+  heading?: string; // e.g. "Architecture & Strategy", "Deep Learning", "Personal Life"
   title: string;
   description?: string;
   category: TaskCategory;
@@ -27,8 +30,11 @@ export interface Task {
   projectId?: string;
   projectName?: string;
   notes?: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD or 'someday'
   dueDate?: string; // YYYY-MM-DD
+  horizon?: TaskHorizon; // 'next_7_days' | 'this_month' | 'someday'
+  estimatedTime?: string; // e.g. "15m", "30m", "1h", "2h+"
+  isUpcoming?: boolean; // marks task as part of future/upcoming backlog
   completed: boolean;
   completedAt?: string;
   createdAt: string;
@@ -121,6 +127,24 @@ export interface ExportDataPayload {
   routineCompletions: RoutineCompletion[];
   tasks: Task[];
   expenses: Expense[];
+}
+
+export type WishlistPriority = 'High' | 'Medium' | 'Low';
+export type WishlistStatus = 'saved' | 'ready' | 'purchased' | 'dropped';
+
+export interface WishlistItem {
+  id: string;
+  title: string;
+  estimatedPrice: number;
+  category: string;
+  priority: WishlistPriority;
+  targetDate?: string; // YYYY-MM-DD
+  url?: string;
+  notes?: string;
+  status: WishlistStatus;
+  createdAt: string;
+  purchasedAt?: string;
+  convertedExpenseId?: string;
 }
 
 export * from './nutrition';

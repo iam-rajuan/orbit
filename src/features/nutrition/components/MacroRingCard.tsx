@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useTheme } from '../../../theme/ThemeContext';
 import { DayNutritionSummary } from '../../../types/nutrition';
-import { Flame, TrendingDown, TrendingUp, SlidersHorizontal } from 'lucide-react-native';
+import { Scale, Flame, TrendingDown, TrendingUp, SlidersHorizontal } from 'lucide-react-native';
 
 interface MacroRingCardProps {
   summary: DayNutritionSummary;
@@ -91,7 +91,7 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
               {isDeficit ? `Deficit: -${deficitAbs} kcal` : `Surplus: +${deficitAbs} kcal`}
             </Text>
             {onPressCalculator && (
-              <Flame size={12} color={isDeficit ? (isDark ? '#34D399' : '#059669') : isDark ? '#FBBF24' : '#B45309'} style={{ marginLeft: 3 }} />
+              <Scale size={11} color={isDeficit ? (isDark ? '#34D399' : '#059669') : isDark ? '#FBBF24' : '#B45309'} style={{ marginLeft: 3 }} />
             )}
           </TouchableOpacity>
         </View>

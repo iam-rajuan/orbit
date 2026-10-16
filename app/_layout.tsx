@@ -19,6 +19,10 @@ function ThemedRoot() {
 
 export default function RootLayout() {
   useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.title = 'Orbit — Life in Sync';
+    }
+
     // Register PWA service worker on Web if supported
     if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {

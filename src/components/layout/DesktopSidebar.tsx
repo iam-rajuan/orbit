@@ -8,10 +8,11 @@ import {
   Receipt,
   Calendar,
   Settings,
-  Flame,
   ChevronLeft,
   ChevronRight,
+  UtensilsCrossed,
 } from 'lucide-react-native';
+import { OrbitLogo } from '../brand/OrbitLogo';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface DesktopSidebarProps {
@@ -30,6 +31,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const navItems = [
     { title: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Daily Routine', path: '/routine', icon: Clock },
+    { title: 'Nutrition & Diet', path: '/nutrition', icon: UtensilsCrossed },
     { title: 'Tasks', path: '/tasks', icon: CheckSquare },
     { title: 'Expenses', path: '/expenses', icon: Receipt },
     { title: 'Calendar', path: '/calendar', icon: Calendar },
@@ -48,16 +50,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       ]}
     >
       {/* App Branding */}
-      <View style={styles.branding}>
-        <View style={styles.logoBadge}>
-          <Flame size={20} color="#ffffff" />
-        </View>
-        {!collapsed && (
-          <View style={styles.brandText}>
-            <Text style={[styles.appName, { color: theme.textPrimary }]}>Daily View</Text>
-            <Text style={[styles.appSub, { color: theme.textMuted }]}>V4 • Productivity</Text>
-          </View>
-        )}
+      <View style={[styles.branding, collapsed && { justifyContent: 'center', paddingHorizontal: 0 }]}>
+        <OrbitLogo
+          size={18}
+          collapsed={collapsed}
+          showTagline={!collapsed}
+        />
       </View>
 
       {/* Nav items */}

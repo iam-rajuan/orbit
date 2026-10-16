@@ -1,5 +1,5 @@
-// Daily View v4 - Service Worker
-const CACHE_NAME = 'daily-view-cache-v1';
+// Orbit - Service Worker
+const CACHE_NAME = 'orbit-cache-v1';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',

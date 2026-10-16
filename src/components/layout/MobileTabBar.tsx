@@ -6,6 +6,7 @@ import {
   Clock,
   CheckSquare,
   Receipt,
+  UtensilsCrossed,
   Menu,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
@@ -18,6 +19,7 @@ export const MobileTabBar: React.FC = () => {
   const tabs = [
     { title: 'Home', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Routine', path: '/routine', icon: Clock },
+    { title: 'Diet', path: '/nutrition', icon: UtensilsCrossed },
     { title: 'Tasks', path: '/tasks', icon: CheckSquare },
     { title: 'Expenses', path: '/expenses', icon: Receipt },
     { title: 'More', path: '/calendar', icon: Menu },

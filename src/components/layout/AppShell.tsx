@@ -7,6 +7,7 @@ import { useTaskStore } from '../../stores/useTaskStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useNutritionStore } from '../../stores/useNutritionStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface AppShellProps {
@@ -34,12 +35,14 @@ export const AppShell: React.FC<AppShellProps> = ({
   const { loadRoutines } = useRoutineStore();
   const { loadExpenses } = useExpenseStore();
   const { loadSettings } = useSettingsStore();
+  const { loadNutrition } = useNutritionStore();
 
   useEffect(() => {
     loadSettings();
     loadRoutines();
     loadTasks();
     loadExpenses();
+    loadNutrition();
   }, []);
 
   return (

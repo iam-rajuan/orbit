@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { parseDailyViewCsv } from '../../utils/csvParser';
 import { generateId } from '../../utils/id';
 import { Task, Expense } from '../../types';
+import { OrbitLogo } from '../../components/brand/OrbitLogo';
 
 export const SettingsManager: React.FC = () => {
   const {
@@ -256,7 +257,7 @@ export const SettingsManager: React.FC = () => {
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>Appearance & Theme</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSecondary }]}>
-          Customize how Daily View looks on your device. Currently active: <Text style={{ fontWeight: '700', color: theme.primary }}>{themeMode === 'system' ? `System (${isDark ? 'Dark' : 'Light'})` : themeMode === 'dark' ? 'Dark' : 'Light'}</Text>
+          Customize how Orbit looks on your device. Currently active: <Text style={{ fontWeight: '700', color: theme.primary }}>{themeMode === 'system' ? `System (${isDark ? 'Dark' : 'Light'})` : themeMode === 'dark' ? 'Dark' : 'Light'}</Text>
         </Text>
 
         <View style={styles.themeGrid}>
@@ -472,14 +473,37 @@ export const SettingsManager: React.FC = () => {
         </View>
       </View>
 
-      {/* 5. About & Version Info */}
+      {/* 5. Brand Identity & About */}
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <View style={styles.aboutRow}>
-          <Info size={18} color={theme.textMuted} />
-          <View>
-            <Text style={[styles.aboutTitle, { color: theme.textPrimary }]}>Daily View — ToDo App</Text>
+        <View style={styles.brandShowcaseHeader}>
+          <OrbitLogo size={28} showTagline={true} />
+        </View>
+        <Text style={[styles.brandManifesto, { color: theme.textSecondary }]}>
+          Orbit unifies your daily routine, nutrition & macros, task execution, and finances into a harmonious, perpetual rhythm.
+        </Text>
+
+        <View style={[styles.brandModesPreview, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
+          <View style={styles.brandModeItem}>
+            <Text style={[styles.brandModeTitle, { color: theme.textMuted }]}>Light Identity</Text>
+            <View style={[styles.brandBadgeSample, { backgroundColor: '#FFFFFF', borderColor: '#E4E4E7' }]}>
+              <OrbitLogo size={20} variant="light" />
+            </View>
+          </View>
+
+          <View style={styles.brandModeItem}>
+            <Text style={[styles.brandModeTitle, { color: theme.textMuted }]}>Dark Identity</Text>
+            <View style={[styles.brandBadgeSample, { backgroundColor: '#09090B', borderColor: '#27272A' }]}>
+              <OrbitLogo size={20} variant="dark" />
+            </View>
+          </View>
+        </View>
+
+        <View style={[styles.aboutRow, { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }]}>
+          <Info size={16} color={theme.textMuted} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.aboutTitle, { color: theme.textPrimary }]}>Orbit OS • Version 4.2.0</Text>
             <Text style={[styles.aboutSub, { color: theme.textSecondary }]}>
-              Version 4.0.0 (Phase 1 Frontend Architecture) • Local-First IndexedDB & AsyncStorage
+              Mobile & Desktop Cross-Platform Suite • Local-First Storage Architecture
             </Text>
           </View>
         </View>
@@ -695,5 +719,37 @@ const styles = StyleSheet.create({
   aboutSub: {
     fontSize: 12,
     marginTop: 2,
+  },
+  brandShowcaseHeader: {
+    marginBottom: 8,
+  },
+  brandManifesto: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  brandModesPreview: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  brandModeItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  brandModeTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  brandBadgeSample: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

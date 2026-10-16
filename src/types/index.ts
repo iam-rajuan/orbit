@@ -122,3 +122,6 @@ export interface ExportDataPayload {
   tasks: Task[];
   expenses: Expense[];
 }
+
+export * from './nutrition';
+

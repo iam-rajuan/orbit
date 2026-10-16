@@ -8,11 +8,13 @@ import { Flame, TrendingDown, TrendingUp, SlidersHorizontal } from 'lucide-react
 interface MacroRingCardProps {
   summary: DayNutritionSummary;
   onPressEditGoals?: () => void;
+  onPressCalculator?: () => void;
 }
 
 export const MacroRingCard: React.FC<MacroRingCardProps> = ({
   summary,
   onPressEditGoals,
+  onPressCalculator,
 }) => {
   const { theme, isDark } = useTheme();
 
@@ -50,7 +52,10 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
       {/* Top Header Row with Goal Pill and Edit Button */}
       <View style={styles.headerRow}>
         <View style={styles.goalBadgeWrapper}>
-          <View
+          <TouchableOpacity
+            activeOpacity={0.7}
+            disabled={!onPressCalculator}
+            onPress={onPressCalculator}
             style={[
               styles.goalPill,
               {
@@ -68,6 +73,7 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
                   : isDark
                   ? 'rgba(245, 158, 11, 0.3)'
                   : '#FDE68A',
+                cursor: onPressCalculator ? ('pointer' as any) : undefined,
               },
             ]}
           >
@@ -84,7 +90,10 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
             >
               {isDeficit ? `Deficit: -${deficitAbs} kcal` : `Surplus: +${deficitAbs} kcal`}
             </Text>
-          </View>
+            {onPressCalculator && (
+              <Flame size={12} color={isDeficit ? (isDark ? '#34D399' : '#059669') : isDark ? '#FBBF24' : '#B45309'} style={{ marginLeft: 3 }} />
+            )}
+          </TouchableOpacity>
         </View>
 
         {onPressEditGoals && (

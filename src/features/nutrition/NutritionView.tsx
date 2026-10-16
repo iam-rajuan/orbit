@@ -18,6 +18,7 @@ import { FoodLogModal } from './components/FoodLogModal';
 import { MealRoutineModal } from './components/MealRoutineModal';
 import { NutritionGoalsModal } from './components/NutritionGoalsModal';
 import { NutritionAnalyticsView } from './components/NutritionAnalyticsView';
+import { FatLossCalculatorView } from './components/FatLossCalculatorView';
 import { offsetDateKey } from '../../utils/date';
 import {
   UtensilsCrossed,
@@ -25,6 +26,7 @@ import {
   Sliders,
   Copy,
   CheckCircle2,
+  Flame,
 } from 'lucide-react-native';
 
 export const NutritionView: React.FC = () => {
@@ -46,7 +48,7 @@ export const NutritionView: React.FC = () => {
     copyMealsFromDate,
   } = useNutritionStore();
 
-  const [mainTab, setMainTab] = useState<'log' | 'analytics' | 'routine'>('log');
+  const [mainTab, setMainTab] = useState<'log' | 'analytics' | 'calculator'>('log');
   const [activeSlotModalId, setActiveSlotModalId] = useState<string | null>(null);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
@@ -137,6 +139,32 @@ export const NutritionView: React.FC = () => {
               Analytics
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setMainTab('calculator')}
+            style={[
+              styles.modeTab,
+              mainTab === 'calculator' && {
+                backgroundColor: theme.primaryBg,
+                borderColor: theme.primaryBorder,
+              },
+            ]}
+          >
+            <Flame
+              size={15}
+              color={mainTab === 'calculator' ? theme.primary : theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.modeTabText,
+                { color: mainTab === 'calculator' ? theme.primary : theme.textSecondary },
+                mainTab === 'calculator' && styles.modeTabTextActive,
+              ]}
+            >
+              Fat Loss Calculator
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Quick action buttons on subheader */}
@@ -200,6 +228,7 @@ export const NutritionView: React.FC = () => {
             <MacroRingCard
               summary={daySummary}
               onPressEditGoals={() => setIsGoalsModalOpen(true)}
+              onPressCalculator={() => setMainTab('calculator')}
             />
 
             {/* 2. Deficiency Diagnostics & Feedback */}
@@ -246,9 +275,12 @@ export const NutritionView: React.FC = () => {
               })}
             </View>
           </View>
-        ) : (
+        ) : mainTab === 'analytics' ? (
           /* Analytics Tab */
           <NutritionAnalyticsView />
+        ) : (
+          /* Fat Loss Science & Deficit Calculator */
+          <FatLossCalculatorView />
         )}
       </ScrollView>
 

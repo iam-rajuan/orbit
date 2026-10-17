@@ -41,7 +41,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     <View style={[styles.container, style]}>
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={size} height={size}>
-          <G rotation="-90" origin={`${center}, ${center}`}>
+          <G transform={`rotate(-90 ${center} ${center})`}>
             {/* Background track circle */}
             <Circle
               cx={center}

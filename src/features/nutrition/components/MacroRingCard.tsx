@@ -116,7 +116,7 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
         {/* Calorie Ring */}
         <View style={styles.ringWrapper}>
           <Svg width={size} height={size}>
-            <G rotation="-90" origin={`${center}, ${center}`}>
+            <G transform={`rotate(-90 ${center} ${center})`}>
               {/* Background Track */}
               <Circle
                 cx={center}

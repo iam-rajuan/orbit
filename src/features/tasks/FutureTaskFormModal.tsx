@@ -1,33 +1,37 @@
 import React, { useState } from 'react';
 import {
+  Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   TextInput,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { AppModal } from '../../components/ui/AppModal';
-import { AppButton } from '../../components/ui/AppButton';
-import { Task, TaskPriority, TaskCategory, TaskHorizon } from '../../types';
+import { Task, TaskHorizon } from '../../types';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useDateStore } from '../../stores/useDateStore';
 import { generateId } from '../../utils/id';
-import { offsetDateKey, getTodayKey } from '../../utils/date';
 import {
-  Sparkles,
-  Calendar,
-  Clock,
-  Tag,
-  FileText,
-  AlertCircle,
-  Flag,
-  Layers,
+  ArrowLeft,
   Pin,
+  Trash2,
+  Zap,
   Palette,
+  Bell,
+  Tag,
+  CheckSquare,
+  Square,
+  Plus,
+  X,
+  Clock,
 } from 'lucide-react-native';
-import { KEEP_COLORS } from './keepTheme';
+import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
 
 interface FutureTaskFormModalProps {
   visible: boolean;
@@ -35,52 +39,37 @@ interface FutureTaskFormModalProps {
   onClose: () => void;
 }
 
-const HEADING_PRESETS = [
-  '🏗️ Architecture',
-  '🧠 Deep Learning',
-  '💼 Finance',
-  '🏡 Health',
-  '⚡ Quick Wins',
-  '🚀 Projects',
-];
-
-const HORIZON_OPTIONS: { id: TaskHorizon; label: string; desc: string }[] = [
-  { id: 'next_7_days', label: '⚡ Next 7 Days', desc: 'Up ahead soon' },
-  { id: 'this_month', label: '📅 This Month', desc: 'Later in month' },
-  { id: 'someday', label: '💡 Someday', desc: 'When I have time' },
-];
-
-const EFFORT_OPTIONS = [
-  { value: '15m', label: '⚡ 15m (Quick Win)' },
-  { value: '30m', label: '🎯 30m (Focused)' },
-  { value: '1h', label: '⏱️ 1h (Solid Block)' },
-  { value: '2h+', label: '🔨 2h+ (Deep Work)' },
-];
-
-const CATEGORY_OPTIONS: TaskCategory[] = [
-  'Office',
-  'Study',
+const QUICK_LABELS = [
+  'Architecture',
+  'Deep Learning',
   'Finance',
   'Health',
-  'Personal',
+  'Quick Wins',
+  'Projects',
 ];
 
-interface FormContentProps {
+const HORIZON_OPTIONS: { id: TaskHorizon; label: string }[] = [
+  { id: 'next_7_days', label: '⚡ Next 7 Days' },
+  { id: 'this_month', label: '📅 This Month' },
+  { id: 'someday', label: '💡 Someday' },
+];
+
+const EFFORT_OPTIONS = ['15m', '30m', '1h', '2h+'];
+
+const FutureTaskNoteEditor: React.FC<{
   taskToEdit?: Task | null;
   onClose: () => void;
-}
-
-const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose }) => {
+}> = ({ taskToEdit, onClose }) => {
   const { theme, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
   const { selectedDate } = useDateStore();
-  const { createTask, updateTask } = useTaskStore();
+  const { createTask, updateTask, deleteTask, moveToToday } = useTaskStore();
 
-  const [heading, setHeading] = useState(taskToEdit?.heading || HEADING_PRESETS[0]);
+  // Note State directly initialized
   const [title, setTitle] = useState(taskToEdit?.title || '');
-  const [description, setDescription] = useState(taskToEdit?.description || '');
-  const [notes, setNotes] = useState(taskToEdit?.notes || '');
-  const [category, setCategory] = useState<TaskCategory>(taskToEdit?.category || 'Office');
-  const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority || 'Medium');
+  const [notes, setNotes] = useState(taskToEdit?.notes || taskToEdit?.description || '');
+  const [heading, setHeading] = useState(taskToEdit?.heading || QUICK_LABELS[0]);
   const [horizon, setHorizon] = useState<TaskHorizon>(taskToEdit?.horizon || 'next_7_days');
   const [estimatedTime, setEstimatedTime] = useState(taskToEdit?.estimatedTime || '30m');
   const [color, setColor] = useState(taskToEdit?.color || 'default');
@@ -88,565 +77,563 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
   const [checklist, setChecklist] = useState<{ id: string; text: string; completed: boolean }[]>(
     taskToEdit?.checklist || []
   );
-  const [targetDate, setTargetDate] = useState(
-    taskToEdit?.date && taskToEdit.date !== 'someday' ? taskToEdit.date : offsetDateKey(getTodayKey(), 3)
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!title.trim()) {
-      setError('Please provide a task title or summary.');
+  // Tray Toggles
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [showHorizonPicker, setShowHorizonPicker] = useState(false);
+
+  const cardStyle = getKeepCardStyle(color, isDark, theme.surface, theme.border);
+
+  // Save changes
+  const handleSaveAndClose = async () => {
+    const finalTitle = title.trim();
+    const finalNotes = notes.trim();
+    const hasChecklist = checklist.some((c) => c.text.trim().length > 0);
+
+    // If completely empty and new, just close
+    if (!finalTitle && !finalNotes && !hasChecklist && !taskToEdit) {
+      onClose();
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
     const now = new Date().toISOString();
-    const finalDate = horizon === 'someday' ? 'someday' : (targetDate.trim() || selectedDate);
+    const finalDate = horizon === 'someday' ? 'someday' : (taskToEdit?.date || selectedDate);
 
-    try {
-      if (taskToEdit) {
-        const updated: Task = {
-          ...taskToEdit,
-          heading: heading.trim() || undefined,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          notes: notes.trim() || undefined,
-          category,
-          priority,
-          horizon,
-          estimatedTime,
-          date: finalDate,
-          dueDate: finalDate !== 'someday' ? finalDate : undefined,
-          isUpcoming: true,
-          pinned,
-          color,
-          checklist: checklist.length > 0 ? checklist : taskToEdit.checklist,
-          updatedAt: now,
-        };
-        await updateTask(updated);
-      } else {
-        const newTask: Task = {
-          id: generateId('task'),
-          heading: heading.trim() || undefined,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          notes: notes.trim() || undefined,
-          checklist: checklist.length > 0 ? checklist : undefined,
-          category,
-          type: 'Project',
-          priority,
-          horizon,
-          estimatedTime,
-          date: finalDate,
-          dueDate: finalDate !== 'someday' ? finalDate : undefined,
-          isUpcoming: true,
-          pinned,
-          color,
-          completed: false,
-          createdAt: now,
-          updatedAt: now,
-        };
-        await createTask(newTask);
-      }
-      onClose();
-    } catch {
-      setError('Failed to save future task. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (taskToEdit) {
+      const updated: Task = {
+        ...taskToEdit,
+        title: finalTitle || 'Untitled note',
+        notes: finalNotes || undefined,
+        description: finalNotes || undefined,
+        heading,
+        horizon,
+        estimatedTime,
+        color,
+        pinned,
+        checklist: checklist.length > 0 ? checklist : undefined,
+        date: finalDate,
+        dueDate: finalDate !== 'someday' ? finalDate : undefined,
+        updatedAt: now,
+      };
+      await updateTask(updated);
+    } else if (finalTitle || finalNotes || hasChecklist) {
+      const newTask: Task = {
+        id: generateId('task'),
+        title: finalTitle || 'Untitled note',
+        notes: finalNotes || undefined,
+        description: finalNotes || undefined,
+        heading,
+        category: 'Office',
+        type: 'Project',
+        priority: 'Medium',
+        horizon,
+        estimatedTime,
+        date: finalDate,
+        dueDate: finalDate !== 'someday' ? finalDate : undefined,
+        isUpcoming: true,
+        pinned,
+        color,
+        checklist: checklist.length > 0 ? checklist : undefined,
+        completed: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await createTask(newTask);
     }
+
+    onClose();
+  };
+
+  // Checklist Actions
+  const handleAddCheckItem = () => {
+    setChecklist((prev) => [
+      ...prev,
+      { id: generateId('chk'), text: '', completed: false },
+    ]);
+  };
+
+  const handleToggleCheckItem = (id: string) => {
+    setChecklist((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
+  };
+
+  const handleUpdateCheckItem = (id: string, text: string) => {
+    setChecklist((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, text } : item))
+    );
+  };
+
+  const handleRemoveCheckItem = (id: string) => {
+    setChecklist((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Delete note
+  const handleDelete = async () => {
+    if (taskToEdit) {
+      await deleteTask(taskToEdit.id);
+    }
+    onClose();
+  };
+
+  // Promote note directly to today
+  const handlePromoteToToday = async () => {
+    if (taskToEdit) {
+      await moveToToday(taskToEdit.id, selectedDate);
+    }
+    onClose();
+  };
+
+  // Cycle effort
+  const handleCycleEffort = () => {
+    const currentIdx = EFFORT_OPTIONS.indexOf(estimatedTime);
+    const nextIdx = (currentIdx + 1) % EFFORT_OPTIONS.length;
+    setEstimatedTime(EFFORT_OPTIONS[nextIdx]);
   };
 
   return (
-    <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTitleGroup}>
-            <View style={styles.iconBadge}>
-              <Sparkles size={18} color="#8B5CF6" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-                {taskToEdit ? 'Edit Upcoming Task' : 'Add Future Task Ahead'}
-              </Text>
-              <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                Plan ahead with Google Keep simplicity — notes, colors & tags
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => setPinned(!pinned)}
-            style={[
-              styles.pinBtn,
-              {
-                backgroundColor: pinned
-                  ? isDark
-                    ? 'rgba(245, 158, 11, 0.25)'
-                    : '#FEF3C7'
-                  : theme.surfaceSubtle,
-                borderColor: pinned ? '#F59E0B' : theme.border,
-              },
-            ]}
-            accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
-          >
-            <Pin
-              size={16}
-              color={pinned ? '#D97706' : theme.textSecondary}
-              fill={pinned ? '#D97706' : 'none'}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Error alert */}
-      {error && (
-        <View style={styles.errorBox}>
-          <AlertCircle size={15} color="#EF4444" />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {/* 1. Task Heading / Workstream */}
-      <View style={styles.formGroup}>
-        <View style={styles.labelRow}>
-          <Layers size={13} color={theme.textSecondary} />
-          <Text style={[styles.label, { color: theme.textPrimary }]}>
-            Task Heading / Workstream
-          </Text>
-        </View>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            },
-          ]}
-          placeholder="e.g. 🏗️ Core Architecture, 🧠 Deep Learning, ⚡ Quick Wins"
-          placeholderTextColor={theme.textMuted}
-          value={heading}
-          onChangeText={setHeading}
-        />
-        {/* Quick Presets */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-        >
-          {HEADING_PRESETS.map((p) => {
-            const active = heading === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                onPress={() => setHeading(p)}
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: active
-                      ? isDark
-                        ? 'rgba(139, 92, 246, 0.25)'
-                        : '#EDE9FE'
-                      : theme.surfaceSubtle,
-                    borderColor: active ? '#8B5CF6' : theme.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.presetChipText,
-                    { color: active ? '#8B5CF6' : theme.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {p}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* 2. Task Title */}
-      <View style={styles.formGroup}>
-        <Text style={[styles.label, { color: theme.textPrimary }]}>
-          Task Title <Text style={styles.required}>*</Text>
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            styles.titleInput,
-            {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            },
-          ]}
-          placeholder="What needs to be done? (action-oriented)"
-          placeholderTextColor={theme.textMuted}
-          value={title}
-          onChangeText={setTitle}
-        />
-      </View>
-
-      {/* 3. Horizon / When to Complete */}
-      <View style={styles.formGroup}>
-        <View style={styles.labelRow}>
-          <Calendar size={13} color={theme.textSecondary} />
-          <Text style={[styles.label, { color: theme.textPrimary }]}>
-            Completion Horizon
-          </Text>
-        </View>
-        <View style={styles.horizonSelector}>
-          {HORIZON_OPTIONS.map((opt) => {
-            const active = horizon === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                onPress={() => setHorizon(opt.id)}
-                style={[
-                  styles.horizonBtn,
-                  {
-                    backgroundColor: active
-                      ? isDark
-                        ? 'rgba(139, 92, 246, 0.2)'
-                        : '#EDE9FE'
-                      : theme.surfaceSubtle,
-                    borderColor: active ? '#8B5CF6' : theme.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.horizonBtnTitle,
-                    { color: active ? '#8B5CF6' : theme.textPrimary },
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {opt.label}
-                </Text>
-                <Text
-                  style={[styles.horizonBtnDesc, { color: theme.textMuted }]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {opt.desc}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Date presets if not someday */}
-        {horizon !== 'someday' && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickDateRow}
-          >
-            {[
-              { label: '+1 Day', days: 1 },
-              { label: '+3 Days', days: 3 },
-              { label: '+1 Week', days: 7 },
-              { label: '+2 Weeks', days: 14 },
-              { label: '+1 Month', days: 30 },
-            ].map((d) => (
-              <TouchableOpacity
-                key={d.label}
-                onPress={() => setTargetDate(offsetDateKey(getTodayKey(), d.days))}
-                style={[
-                  styles.quickDateBtn,
-                  {
-                    backgroundColor: theme.surfaceSubtle,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.quickDateText, { color: theme.textSecondary }]} numberOfLines={1}>
-                  {d.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-
-      {/* 4. Estimated Time & Priority Row */}
-      <View style={styles.row}>
-        {/* Estimated Effort */}
-        <View style={styles.halfCol}>
-          <View style={styles.labelRow}>
-            <Clock size={13} color={theme.textSecondary} />
-            <Text style={[styles.label, { color: theme.textPrimary }]}>Estimated Time</Text>
-          </View>
-          <View style={styles.effortGrid}>
-            {EFFORT_OPTIONS.map((eff) => {
-              const active = estimatedTime === eff.value;
-              return (
-                <TouchableOpacity
-                  key={eff.value}
-                  onPress={() => setEstimatedTime(eff.value)}
-                  style={[
-                    styles.effortBtn,
-                    {
-                      backgroundColor: active
-                        ? isDark
-                          ? 'rgba(16, 185, 129, 0.2)'
-                          : '#ECFDF5'
-                        : theme.surfaceSubtle,
-                      borderColor: active ? '#10B981' : theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.effortBtnText,
-                      { color: active ? '#059669' : theme.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {eff.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Priority */}
-        <View style={styles.halfCol}>
-          <View style={styles.labelRow}>
-            <Flag size={13} color={theme.textSecondary} />
-            <Text style={[styles.label, { color: theme.textPrimary }]}>Priority Impact</Text>
-          </View>
-          <View style={styles.prioritySelector}>
-            {(['High', 'Medium', 'Low'] as const).map((p) => {
-              const active = priority === p;
-              const color = p === 'High' ? '#F43F5E' : p === 'Medium' ? '#F59E0B' : '#64748B';
-              return (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => setPriority(p)}
-                  style={[
-                    styles.priorityBtn,
-                    {
-                      backgroundColor: active
-                        ? isDark
-                          ? `${color}25`
-                          : `${color}15`
-                        : theme.surfaceSubtle,
-                      borderColor: active ? color : theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[styles.priorityBtnText, { color: active ? color : theme.textSecondary }]}
-                    numberOfLines={1}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      </View>
-
-      {/* 5. Category Selection */}
-      <View style={styles.formGroup}>
-        <View style={styles.labelRow}>
-          <Tag size={13} color={theme.textSecondary} />
-          <Text style={[styles.label, { color: theme.textPrimary }]}>Category</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryRow}
-        >
-          {CATEGORY_OPTIONS.map((c) => {
-            const active = category === c;
-            return (
-              <TouchableOpacity
-                key={c}
-                onPress={() => setCategory(c)}
-                style={[
-                  styles.categoryChip,
-                  {
-                    backgroundColor: active
-                      ? isDark
-                        ? 'rgba(139, 92, 246, 0.2)'
-                        : '#EDE9FE'
-                      : theme.surfaceSubtle,
-                    borderColor: active ? '#8B5CF6' : theme.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    { color: active ? '#8B5CF6' : theme.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {c}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Google Keep Color Palette */}
-      <View style={styles.formGroup}>
-        <View style={styles.labelRow}>
-          <Palette size={13} color={theme.textSecondary} />
-          <Text style={[styles.label, { color: theme.textPrimary }]}>Note Color</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.colorPaletteRow}
-        >
-          {KEEP_COLORS.map((c) => {
-            const active = color === c.id;
-            const swatchBg = isDark ? c.darkBg : c.lightBg;
-            return (
-              <TouchableOpacity
-                key={c.id}
-                onPress={() => setColor(c.id)}
-                style={[
-                  styles.colorSwatch,
-                  {
-                    backgroundColor: swatchBg,
-                    borderColor: active
-                      ? isDark
-                        ? '#FFF'
-                        : '#0F172A'
-                      : isDark
-                      ? 'rgba(255,255,255,0.18)'
-                      : 'rgba(0,0,0,0.12)',
-                    borderWidth: active ? 2.5 : 1,
-                  },
-                ]}
-                accessibilityLabel={c.name}
-              >
-                {active && (
-                  <View
-                    style={[
-                      styles.colorCheckDot,
-                      { backgroundColor: isDark ? '#FFF' : '#0F172A' },
-                    ]}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* 6. Summary / One-liner description */}
-      <View style={styles.formGroup}>
-        <Text style={[styles.label, { color: theme.textPrimary }]}>
-          Brief Description (optional)
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            },
-          ]}
-          placeholder="High-level goal or key deliverable"
-          placeholderTextColor={theme.textMuted}
-          value={description}
-          onChangeText={setDescription}
-        />
-      </View>
-
-      {/* Checklist items if any */}
-      {checklist.length > 0 && (
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: theme.textPrimary, marginBottom: 8 }]}>
-            Checklist Items
-          </Text>
-          {checklist.map((chk) => (
-            <TouchableOpacity
-              key={chk.id}
-              onPress={() => {
-                setChecklist((prev) =>
-                  prev.map((item) =>
-                    item.id === chk.id ? { ...item, completed: !item.completed } : item
-                  )
-                );
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
+    <Modal
+      visible={true}
+      transparent
+      animationType={isMobile ? 'slide' : 'fade'}
+      onRequestClose={handleSaveAndClose}
+    >
+      <TouchableWithoutFeedback onPress={handleSaveAndClose}>
+        <View style={styles.backdrop}>
+          <TouchableWithoutFeedback>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={[
+                styles.modalCard,
+                isMobile ? styles.modalCardMobile : styles.modalCardDesktop,
+                {
+                  backgroundColor: cardStyle.backgroundColor,
+                  borderColor: cardStyle.borderColor,
+                },
+              ]}
             >
-              <Text style={{ fontSize: 16, color: chk.completed ? '#10B981' : theme.textSecondary }}>
-                {chk.completed ? '☑' : '☐'}
-              </Text>
-              <Text
+              {/* 1. Google Keep Top Navigation Bar */}
+              <View style={styles.topBar}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleSaveAndClose}
+                  style={styles.topIconBtn}
+                  accessibilityLabel="Back / Close"
+                >
+                  <ArrowLeft size={20} color={cardStyle.textColor} />
+                </TouchableOpacity>
+
+                <View style={styles.topBarRightActions}>
+                  {/* Pin button */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPinned(!pinned)}
+                    style={styles.topIconBtn}
+                    accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
+                  >
+                    <Pin
+                      size={18}
+                      color={pinned ? '#F59E0B' : cardStyle.subTextColor}
+                      fill={pinned ? '#F59E0B' : 'transparent'}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Move to today (Orbit Zap) */}
+                  {taskToEdit && !taskToEdit.completed && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={handlePromoteToToday}
+                      style={styles.topIconBtn}
+                      accessibilityLabel="Do today"
+                    >
+                      <Zap size={18} color="#8B5CF6" />
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Delete button */}
+                  {taskToEdit && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={handleDelete}
+                      style={styles.topIconBtn}
+                      accessibilityLabel="Delete note"
+                    >
+                      <Trash2 size={18} color={cardStyle.subTextColor} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* 2. Note Body: Title + Checklist or Text Note */}
+              <ScrollView
+                style={styles.contentScroll}
+                contentContainerStyle={styles.contentScrollContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Clean Borderless Title */}
+                <TextInput
+                  style={[
+                    styles.titleInput,
+                    { color: cardStyle.textColor },
+                  ]}
+                  placeholder="Title"
+                  placeholderTextColor={cardStyle.subTextColor}
+                  value={title}
+                  onChangeText={setTitle}
+                  multiline
+                />
+
+                {/* Checklist items (if any exist or added) */}
+                {checklist.length > 0 && (
+                  <View style={styles.checklistSection}>
+                    {checklist.map((item) => (
+                      <View key={item.id} style={styles.checklistItemRow}>
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => handleToggleCheckItem(item.id)}
+                          style={styles.chkBoxBtn}
+                        >
+                          {item.completed ? (
+                            <CheckSquare size={16} color="#10B981" />
+                          ) : (
+                            <Square size={16} color={cardStyle.subTextColor} />
+                          )}
+                        </TouchableOpacity>
+
+                        <TextInput
+                          style={[
+                            styles.checklistTextInput,
+                            { color: cardStyle.textColor },
+                            item.completed && styles.checklistTextInputDone,
+                          ]}
+                          placeholder="List item"
+                          placeholderTextColor={cardStyle.subTextColor}
+                          value={item.text}
+                          onChangeText={(txt) => handleUpdateCheckItem(item.id, txt)}
+                        />
+
+                        <TouchableOpacity
+                          onPress={() => handleRemoveCheckItem(item.id)}
+                          style={styles.chkRemoveBtn}
+                        >
+                          <X size={14} color={cardStyle.subTextColor} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {/* + Add List item */}
+                    <TouchableOpacity
+                      onPress={handleAddCheckItem}
+                      style={styles.addCheckItemRow}
+                    >
+                      <Plus size={16} color={cardStyle.subTextColor} />
+                      <Text style={[styles.addCheckItemText, { color: cardStyle.subTextColor }]}>
+                        List item
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Clean Borderless Multiline Note */}
+                <TextInput
+                  style={[
+                    styles.noteBodyInput,
+                    { color: cardStyle.textColor },
+                  ]}
+                  placeholder="Note"
+                  placeholderTextColor={cardStyle.subTextColor}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  textAlignVertical="top"
+                />
+
+                {/* Chips Area: Workstream tag, Reminder, Effort badge */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsScrollRow}
+                >
+                  {/* Workstream / Label Chip */}
+                  {heading ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setShowLabelPicker(!showLabelPicker);
+                        setShowColorPicker(false);
+                        setShowHorizonPicker(false);
+                      }}
+                      style={[
+                        styles.keepChip,
+                        {
+                          backgroundColor: cardStyle.chipBg,
+                          borderColor: cardStyle.chipBorder,
+                        },
+                      ]}
+                    >
+                      <Tag size={11} color={cardStyle.subTextColor} />
+                      <Text
+                        style={[styles.keepChipText, { color: cardStyle.textColor }]}
+                        numberOfLines={1}
+                      >
+                        {heading}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {/* Horizon / Reminder Chip */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setShowHorizonPicker(!showHorizonPicker);
+                      setShowColorPicker(false);
+                      setShowLabelPicker(false);
+                    }}
+                    style={[
+                      styles.keepChip,
+                      {
+                        backgroundColor: cardStyle.chipBg,
+                        borderColor: cardStyle.chipBorder,
+                      },
+                    ]}
+                  >
+                    <Bell size={11} color={cardStyle.subTextColor} />
+                    <Text
+                      style={[styles.keepChipText, { color: cardStyle.textColor }]}
+                      numberOfLines={1}
+                    >
+                      {horizon === 'next_7_days'
+                        ? 'Next 7 Days'
+                        : horizon === 'this_month'
+                        ? 'This Month'
+                        : 'Someday'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Effort Chip */}
+                  {estimatedTime ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={handleCycleEffort}
+                      style={[
+                        styles.keepChip,
+                        {
+                          backgroundColor: cardStyle.chipBg,
+                          borderColor: cardStyle.chipBorder,
+                        },
+                      ]}
+                    >
+                      <Clock size={11} color={cardStyle.subTextColor} />
+                      <Text
+                        style={[styles.keepChipText, { color: cardStyle.textColor }]}
+                        numberOfLines={1}
+                      >
+                        {estimatedTime}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </ScrollView>
+              </ScrollView>
+
+              {/* 3. Collapsible Option Trays */}
+              {/* Color Palette Swatches */}
+              {showColorPicker && (
+                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.colorPaletteRow}
+                  >
+                    {KEEP_COLORS.map((c) => {
+                      const active = color === c.id;
+                      return (
+                        <TouchableOpacity
+                          key={c.id}
+                          onPress={() => setColor(c.id)}
+                          style={[
+                            styles.paletteDot,
+                            { backgroundColor: c.dotColor },
+                            active && styles.paletteDotSelected,
+                          ]}
+                          accessibilityLabel={c.name}
+                        />
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Label Selector Tray */}
+              {showLabelPicker && (
+                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.trayScrollRow}
+                  >
+                    {QUICK_LABELS.map((lbl) => {
+                      const active = heading === lbl;
+                      return (
+                        <TouchableOpacity
+                          key={lbl}
+                          onPress={() => {
+                            setHeading(lbl);
+                            setShowLabelPicker(false);
+                          }}
+                          style={[
+                            styles.trayPill,
+                            active && {
+                              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#EDE9FE',
+                              borderColor: '#8B5CF6',
+                            },
+                            !active && {
+                              backgroundColor: cardStyle.chipBg,
+                              borderColor: cardStyle.chipBorder,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.trayPillText,
+                              { color: active ? '#8B5CF6' : cardStyle.textColor },
+                            ]}
+                          >
+                            {lbl}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Horizon Selector Tray */}
+              {showHorizonPicker && (
+                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.trayScrollRow}
+                  >
+                    {HORIZON_OPTIONS.map((opt) => {
+                      const active = horizon === opt.id;
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          onPress={() => {
+                            setHorizon(opt.id);
+                            setShowHorizonPicker(false);
+                          }}
+                          style={[
+                            styles.trayPill,
+                            active && {
+                              backgroundColor: theme.primary,
+                              borderColor: theme.primary,
+                            },
+                            !active && {
+                              backgroundColor: cardStyle.chipBg,
+                              borderColor: cardStyle.chipBorder,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.trayPillText,
+                              { color: active ? '#FFFFFF' : cardStyle.textColor },
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* 4. Google Keep Bottom Toolbar */}
+              <View
                 style={[
-                  { fontSize: 13, color: theme.textPrimary, flex: 1 },
-                  chk.completed && { textDecorationLine: 'line-through', opacity: 0.6 },
+                  styles.bottomToolbar,
+                  { borderTopColor: 'rgba(150, 150, 150, 0.15)' },
                 ]}
               >
-                {chk.text}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+                <View style={styles.toolbarIconGroup}>
+                  {/* Color Palette Icon */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowColorPicker(!showColorPicker);
+                      setShowLabelPicker(false);
+                      setShowHorizonPicker(false);
+                    }}
+                    style={styles.toolbarBtn}
+                    accessibilityLabel="Note color"
+                  >
+                    <Palette size={18} color={cardStyle.subTextColor} />
+                  </TouchableOpacity>
 
-      {/* 7. Detailed Notes, Bullet Steps & URLs */}
-      <View style={styles.formGroup}>
-        <View style={styles.labelRow}>
-          <FileText size={13} color={theme.textSecondary} />
-          <Text style={[styles.label, { color: theme.textPrimary }]}>
-            Detailed Notes, Context & Steps (so you never forget)
-          </Text>
-        </View>
-        <TextInput
-          style={[
-            styles.input,
-            styles.textArea,
-            {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            },
-          ]}
-          placeholder={'• Acceptance criteria or step-by-step checklist\n• Important links, docs or credentials\n• Ideas & why this matters'}
-          placeholderTextColor={theme.textMuted}
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={4}
-        />
-      </View>
+                  {/* Reminder / Horizon Icon */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowHorizonPicker(!showHorizonPicker);
+                      setShowColorPicker(false);
+                      setShowLabelPicker(false);
+                    }}
+                    style={styles.toolbarBtn}
+                    accessibilityLabel="Completion horizon"
+                  >
+                    <Bell size={18} color={cardStyle.subTextColor} />
+                  </TouchableOpacity>
 
-      {/* Action Buttons */}
-      <View style={styles.footerButtons}>
-        <AppButton
-          title="Cancel"
-          variant="outline"
-          size="md"
-          onPress={onClose}
-        />
-        <AppButton
-          title={taskToEdit ? 'Save Changes' : 'Add Upcoming Task'}
-          variant="primary"
-          size="md"
-          loading={isSubmitting}
-          onPress={handleSubmit}
-        />
-      </View>
-    </ScrollView>
+                  {/* Workstream / Label Icon */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowLabelPicker(!showLabelPicker);
+                      setShowColorPicker(false);
+                      setShowHorizonPicker(false);
+                    }}
+                    style={styles.toolbarBtn}
+                    accessibilityLabel="Workstream label"
+                  >
+                    <Tag size={18} color={cardStyle.subTextColor} />
+                  </TouchableOpacity>
+
+                  {/* Add Checklist Icon */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (checklist.length === 0) {
+                        handleAddCheckItem();
+                      } else {
+                        handleAddCheckItem();
+                      }
+                    }}
+                    style={styles.toolbarBtn}
+                    accessibilityLabel="Checklist"
+                  >
+                    <CheckSquare size={18} color={cardStyle.subTextColor} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Close Button */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleSaveAndClose}
+                  style={styles.closeBtn}
+                >
+                  <Text style={[styles.closeBtnText, { color: cardStyle.textColor }]}>
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 };
 
@@ -655,249 +642,224 @@ export const FutureTaskFormModal: React.FC<FutureTaskFormModalProps> = ({
   taskToEdit,
   onClose,
 }) => {
+  if (!visible) return null;
+
   return (
-    <AppModal
-      visible={visible}
+    <FutureTaskNoteEditor
+      key={taskToEdit ? taskToEdit.id : 'new-note'}
+      taskToEdit={taskToEdit}
       onClose={onClose}
-      title=""
-      maxWidth={580}
-    >
-      {visible ? (
-        <FutureTaskFormContent
-          key={taskToEdit ? taskToEdit.id : 'new-future-task'}
-          taskToEdit={taskToEdit}
-          onClose={onClose}
-        />
-      ) : null}
-    </AppModal>
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  scrollArea: {
-    maxHeight: 580,
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  header: {
-    paddingBottom: 12,
-    marginBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150, 150, 150, 0.15)',
+  modalCard: {
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 25,
+    elevation: 10,
+    borderWidth: 1,
   },
-  headerRow: {
+  modalCardDesktop: {
+    width: '92%',
+    maxWidth: 600,
+    maxHeight: '85%',
+    borderRadius: 16,
+  },
+  modalCardMobile: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: '92%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+
+  /* Top Bar */
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  headerTitleGroup: {
+  topBarRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Scrollable Content */
+  contentScroll: {
+    flex: 1,
+  },
+  contentScrollContainer: {
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  titleInput: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
+    padding: 0,
+    marginBottom: 14,
+  },
+  noteBodyInput: {
+    fontSize: 15,
+    lineHeight: 24,
+    minHeight: 140,
+    padding: 0,
+    marginBottom: 16,
+  },
+
+  /* Checklist section */
+  checklistSection: {
+    marginBottom: 14,
+  },
+  checklistItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    flex: 1,
+    paddingVertical: 5,
   },
-  pinBtn: {
-    width: 34,
-    height: 34,
+  chkBoxBtn: {
+    padding: 2,
+  },
+  checklistTextInput: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    padding: 0,
+  },
+  checklistTextInputDone: {
+    textDecorationLine: 'line-through',
+    opacity: 0.55,
+  },
+  chkRemoveBtn: {
+    padding: 4,
+  },
+  addCheckItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    marginTop: 2,
+  },
+  addCheckItemText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  /* Chips Row */
+  chipsScrollRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 4,
+  },
+  keepChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
+  },
+  keepChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  /* Option Trays */
+  trayWrapper: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+  },
+  trayScrollRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
+  },
+  trayPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  trayPillText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   colorPaletteRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  colorSwatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  colorCheckDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  modalSubtitle: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  errorBox: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  paletteDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#EF4444',
-    marginBottom: 12,
+    borderColor: 'rgba(0,0,0,0.15)',
   },
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    fontWeight: '600',
-    flex: 1,
+  paletteDotSelected: {
+    borderColor: '#8B5CF6',
+    borderWidth: 2.5,
+    transform: [{ scale: 1.15 }],
   },
-  formGroup: {
-    marginBottom: 14,
-  },
-  labelRow: {
+
+  /* Bottom Toolbar */
+  bottomToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  required: {
-    color: '#EF4444',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 13,
+    borderTopWidth: 1,
   },
-  titleInput: {
+  toolbarIconGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toolbarBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  closeBtnText: {
     fontSize: 14,
     fontWeight: '700',
-  },
-  textArea: {
-    minHeight: 85,
-    textAlignVertical: 'top',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 6,
-    paddingVertical: 2,
-  },
-  presetChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  presetChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  horizonSelector: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  horizonBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  horizonBtnTitle: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  horizonBtnDesc: {
-    fontSize: 9.5,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  quickDateRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 6,
-    paddingVertical: 2,
-  },
-  quickDateBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  quickDateText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 14,
-  },
-  halfCol: {
-    flex: 1,
-  },
-  effortGrid: {
-    gap: 6,
-  },
-  effortBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  effortBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  prioritySelector: {
-    gap: 6,
-  },
-  priorityBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  priorityBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingVertical: 2,
-  },
-  categoryChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  categoryChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  footerButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 10,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(150, 150, 150, 0.15)',
   },
 });

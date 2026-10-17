@@ -3,7 +3,7 @@ import { Task } from '../../types';
 export const SEED_FUTURE_TASKS: Task[] = [
   {
     id: 'future_task_1',
-    heading: '🏗️ Core Architecture & Reliability',
+    heading: '🏗️ Architecture',
     title: 'Implement Offline Queue & Network Recovery Listener',
     description: 'Set up robust offline mutation queue with exponential backoff retry and status indicator',
     category: 'Office',
@@ -30,7 +30,7 @@ export const SEED_FUTURE_TASKS: Task[] = [
   },
   {
     id: 'future_task_2',
-    heading: '🧠 Deep Learning & Skill Mastery',
+    heading: '🧠 Deep Learning',
     title: 'Read & Summarize System Design Primer: Distributed Caching',
     description: 'Focus on Cache-Aside, Write-Through and eviction algorithms (LRU vs LFU)',
     category: 'Study',
@@ -55,7 +55,7 @@ export const SEED_FUTURE_TASKS: Task[] = [
   },
   {
     id: 'future_task_3',
-    heading: '⚡ Quick Wins (Free Time)',
+    heading: '⚡ Quick Wins',
     title: 'Clean Up Cloud Drive & Archive Tax Invoices',
     description: 'Empty trash, organize Q3 receipts, clean Downloads folder and desktop',
     category: 'Finance',
@@ -80,7 +80,7 @@ export const SEED_FUTURE_TASKS: Task[] = [
   },
   {
     id: 'future_task_4',
-    heading: '💼 Career & Financial Planning',
+    heading: '💼 Finance',
     title: 'Quarterly Portfolio Rebalance & Emergency Fund Review',
     description: 'Audit liquid savings runway and evaluate asset allocation against targets',
     category: 'Finance',
@@ -101,7 +101,7 @@ export const SEED_FUTURE_TASKS: Task[] = [
   },
   {
     id: 'future_task_5',
-    heading: '🏡 Personal & Health Optimization',
+    heading: '🏡 Health',
     title: 'Schedule Annual Comprehensive Health & Dental Checkup',
     description: 'Routine diagnostic blood panel and dental prophylactic cleaning',
     category: 'Health',
@@ -127,7 +127,7 @@ export const SEED_FUTURE_TASKS: Task[] = [
   },
   {
     id: 'future_task_6',
-    heading: '⚡ Quick Wins (Free Time)',
+    heading: '⚡ Quick Wins',
     title: 'Back Up Mobile Photos & Export Orbit JSON Ledger',
     description: 'Perform complete local device backup and Orbit JSON data export for peace of mind',
     category: 'Personal',

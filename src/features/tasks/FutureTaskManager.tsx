@@ -51,6 +51,16 @@ const HORIZON_FILTERS = [
   { id: 'completed', label: '✅ Done' },
 ];
 
+function formatShortHeading(heading: string): string {
+  return heading
+    .replace(' & Reliability', '')
+    .replace(' & Skill Mastery', '')
+    .replace(' & Financial Planning', '')
+    .replace(' & Health Optimization', '')
+    .replace(' (Free Time)', '')
+    .trim();
+}
+
 interface ChecklistDraftItem {
   id: string;
   text: string;
@@ -228,12 +238,18 @@ export const FutureTaskManager: React.FC = () => {
   const renderCard = (task: Task) => {
     const cardStyle = getKeepCardStyle(task.color, isDark, theme.surface, theme.border);
     const isShowingColorPicker = showColorPickerForId === task.id;
+    const isGrid = viewMode === 'grid';
 
     return (
       <View
         key={task.id}
         style={[
           styles.noteCard,
+          isGrid
+            ? isDesktop
+              ? styles.cardGridDesktop
+              : styles.cardGridMobile
+            : styles.cardList,
           {
             backgroundColor: cardStyle.backgroundColor,
             borderColor: cardStyle.borderColor,
@@ -250,9 +266,9 @@ export const FutureTaskManager: React.FC = () => {
             accessibilityLabel="Mark complete"
           >
             {task.completed ? (
-              <CheckSquare size={18} color="#10B981" />
+              <CheckSquare size={16} color="#10B981" />
             ) : (
-              <Square size={18} color={cardStyle.subTextColor} />
+              <Square size={16} color={cardStyle.subTextColor} />
             )}
           </TouchableOpacity>
 
@@ -267,10 +283,11 @@ export const FutureTaskManager: React.FC = () => {
             <Text
               style={[
                 styles.cardTitle,
+                isGrid && !isDesktop && styles.cardTitleGridMobile,
                 { color: cardStyle.textColor },
                 task.completed && styles.cardTitleCompleted,
               ]}
-              numberOfLines={2}
+              numberOfLines={isGrid ? 3 : 2}
             >
               {task.title}
             </Text>
@@ -284,7 +301,7 @@ export const FutureTaskManager: React.FC = () => {
             accessibilityLabel={task.pinned ? 'Unpin note' : 'Pin note'}
           >
             <Pin
-              size={16}
+              size={15}
               color={task.pinned ? '#F59E0B' : cardStyle.subTextColor}
               fill={task.pinned ? '#F59E0B' : 'transparent'}
             />
@@ -302,7 +319,7 @@ export const FutureTaskManager: React.FC = () => {
         >
           {task.checklist && task.checklist.length > 0 ? (
             <View style={styles.checklistList}>
-              {task.checklist.slice(0, 5).map((chk) => (
+              {task.checklist.slice(0, isGrid && !isDesktop ? 3 : 5).map((chk) => (
                 <View key={chk.id} style={styles.checklistItemRow}>
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -310,14 +327,15 @@ export const FutureTaskManager: React.FC = () => {
                     style={styles.chkToggle}
                   >
                     {chk.completed ? (
-                      <CheckSquare size={14} color="#10B981" />
+                      <CheckSquare size={13} color="#10B981" />
                     ) : (
-                      <Square size={14} color={cardStyle.subTextColor} />
+                      <Square size={13} color={cardStyle.subTextColor} />
                     )}
                   </TouchableOpacity>
                   <Text
                     style={[
                       styles.checklistText,
+                      isGrid && !isDesktop && { fontSize: 11 },
                       { color: cardStyle.textColor },
                       chk.completed && styles.checklistTextCompleted,
                     ]}
@@ -327,9 +345,9 @@ export const FutureTaskManager: React.FC = () => {
                   </Text>
                 </View>
               ))}
-              {task.checklist.length > 5 && (
+              {task.checklist.length > (isGrid && !isDesktop ? 3 : 5) && (
                 <Text style={[styles.moreItemsText, { color: cardStyle.subTextColor }]}>
-                  +{task.checklist.length - 5} more items
+                  +{task.checklist.length - (isGrid && !isDesktop ? 3 : 5)} more
                 </Text>
               )}
             </View>
@@ -337,10 +355,11 @@ export const FutureTaskManager: React.FC = () => {
             <Text
               style={[
                 styles.cardNotes,
+                isGrid && !isDesktop && styles.cardNotesGridMobile,
                 { color: cardStyle.textColor },
                 task.completed && styles.cardNotesCompleted,
               ]}
-              numberOfLines={5}
+              numberOfLines={isGrid && !isDesktop ? 3 : 5}
             >
               {task.notes}
             </Text>
@@ -353,6 +372,7 @@ export const FutureTaskManager: React.FC = () => {
             <View
               style={[
                 styles.cardChip,
+                isGrid && !isDesktop && styles.cardChipMobile,
                 {
                   backgroundColor: cardStyle.chipBg,
                   borderColor: cardStyle.chipBorder,
@@ -360,10 +380,15 @@ export const FutureTaskManager: React.FC = () => {
               ]}
             >
               <Text
-                style={[styles.cardChipText, { color: cardStyle.textColor }]}
+                style={[
+                  styles.cardChipText,
+                  isGrid && !isDesktop && styles.cardChipTextMobile,
+                  { color: cardStyle.textColor },
+                ]}
                 numberOfLines={1}
+                ellipsizeMode="tail"
               >
-                {task.heading}
+                {formatShortHeading(task.heading)}
               </Text>
             </View>
           )}
@@ -372,14 +397,23 @@ export const FutureTaskManager: React.FC = () => {
             <View
               style={[
                 styles.cardChip,
+                isGrid && !isDesktop && styles.cardChipMobile,
                 {
                   backgroundColor: cardStyle.chipBg,
                   borderColor: cardStyle.chipBorder,
                 },
               ]}
             >
-              <Bell size={10} color={cardStyle.subTextColor} />
-              <Text style={[styles.cardChipText, { color: cardStyle.textColor }]}>
+              <Bell size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
+              <Text
+                style={[
+                  styles.cardChipText,
+                  isGrid && !isDesktop && styles.cardChipTextMobile,
+                  { color: cardStyle.textColor },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {task.horizon === 'next_7_days'
                   ? 'Next 7 Days'
                   : task.horizon === 'this_month'
@@ -393,14 +427,23 @@ export const FutureTaskManager: React.FC = () => {
             <View
               style={[
                 styles.cardChip,
+                isGrid && !isDesktop && styles.cardChipMobile,
                 {
                   backgroundColor: cardStyle.chipBg,
                   borderColor: cardStyle.chipBorder,
                 },
               ]}
             >
-              <Clock size={10} color={cardStyle.subTextColor} />
-              <Text style={[styles.cardChipText, { color: cardStyle.textColor }]}>
+              <Clock size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
+              <Text
+                style={[
+                  styles.cardChipText,
+                  isGrid && !isDesktop && styles.cardChipTextMobile,
+                  { color: cardStyle.textColor },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {task.estimatedTime}
               </Text>
             </View>
@@ -436,7 +479,7 @@ export const FutureTaskManager: React.FC = () => {
         )}
 
         {/* Card Action Toolbar */}
-        <View style={styles.cardFooter}>
+        <View style={[styles.cardFooter, isGrid && !isDesktop && styles.cardFooterMobile]}>
           {/* 1-Tap "⚡ Move to Today" */}
           {!task.completed && (
             <TouchableOpacity
@@ -444,28 +487,31 @@ export const FutureTaskManager: React.FC = () => {
               onPress={() => setMoveToTodayTask(task)}
               style={[
                 styles.doTodayChip,
+                isGrid && !isDesktop && styles.doTodayChipMobile,
                 {
                   backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
                   borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
                 },
               ]}
             >
-              <Zap size={11} color="#8B5CF6" />
-              <Text style={styles.doTodayChipText}>⚡ Do Today</Text>
+              <Zap size={isGrid && !isDesktop ? 9 : 11} color="#8B5CF6" />
+              <Text style={[styles.doTodayChipText, isGrid && !isDesktop && styles.doTodayChipTextMobile]}>
+                {isGrid && !isDesktop ? 'Today' : '⚡ Do Today'}
+              </Text>
             </TouchableOpacity>
           )}
 
-          <View style={styles.cardActionIcons}>
+          <View style={[styles.cardActionIcons, isGrid && !isDesktop && styles.cardActionIconsMobile]}>
             {/* Color Palette */}
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() =>
                 setShowColorPickerForId(isShowingColorPicker ? null : task.id)
               }
-              style={styles.cardActionIconBtn}
+              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
               accessibilityLabel="Change color"
             >
-              <Palette size={14} color={cardStyle.subTextColor} />
+              <Palette size={isGrid && !isDesktop ? 12 : 14} color={cardStyle.subTextColor} />
             </TouchableOpacity>
 
             {/* Edit */}
@@ -475,20 +521,20 @@ export const FutureTaskManager: React.FC = () => {
                 setEditingTask(task);
                 setEditModalOpen(true);
               }}
-              style={styles.cardActionIconBtn}
+              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
               accessibilityLabel="Edit note"
             >
-              <Edit3 size={13} color={cardStyle.subTextColor} />
+              <Edit3 size={isGrid && !isDesktop ? 11 : 13} color={cardStyle.subTextColor} />
             </TouchableOpacity>
 
             {/* Delete */}
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setDeleteConfirmId(task.id)}
-              style={styles.cardActionIconBtn}
+              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
               accessibilityLabel="Delete note"
             >
-              <Trash2 size={13} color={cardStyle.subTextColor} />
+              <Trash2 size={isGrid && !isDesktop ? 11 : 13} color={cardStyle.subTextColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -527,20 +573,20 @@ export const FutureTaskManager: React.FC = () => {
         {/* Grid vs List View Toggle */}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+          onPress={() => setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'))}
           style={[
             styles.viewModeBtn,
             {
               backgroundColor: theme.surface,
-              borderColor: theme.border,
+              borderColor: viewMode === 'list' ? theme.primary : theme.border,
             },
           ]}
-          accessibilityLabel={viewMode === 'grid' ? 'List view' : 'Grid view'}
+          accessibilityLabel={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
         >
           {viewMode === 'grid' ? (
-            <ListIcon size={17} color={theme.textSecondary} />
+            <ListIcon size={17} color={theme.textPrimary} />
           ) : (
-            <LayoutGrid size={17} color={theme.textSecondary} />
+            <LayoutGrid size={17} color={theme.primary} />
           )}
         </TouchableOpacity>
       </View>
@@ -1268,8 +1314,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    justifyContent: 'space-between',
   },
   listCol: {
+    flexDirection: 'column',
     gap: 10,
     maxWidth: 620,
     alignSelf: 'center',
@@ -1278,17 +1326,40 @@ const styles = StyleSheet.create({
 
   /* Note Card */
   noteCard: {
-    flex: 1,
-    minWidth: 260,
-    maxWidth: 380,
     borderRadius: 12,
     borderWidth: 1,
-    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom: 2,
+  },
+  cardGridMobile: {
+    width: '48.5%',
+    minWidth: 0,
+    maxWidth: '49%',
+    padding: 10,
+  },
+  cardGridDesktop: {
+    width: '31.5%',
+    minWidth: 240,
+    maxWidth: 380,
+    padding: 14,
+  },
+  cardList: {
+    width: '100%',
+    minWidth: '100%',
+    maxWidth: '100%',
+    padding: 14,
+  },
+  cardTitleGridMobile: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  cardNotesGridMobile: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   noteCardCompleted: {
     opacity: 0.6,
@@ -1353,8 +1424,10 @@ const styles = StyleSheet.create({
   cardChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 10,
+    gap: 4,
+    marginBottom: 8,
+    maxWidth: '100%',
+    overflow: 'hidden',
   },
   cardChip: {
     flexDirection: 'row',
@@ -1362,12 +1435,24 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
+    maxWidth: '100%',
+    overflow: 'hidden',
+  },
+  cardChipMobile: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
   },
   cardChipText: {
     fontSize: 10,
     fontWeight: '600',
+    flexShrink: 1,
+  },
+  cardChipTextMobile: {
+    fontSize: 9,
   },
   palettePopover: {
     flexDirection: 'row',
@@ -1385,6 +1470,12 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: 'rgba(150,150,150,0.15)',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  cardFooterMobile: {
+    paddingTop: 4,
+    gap: 2,
   },
   doTodayChip: {
     flexDirection: 'row',
@@ -1392,18 +1483,31 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
+  },
+  doTodayChipMobile: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 2,
   },
   doTodayChipText: {
     fontSize: 10,
     fontWeight: '700',
     color: '#8B5CF6',
   },
+  doTodayChipTextMobile: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
   cardActionIcons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  cardActionIconsMobile: {
+    gap: 1,
   },
   cardActionIconBtn: {
     width: 26,
@@ -1411,6 +1515,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cardActionIconBtnMobile: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
   },
 
   /* Empty state */

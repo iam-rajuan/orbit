@@ -36,18 +36,18 @@ interface FutureTaskFormModalProps {
 }
 
 const HEADING_PRESETS = [
-  '🏗️ Core Architecture & Reliability',
-  '🧠 Deep Learning & Skill Mastery',
-  '💼 Career & Financial Planning',
-  '🏡 Personal & Health Optimization',
-  '⚡ Quick Wins (Free Time)',
-  '🚀 Strategic Projects',
+  '🏗️ Architecture',
+  '🧠 Deep Learning',
+  '💼 Finance',
+  '🏡 Health',
+  '⚡ Quick Wins',
+  '🚀 Projects',
 ];
 
 const HORIZON_OPTIONS: { id: TaskHorizon; label: string; desc: string }[] = [
   { id: 'next_7_days', label: '⚡ Next 7 Days', desc: 'Up ahead soon' },
   { id: 'this_month', label: '📅 This Month', desc: 'Later in month' },
-  { id: 'someday', label: '💡 When I Have Time', desc: 'Someday / backlog' },
+  { id: 'someday', label: '💡 Someday', desc: 'When I have time' },
 ];
 
 const EFFORT_OPTIONS = [
@@ -232,7 +232,11 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           onChangeText={setHeading}
         />
         {/* Quick Presets */}
-        <View style={styles.chipRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
           {HEADING_PRESETS.map((p) => {
             const active = heading === p;
             return (
@@ -263,7 +267,7 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {/* 2. Task Title */}
@@ -320,10 +324,16 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
                     styles.horizonBtnTitle,
                     { color: active ? '#8B5CF6' : theme.textPrimary },
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {opt.label}
                 </Text>
-                <Text style={[styles.horizonBtnDesc, { color: theme.textMuted }]}>
+                <Text
+                  style={[styles.horizonBtnDesc, { color: theme.textMuted }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {opt.desc}
                 </Text>
               </TouchableOpacity>
@@ -333,7 +343,11 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
 
         {/* Date presets if not someday */}
         {horizon !== 'someday' && (
-          <View style={styles.quickDateRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickDateRow}
+          >
             {[
               { label: '+1 Day', days: 1 },
               { label: '+3 Days', days: 3 },
@@ -352,12 +366,12 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
                   },
                 ]}
               >
-                <Text style={[styles.quickDateText, { color: theme.textSecondary }]}>
+                <Text style={[styles.quickDateText, { color: theme.textSecondary }]} numberOfLines={1}>
                   {d.label}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         )}
       </View>
 
@@ -393,6 +407,7 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
                       styles.effortBtnText,
                       { color: active ? '#059669' : theme.textSecondary },
                     ]}
+                    numberOfLines={1}
                   >
                     {eff.label}
                   </Text>
@@ -428,7 +443,10 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
                     },
                   ]}
                 >
-                  <Text style={[styles.priorityBtnText, { color: active ? color : theme.textSecondary }]}>
+                  <Text
+                    style={[styles.priorityBtnText, { color: active ? color : theme.textSecondary }]}
+                    numberOfLines={1}
+                  >
                     {p}
                   </Text>
                 </TouchableOpacity>
@@ -444,7 +462,11 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           <Tag size={13} color={theme.textSecondary} />
           <Text style={[styles.label, { color: theme.textPrimary }]}>Category</Text>
         </View>
-        <View style={styles.categoryRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+        >
           {CATEGORY_OPTIONS.map((c) => {
             const active = category === c;
             return (
@@ -468,13 +490,14 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
                     styles.categoryChipText,
                     { color: active ? '#8B5CF6' : theme.textSecondary },
                   ]}
+                  numberOfLines={1}
                 >
                   {c}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Google Keep Color Palette */}
@@ -764,47 +787,52 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 6,
     marginTop: 6,
+    paddingVertical: 2,
   },
   presetChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
     borderWidth: 1,
   },
   presetChipText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
   },
   horizonSelector: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   horizonBtn: {
     flex: 1,
-    padding: 10,
-    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   horizonBtnTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
+    textAlign: 'center',
   },
   horizonBtnDesc: {
-    fontSize: 10,
+    fontSize: 9.5,
     marginTop: 2,
+    textAlign: 'center',
   },
   quickDateRow: {
     flexDirection: 'row',
     gap: 6,
-    marginTop: 8,
+    marginTop: 6,
+    paddingVertical: 2,
   },
   quickDateBtn: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
   },
@@ -850,8 +878,8 @@ const styles = StyleSheet.create({
   },
   categoryRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 6,
+    paddingVertical: 2,
   },
   categoryChip: {
     paddingHorizontal: 10,

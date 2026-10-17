@@ -280,7 +280,11 @@ const WishlistFormContent: React.FC<WishlistFormContentProps> = ({
             onChangeText={setTargetDate}
           />
           {/* Quick preset dates */}
-          <View style={styles.quickDateRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickDateRow}
+          >
             {[
               { label: 'Next 30 Days', days: 30 },
               { label: 'Next 60 Days', days: 60 },
@@ -295,12 +299,12 @@ const WishlistFormContent: React.FC<WishlistFormContentProps> = ({
                   { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
                 ]}
               >
-                <Text style={[styles.quickDateText, { color: theme.textMuted }]}>
+                <Text style={[styles.quickDateText, { color: theme.textMuted }]} numberOfLines={1}>
                   {preset.label}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* 5. Product Link / URL (Optional) */}

@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  useWindowDimensions,
 } from 'react-native';
 import {
   Clock,

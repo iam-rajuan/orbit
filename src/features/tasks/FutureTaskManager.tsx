@@ -847,11 +847,15 @@ export const FutureTaskManager: React.FC = () => {
                 </ScrollView>
 
                 {/* Horizon pills */}
-                <View style={styles.composerHorizonRow}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.composerHorizonRow}
+                >
                   {[
                     { id: 'next_7_days', label: '⚡ Next 7 Days' },
                     { id: 'this_month', label: '📅 This Month' },
-                    { id: 'someday', label: '💡 When I Have Time' },
+                    { id: 'someday', label: '💡 Someday' },
                   ].map((hz) => {
                     const active = newHorizon === hz.id;
                     return (
@@ -864,13 +868,19 @@ export const FutureTaskManager: React.FC = () => {
                           !active && { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
                         ]}
                       >
-                        <Text style={[styles.composerMiniPillText, { color: active ? '#FFFFFF' : theme.textSecondary }]}>
+                        <Text
+                          style={[
+                            styles.composerMiniPillText,
+                            { color: active ? '#FFFFFF' : theme.textSecondary },
+                          ]}
+                          numberOfLines={1}
+                        >
                           {hz.label}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                </ScrollView>
               </View>
 
               {/* Color dots row (if open) */}
@@ -1124,6 +1134,7 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     borderRadius: 12,
     borderWidth: 1,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1217,7 +1228,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
     borderWidth: 1,
-    marginRight: 6,
   },
   composerMiniPillText: {
     fontSize: 11,
@@ -1328,6 +1338,7 @@ const styles = StyleSheet.create({
   noteCard: {
     borderRadius: 12,
     borderWidth: 1,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,

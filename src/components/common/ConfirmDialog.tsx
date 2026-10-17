@@ -86,9 +86,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 20,
+    flexWrap: 'wrap',
   },
   btn: {
     minWidth: 96,
+    flexShrink: 1,
   },
 });
 

@@ -550,8 +550,7 @@ export const FutureTaskManager: React.FC = () => {
           style={[
             styles.searchBox,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
             },
           ]}
         >
@@ -783,7 +782,7 @@ export const FutureTaskManager: React.FC = () => {
                       <TextInput
                         style={[
                           styles.composerChecklistInput,
-                          { color: theme.textPrimary, borderColor: theme.border },
+                          { color: theme.textPrimary },
                         ]}
                         placeholder="List item"
                         placeholderTextColor={theme.textMuted}
@@ -1067,9 +1066,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 0,
+    paddingHorizontal: 14,
   },
   searchIcon: {
     marginRight: 8,
@@ -1078,6 +1077,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     paddingVertical: 4,
+    outlineStyle: 'none' as any,
   },
   clearSearchBtn: {
     padding: 4,
@@ -1178,6 +1178,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     padding: 0,
+    borderWidth: 0,
+    outlineStyle: 'none' as any,
   },
   composerPinBtn: {
     padding: 4,
@@ -1188,6 +1190,8 @@ const styles = StyleSheet.create({
     minHeight: 65,
     padding: 0,
     marginBottom: 10,
+    borderWidth: 0,
+    outlineStyle: 'none' as any,
   },
   composerChecklistBlock: {
     marginBottom: 10,
@@ -1204,7 +1208,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
-    borderWidth: 1,
+    borderWidth: 0,
+    outlineStyle: 'none' as any,
   },
   removeChkBtn: {
     padding: 4,

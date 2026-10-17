@@ -35,6 +35,8 @@ export interface Task {
   horizon?: TaskHorizon; // 'next_7_days' | 'this_month' | 'someday'
   estimatedTime?: string; // e.g. "15m", "30m", "1h", "2h+"
   isUpcoming?: boolean; // marks task as part of future/upcoming backlog
+  pinned?: boolean; // Google Keep pin to top
+  color?: string; // Google Keep note color palette key (coral, peach, mint, sage, fog, storm, dusk, blossom, clay, chalk)
   completed: boolean;
   completedAt?: string;
   createdAt: string;

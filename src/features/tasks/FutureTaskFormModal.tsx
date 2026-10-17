@@ -24,7 +24,10 @@ import {
   AlertCircle,
   Flag,
   Layers,
+  Pin,
+  Palette,
 } from 'lucide-react-native';
+import { KEEP_COLORS } from './keepTheme';
 
 interface FutureTaskFormModalProps {
   visible: boolean;
@@ -80,6 +83,8 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
   const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority || 'Medium');
   const [horizon, setHorizon] = useState<TaskHorizon>(taskToEdit?.horizon || 'next_7_days');
   const [estimatedTime, setEstimatedTime] = useState(taskToEdit?.estimatedTime || '30m');
+  const [color, setColor] = useState(taskToEdit?.color || 'default');
+  const [pinned, setPinned] = useState(taskToEdit?.pinned || false);
   const [targetDate, setTargetDate] = useState(
     taskToEdit?.date && taskToEdit.date !== 'someday' ? taskToEdit.date : offsetDateKey(getTodayKey(), 3)
   );
@@ -113,6 +118,8 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           date: finalDate,
           dueDate: finalDate !== 'someday' ? finalDate : undefined,
           isUpcoming: true,
+          pinned,
+          color,
           updatedAt: now,
         };
         await updateTask(updated);
@@ -131,6 +138,8 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           date: finalDate,
           dueDate: finalDate !== 'someday' ? finalDate : undefined,
           isUpcoming: true,
+          pinned,
+          color,
           completed: false,
           createdAt: now,
           updatedAt: now,
@@ -149,18 +158,41 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
     <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTitleGroup}>
-          <View style={styles.iconBadge}>
-            <Sparkles size={18} color="#8B5CF6" />
+        <View style={styles.headerRow}>
+          <View style={styles.headerTitleGroup}>
+            <View style={styles.iconBadge}>
+              <Sparkles size={18} color="#8B5CF6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
+                {taskToEdit ? 'Edit Upcoming Task' : 'Add Future Task Ahead'}
+              </Text>
+              <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
+                Plan ahead with Google Keep simplicity — notes, colors & tags
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-              {taskToEdit ? 'Edit Upcoming Task' : 'Add Future Task Ahead'}
-            </Text>
-            <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-              Plan ahead with headings, notes & time estimates — complete when you have time
-            </Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => setPinned(!pinned)}
+            style={[
+              styles.pinBtn,
+              {
+                backgroundColor: pinned
+                  ? isDark
+                    ? 'rgba(245, 158, 11, 0.25)'
+                    : '#FEF3C7'
+                  : theme.surfaceSubtle,
+                borderColor: pinned ? '#F59E0B' : theme.border,
+              },
+            ]}
+            accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
+          >
+            <Pin
+              size={16}
+              color={pinned ? '#D97706' : theme.textSecondary}
+              fill={pinned ? '#D97706' : 'none'}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -440,6 +472,54 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
         </View>
       </View>
 
+      {/* Google Keep Color Palette */}
+      <View style={styles.formGroup}>
+        <View style={styles.labelRow}>
+          <Palette size={13} color={theme.textSecondary} />
+          <Text style={[styles.label, { color: theme.textPrimary }]}>Note Color</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.colorPaletteRow}
+        >
+          {KEEP_COLORS.map((c) => {
+            const active = color === c.id;
+            const swatchBg = isDark ? c.darkBg : c.lightBg;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                onPress={() => setColor(c.id)}
+                style={[
+                  styles.colorSwatch,
+                  {
+                    backgroundColor: swatchBg,
+                    borderColor: active
+                      ? isDark
+                        ? '#FFF'
+                        : '#0F172A'
+                      : isDark
+                      ? 'rgba(255,255,255,0.18)'
+                      : 'rgba(0,0,0,0.12)',
+                    borderWidth: active ? 2.5 : 1,
+                  },
+                ]}
+                accessibilityLabel={c.name}
+              >
+                {active && (
+                  <View
+                    style={[
+                      styles.colorCheckDot,
+                      { backgroundColor: isDark ? '#FFF' : '#0F172A' },
+                    ]}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       {/* 6. Summary / One-liner description */}
       <View style={styles.formGroup}>
         <Text style={[styles.label, { color: theme.textPrimary }]}>
@@ -541,10 +621,42 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.15)',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   headerTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+  },
+  pinBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorPaletteRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  colorSwatch: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorCheckDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   iconBadge: {
     width: 36,

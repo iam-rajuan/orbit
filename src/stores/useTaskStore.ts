@@ -30,6 +30,8 @@ interface TaskState {
   getFilteredTasks: (date: string) => Task[];
   getTaskProgress: (date: string) => { total: number; completed: number; pending: number; percentage: number };
   moveToToday: (taskId: string, todayDate: string) => Promise<void>;
+  togglePinTask: (id: string) => Promise<void>;
+  updateTaskColor: (id: string, color: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -194,6 +196,30 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       date: todayDate,
       isUpcoming: false,
       horizon: 'today' as any,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
+  },
+
+  togglePinTask: async (id: string) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const updated: Task = {
+      ...target,
+      pinned: !target.pinned,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
+  },
+
+  updateTaskColor: async (id: string, color: string) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const updated: Task = {
+      ...target,
+      color,
       updatedAt: new Date().toISOString(),
     };
     await updateTask(updated);

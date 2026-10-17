@@ -85,6 +85,9 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
   const [estimatedTime, setEstimatedTime] = useState(taskToEdit?.estimatedTime || '30m');
   const [color, setColor] = useState(taskToEdit?.color || 'default');
   const [pinned, setPinned] = useState(taskToEdit?.pinned || false);
+  const [checklist, setChecklist] = useState<{ id: string; text: string; completed: boolean }[]>(
+    taskToEdit?.checklist || []
+  );
   const [targetDate, setTargetDate] = useState(
     taskToEdit?.date && taskToEdit.date !== 'someday' ? taskToEdit.date : offsetDateKey(getTodayKey(), 3)
   );
@@ -120,6 +123,7 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           isUpcoming: true,
           pinned,
           color,
+          checklist: checklist.length > 0 ? checklist : taskToEdit.checklist,
           updatedAt: now,
         };
         await updateTask(updated);
@@ -130,6 +134,7 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           title: title.trim(),
           description: description.trim() || undefined,
           notes: notes.trim() || undefined,
+          checklist: checklist.length > 0 ? checklist : undefined,
           category,
           type: 'Project',
           priority,
@@ -540,6 +545,40 @@ const FutureTaskFormContent: React.FC<FormContentProps> = ({ taskToEdit, onClose
           onChangeText={setDescription}
         />
       </View>
+
+      {/* Checklist items if any */}
+      {checklist.length > 0 && (
+        <View style={styles.formGroup}>
+          <Text style={[styles.label, { color: theme.textPrimary, marginBottom: 8 }]}>
+            Checklist Items
+          </Text>
+          {checklist.map((chk) => (
+            <TouchableOpacity
+              key={chk.id}
+              onPress={() => {
+                setChecklist((prev) =>
+                  prev.map((item) =>
+                    item.id === chk.id ? { ...item, completed: !item.completed } : item
+                  )
+                );
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
+            >
+              <Text style={{ fontSize: 16, color: chk.completed ? '#10B981' : theme.textSecondary }}>
+                {chk.completed ? '☑' : '☐'}
+              </Text>
+              <Text
+                style={[
+                  { fontSize: 13, color: theme.textPrimary, flex: 1 },
+                  chk.completed && { textDecorationLine: 'line-through', opacity: 0.6 },
+                ]}
+              >
+                {chk.text}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* 7. Detailed Notes, Bullet Steps & URLs */}
       <View style={styles.formGroup}>

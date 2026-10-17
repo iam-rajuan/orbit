@@ -37,6 +37,7 @@ export interface Task {
   isUpcoming?: boolean; // marks task as part of future/upcoming backlog
   pinned?: boolean; // Google Keep pin to top
   color?: string; // Google Keep note color palette key (coral, peach, mint, sage, fog, storm, dusk, blossom, clay, chalk)
+  checklist?: { id: string; text: string; completed: boolean }[]; // Google Keep checklist items
   completed: boolean;
   completedAt?: string;
   createdAt: string;

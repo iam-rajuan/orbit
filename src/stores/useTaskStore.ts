@@ -32,6 +32,7 @@ interface TaskState {
   moveToToday: (taskId: string, todayDate: string) => Promise<void>;
   togglePinTask: (id: string) => Promise<void>;
   updateTaskColor: (id: string, color: string) => Promise<void>;
+  toggleChecklistItem: (taskId: string, itemId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -220,6 +221,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const updated: Task = {
       ...target,
       color,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
+  },
+
+  toggleChecklistItem: async (taskId: string, itemId: string) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target || !target.checklist) return;
+    const updatedChecklist = target.checklist.map((item) =>
+      item.id === itemId ? { ...item, completed: !item.completed } : item
+    );
+    const updated: Task = {
+      ...target,
+      checklist: updatedChecklist,
       updatedAt: new Date().toISOString(),
     };
     await updateTask(updated);

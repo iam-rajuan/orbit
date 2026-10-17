@@ -104,7 +104,7 @@ export const TaskManager: React.FC = () => {
             activeOpacity={0.7}
           >
             <CheckSquare
-              size={16}
+              size={14}
               color={activeView === 'today' ? '#8B5CF6' : theme.textSecondary}
             />
             <Text
@@ -115,8 +115,9 @@ export const TaskManager: React.FC = () => {
                   fontWeight: activeView === 'today' ? '700' : '500',
                 },
               ]}
+              numberOfLines={1}
             >
-              {"Today's Tasks"}
+              Today
             </Text>
           </TouchableOpacity>
 
@@ -132,7 +133,7 @@ export const TaskManager: React.FC = () => {
             activeOpacity={0.7}
           >
             <Sparkles
-              size={16}
+              size={14}
               color={activeView === 'upcoming' ? '#8B5CF6' : theme.textSecondary}
             />
             <Text
@@ -143,8 +144,9 @@ export const TaskManager: React.FC = () => {
                   fontWeight: activeView === 'upcoming' ? '700' : '500',
                 },
               ]}
+              numberOfLines={1}
             >
-              Future & Upcoming Tasks
+              Upcoming
             </Text>
           </TouchableOpacity>
         </View>
@@ -699,31 +701,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topBarWrapper: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   viewSwitchContainer: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 4,
-    gap: 6,
+    borderRadius: 10,
+    padding: 3,
+    height: 38,
+    alignItems: 'center',
   },
   viewSwitchButton: {
     flex: 1,
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    gap: 6,
+    borderRadius: 8,
+    paddingHorizontal: 8,
   },
   viewSwitchButtonActive: {
     borderWidth: 1,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 1,
   },

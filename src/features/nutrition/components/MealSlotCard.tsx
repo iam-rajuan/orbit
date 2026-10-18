@@ -45,16 +45,23 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
   const getSlotIcon = () => {
     switch (slot.iconName) {
       case 'Sunrise':
-        return <Sunrise size={17} color="#F59E0B" />;
+        return <Sunrise size={16} color="#F59E0B" />;
       case 'Sun':
-        return <Sun size={17} color="#F59E0B" />;
+        return <Sun size={16} color="#F59E0B" />;
       case 'Coffee':
-        return <Coffee size={17} color="#10B981" />;
+        return <Coffee size={16} color="#10B981" />;
       case 'Moon':
-        return <Moon size={17} color="#6366F1" />;
+        return <Moon size={16} color="#6366F1" />;
       default:
-        return <UtensilsCrossed size={17} color={theme.primary} />;
+        return <UtensilsCrossed size={16} color={theme.primary} />;
     }
+  };
+
+  // Helper for clean, non-repetitive serving display
+  const formatServing = (portion: number, unit: string) => {
+    if (!portion || portion === 1) return unit;
+    if (unit.startsWith(`${portion} `)) return unit;
+    return `${portion}x ${unit}`;
   };
 
   return (
@@ -80,20 +87,20 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
           >
             {getSlotIcon()}
           </View>
-          <View>
+          <View style={styles.headerInfo}>
             <View style={styles.titleRow}>
               <Text style={[styles.slotName, { color: theme.textPrimary }]}>{slot.name}</Text>
               <View style={styles.timeTag}>
-                <Clock size={11} color={theme.textMuted} />
+                <Clock size={10} color={theme.textMuted} />
                 <Text style={[styles.timeText, { color: theme.textMuted }]}>{slot.time}</Text>
               </View>
             </View>
 
-            {/* Macro Summary Line */}
+            {/* Macro Summary Line - clean and compact */}
             {entries.length > 0 && (
               <View style={styles.macroPillsRow}>
-                <Text style={[styles.macroPill, { color: theme.textSecondary }]}>
-                  <Text style={{ fontWeight: '800', color: theme.textPrimary }}>{slotCals}</Text> kcal
+                <Text style={[styles.slotCalsText, { color: theme.textPrimary }]}>
+                  {slotCals} <Text style={styles.kcalUnit}>kcal</Text>
                 </Text>
                 <Text style={styles.dot}>•</Text>
                 <Text style={[styles.macroPill, { color: '#10B981' }]}>
@@ -121,60 +128,50 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
             { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
           ]}
         >
-          <Plus size={14} color={theme.primary} />
+          <Plus size={13} color={theme.primary} />
           <Text style={[styles.addFoodBtnText, { color: theme.primary }]}>Add</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Entries List or Empty Prompt */}
+      {/* Entries List - Clean list view with hairline dividers (no nested card boxes) */}
       {entries.length > 0 ? (
-        <View style={styles.entriesList}>
-          {entries.map((entry) => (
+        <View style={[styles.entriesList, { borderTopColor: theme.border }]}>
+          {entries.map((entry, index) => (
             <View
               key={entry.id}
               style={[
-                styles.entryItem,
-                {
-                  backgroundColor: theme.surfaceSubtle,
-                  borderColor: theme.border,
-                },
+                styles.entryRow,
+                index > 0 && [
+                  styles.entryDivider,
+                  { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+                ],
               ]}
             >
-              <View style={styles.entryMain}>
+              <View style={styles.entryLeft}>
                 <Text style={[styles.entryName, { color: theme.textPrimary }]} numberOfLines={1}>
                   {entry.name}
                 </Text>
-                <View style={styles.entrySubRow}>
-                  <Text style={[styles.portionBadge, { color: theme.textMuted }]}>
-                    {entry.portion !== 1 ? `${entry.portion}x ` : ''}{entry.servingUnit}
-                  </Text>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={[styles.entryCals, { color: isDark ? '#A5B4FC' : '#4F46E5' }]}>
-                    {entry.calories} kcal
-                  </Text>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={[styles.entryMacroText, { color: '#10B981' }]}>
-                    {Math.round(entry.protein)}g P
-                  </Text>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={[styles.entryMacroText, { color: '#F59E0B' }]}>
-                    {Math.round(entry.carbs)}g C
-                  </Text>
-                  <Text style={styles.dot}>•</Text>
-                  <Text style={[styles.entryMacroText, { color: '#EC4899' }]}>
-                    {Math.round(entry.fat)}g F
-                  </Text>
-                </View>
+                <Text style={[styles.entryServing, { color: theme.textMuted }]} numberOfLines={1}>
+                  {formatServing(entry.portion, entry.servingUnit)}
+                </Text>
               </View>
 
-              {/* Delete Button */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => onDeleteEntry(entry.id)}
-                style={styles.deleteBtn}
-              >
-                <Trash2 size={14} color={theme.textMuted} />
-              </TouchableOpacity>
+              <View style={styles.entryRight}>
+                <Text style={[styles.entryCals, { color: theme.textPrimary }]}>
+                  {entry.calories}{' '}
+                  <Text style={[styles.entryCalsUnit, { color: theme.textMuted }]}>kcal</Text>
+                </Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  onPress={() => onDeleteEntry(entry.id)}
+                  style={styles.deleteBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel={`Remove ${entry.name}`}
+                >
+                  <Trash2 size={13} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
@@ -185,7 +182,7 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
           style={[styles.emptySlot, { borderColor: theme.border }]}
         >
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>
-            No food logged yet • Tap to log {slot.name.toLowerCase()}
+            No food logged yet • Tap to add
           </Text>
         </TouchableOpacity>
       )}
@@ -197,11 +194,12 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginBottom: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 1,
   },
   header: {
     flexDirection: 'row',
@@ -215,20 +213,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconWrapper: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerInfo: {
+    flex: 1,
     justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   slotName: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   timeTag: {
@@ -246,75 +248,87 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  macroPill: {
+  slotCalsText: {
     fontSize: 11,
+    fontWeight: '700',
+  },
+  kcalUnit: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: '#9CA3AF',
+  },
+  macroPill: {
+    fontSize: 10,
     fontWeight: '600',
   },
   dot: {
     color: '#9CA3AF',
-    fontSize: 10,
+    fontSize: 9,
   },
   addFoodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
     cursor: 'pointer' as any,
   },
   addFoodBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   entriesList: {
-    marginTop: 12,
-    gap: 6,
+    marginTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 2,
   },
-  entryItem: {
+  entryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+    paddingHorizontal: 2,
   },
-  entryMain: {
+  entryDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  entryLeft: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
   entryName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
-  entrySubRow: {
+  entryServing: {
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
+  },
+  entryRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  portionBadge: {
-    fontSize: 10,
-    fontWeight: '500',
+    gap: 8,
   },
   entryCals: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
   },
-  entryMacroText: {
+  entryCalsUnit: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   deleteBtn: {
-    padding: 6,
+    padding: 4,
     cursor: 'pointer' as any,
   },
   emptySlot: {
-    marginTop: 10,
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginTop: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderStyle: 'dashed',
     alignItems: 'center',

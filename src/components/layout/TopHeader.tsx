@@ -45,19 +45,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </View>
 
       <View style={styles.actions}>
-        {/* Quick Theme Toggle Button - Harmonized for Light & Dark Modes */}
+        {/* Quick Theme Toggle Button - Harmonized with Theme Surface */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={toggleTheme}
           style={[
             styles.themeToggleBtn,
             {
-              backgroundColor: isDark
-                ? 'rgba(251, 191, 36, 0.12)'
-                : 'rgba(79, 70, 229, 0.08)',
-              borderColor: isDark
-                ? 'rgba(251, 191, 36, 0.25)'
-                : 'rgba(79, 70, 229, 0.2)',
+              backgroundColor: theme.surfaceSubtle,
+              borderColor: isDark ? theme.border : theme.borderSubtle,
             },
           ]}
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}

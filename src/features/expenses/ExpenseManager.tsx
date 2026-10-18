@@ -33,6 +33,7 @@ import { WishlistManager } from '../wishlist/WishlistManager';
 export const ExpenseManager: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 860;
+  const isMobile = width < 500;
 
   const params = useLocalSearchParams<{ tab?: string }>();
   const [selectedTab, setSelectedTab] = useState<'expenses' | 'wishlist' | null>(null);
@@ -90,7 +91,7 @@ export const ExpenseManager: React.FC = () => {
             activeOpacity={0.7}
           >
             <Receipt
-              size={16}
+              size={15}
               color={activeView === 'expenses' ? '#F43F5E' : theme.textSecondary}
             />
             <Text
@@ -101,6 +102,7 @@ export const ExpenseManager: React.FC = () => {
                   fontWeight: activeView === 'expenses' ? '700' : '500',
                 },
               ]}
+              numberOfLines={1}
             >
               Daily Expenses
             </Text>
@@ -118,7 +120,7 @@ export const ExpenseManager: React.FC = () => {
             activeOpacity={0.7}
           >
             <Gift
-              size={16}
+              size={15}
               color={activeView === 'wishlist' ? '#EC4899' : theme.textSecondary}
             />
             <Text
@@ -129,8 +131,9 @@ export const ExpenseManager: React.FC = () => {
                   fontWeight: activeView === 'wishlist' ? '700' : '500',
                 },
               ]}
+              numberOfLines={1}
             >
-              Wishlist & Buy Later
+              {isMobile ? 'Wishlist & Later' : 'Wishlist & Buy Later'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -635,25 +638,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topBarWrapper: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 4,
   },
   viewSwitchContainer: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 4,
-    gap: 6,
+    borderRadius: 12,
+    padding: 3,
+    gap: 4,
   },
   viewSwitchButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 9,
   },
   viewSwitchButtonActive: {
     borderWidth: 1,
@@ -664,7 +667,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   viewSwitchText: {
-    fontSize: 13,
+    fontSize: 12.5,
+    flexShrink: 1,
   },
   container: {
     padding: 20,

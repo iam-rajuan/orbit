@@ -6,8 +6,6 @@ import {
   Droplets,
   Plus,
   Minus,
-  CheckCircle2,
-  Circle,
   FileEdit,
   Check,
 } from 'lucide-react-native';
@@ -17,7 +15,7 @@ interface WaterHabitCardProps {
   waterTargetMl: number;
   habit?: DailyHabitLog;
   onLogWater: (delta: number) => void;
-  onToggleHabit: (key: 'stuckToDiet' | 'noJunkFood' | 'supplementsTaken') => void;
+  onToggleHabit?: (key: 'stuckToDiet' | 'noJunkFood' | 'supplementsTaken') => void;
   onSaveNotes: (notes: string) => void;
 }
 
@@ -26,7 +24,6 @@ export const WaterHabitCard: React.FC<WaterHabitCardProps> = ({
   waterTargetMl,
   habit,
   onLogWater,
-  onToggleHabit,
   onSaveNotes,
 }) => {
   const { theme, isDark } = useTheme();
@@ -132,88 +129,6 @@ export const WaterHabitCard: React.FC<WaterHabitCardProps> = ({
             )}
           </View>
         </View>
-
-        {/* Vertical Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        {/* Right Column: Daily Food Habits */}
-        <View style={styles.habitsColumn}>
-          <Text style={[styles.columnTitle, { color: theme.textPrimary, marginBottom: 8 }]}>
-            Food Habits
-          </Text>
-
-          {/* Habit 1: Stuck to Meal Plan */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onToggleHabit('stuckToDiet')}
-            style={styles.habitRow}
-          >
-            {habit?.stuckToDiet ? (
-              <CheckCircle2 size={16} color="#10B981" />
-            ) : (
-              <Circle size={16} color={theme.textMuted} />
-            )}
-            <Text
-              style={[
-                styles.habitLabel,
-                {
-                  color: habit?.stuckToDiet ? theme.textPrimary : theme.textSecondary,
-                  fontWeight: habit?.stuckToDiet ? '700' : '500',
-                },
-              ]}
-            >
-              Stuck to Meal Plan
-            </Text>
-          </TouchableOpacity>
-
-          {/* Habit 2: No Junk / Fast Food */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onToggleHabit('noJunkFood')}
-            style={styles.habitRow}
-          >
-            {habit?.noJunkFood ? (
-              <CheckCircle2 size={16} color="#10B981" />
-            ) : (
-              <Circle size={16} color={theme.textMuted} />
-            )}
-            <Text
-              style={[
-                styles.habitLabel,
-                {
-                  color: habit?.noJunkFood ? theme.textPrimary : theme.textSecondary,
-                  fontWeight: habit?.noJunkFood ? '700' : '500',
-                },
-              ]}
-            >
-              No Junk / Fast Food
-            </Text>
-          </TouchableOpacity>
-
-          {/* Habit 3: Supplements / Vitamins */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onToggleHabit('supplementsTaken')}
-            style={styles.habitRow}
-          >
-            {habit?.supplementsTaken ? (
-              <CheckCircle2 size={16} color="#10B981" />
-            ) : (
-              <Circle size={16} color={theme.textMuted} />
-            )}
-            <Text
-              style={[
-                styles.habitLabel,
-                {
-                  color: habit?.supplementsTaken ? theme.textPrimary : theme.textSecondary,
-                  fontWeight: habit?.supplementsTaken ? '700' : '500',
-                },
-              ]}
-            >
-              Supplements / Vitamins
-            </Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Habit Notes Section */}
@@ -281,19 +196,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   contentRow: {
-    flexDirection: 'row',
-    gap: 16,
+    width: '100%',
   },
   waterColumn: {
-    flex: 1,
-  },
-  habitsColumn: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 6,
-  },
-  divider: {
-    width: 1,
+    width: '100%',
   },
   columnHeader: {
     flexDirection: 'row',
@@ -362,16 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     cursor: 'pointer' as any,
   },
-  habitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 3,
-    cursor: 'pointer' as any,
-  },
-  habitLabel: {
-    fontSize: 12,
-  },
+
   notesSection: {
     borderTopWidth: 1,
     marginTop: 14,

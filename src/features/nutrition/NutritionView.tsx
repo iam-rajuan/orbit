@@ -83,7 +83,7 @@ export const NutritionView: React.FC = () => {
           {
             backgroundColor: theme.surface,
             borderBottomColor: theme.border,
-            paddingHorizontal: isMobile ? 14 : 24,
+            paddingHorizontal: isMobile ? 12 : 24,
           },
         ]}
       >
@@ -100,7 +100,7 @@ export const NutritionView: React.FC = () => {
             ]}
           >
             <UtensilsCrossed
-              size={15}
+              size={14}
               color={mainTab === 'log' ? theme.primary : theme.textSecondary}
             />
             <Text
@@ -126,7 +126,7 @@ export const NutritionView: React.FC = () => {
             ]}
           >
             <BarChart3
-              size={15}
+              size={14}
               color={mainTab === 'analytics' ? theme.primary : theme.textSecondary}
             />
             <Text
@@ -152,7 +152,7 @@ export const NutritionView: React.FC = () => {
             ]}
           >
             <Scale
-              size={15}
+              size={14}
               color={mainTab === 'calculator' ? theme.primary : theme.textSecondary}
             />
             <Text
@@ -162,47 +162,46 @@ export const NutritionView: React.FC = () => {
                 mainTab === 'calculator' && styles.modeTabTextActive,
               ]}
             >
-              Weight Planner
+              {isMobile ? 'Planner' : 'Weight Planner'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Quick action buttons on subheader */}
-        <View style={styles.quickActions}>
-          {mainTab === 'log' && (
+        {!isMobile && (
+          <View style={styles.quickActions}>
+            {mainTab === 'log' && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleCopyYesterday}
+                style={[
+                  styles.quickActionBtn,
+                  { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                ]}
+                accessibilityLabel="Copy yesterday's meals"
+              >
+                <Copy size={13} color={theme.textSecondary} />
+                <Text style={[styles.quickActionText, { color: theme.textSecondary }]}>
+                  Copy Yesterday
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={handleCopyYesterday}
+              onPress={() => setIsRoutineModalOpen(true)}
               style={[
                 styles.quickActionBtn,
                 { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
               ]}
-              accessibilityLabel="Copy yesterday's meals"
+              accessibilityLabel="Configure meal routine"
             >
-              <Copy size={13} color={theme.textSecondary} />
-              {!isMobile && (
-                <Text style={[styles.quickActionText, { color: theme.textSecondary }]}>
-                  Copy Yesterday
-                </Text>
-              )}
+              <Sliders size={13} color={theme.textSecondary} />
+              <Text style={[styles.quickActionText, { color: theme.textSecondary }]}>
+                Routine ({mealSlots.length} Meals)
+              </Text>
             </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setIsRoutineModalOpen(true)}
-            style={[
-              styles.quickActionBtn,
-              { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
-            ]}
-            accessibilityLabel="Configure meal routine"
-          >
-            <Sliders size={13} color={theme.textSecondary} />
-            <Text style={[styles.quickActionText, { color: theme.textSecondary }]}>
-              {isMobile ? `${mealSlots.length} Meals` : `Routine (${mealSlots.length} Meals)`}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        )}
       </View>
 
       {/* Copied Success Toast */}
@@ -247,18 +246,62 @@ export const NutritionView: React.FC = () => {
             {/* 4. Meal Routine Slot Cards (Breakfast, Lunch, Habit Snack, Dinner, etc.) */}
             <View style={styles.mealSlotsSection}>
               <View style={styles.mealSlotsHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-                  Daily Meal Plan ({mealSlots.length} meals)
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setIsRoutineModalOpen(true)}
-                  style={styles.editRoutineLink}
-                >
-                  <Text style={[styles.editRoutineLinkText, { color: theme.primary }]}>
-                    Customize Routine
+                <View style={styles.mealSlotsTitleGroup}>
+                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+                    Daily Meals
                   </Text>
-                </TouchableOpacity>
+                  <View
+                    style={[
+                      styles.countBadge,
+                      {
+                        backgroundColor: theme.surfaceSubtle,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.countBadgeText, { color: theme.textMuted }]}>
+                      {mealSlots.length}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.mealSlotsActions}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleCopyYesterday}
+                    style={[
+                      styles.slotHeaderBtn,
+                      {
+                        backgroundColor: theme.surfaceSubtle,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    accessibilityLabel="Copy yesterday's meals"
+                  >
+                    <Copy size={12} color={theme.textSecondary} />
+                    <Text style={[styles.slotHeaderBtnText, { color: theme.textSecondary }]}>
+                      Copy Yesterday
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setIsRoutineModalOpen(true)}
+                    style={[
+                      styles.slotHeaderBtn,
+                      {
+                        backgroundColor: theme.surfaceSubtle,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    accessibilityLabel="Customize routine"
+                  >
+                    <Sliders size={12} color={theme.textSecondary} />
+                    <Text style={[styles.slotHeaderBtnText, { color: theme.textSecondary }]}>
+                      Routine
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {mealSlots.map((slot) => {
@@ -389,19 +432,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  mealSlotsTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
-  editRoutineLink: {
-    paddingVertical: 2,
+  countBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  countBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  mealSlotsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  slotHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
     cursor: 'pointer' as any,
   },
-  editRoutineLinkText: {
-    fontSize: 12,
-    fontWeight: '700',
+  slotHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

@@ -17,6 +17,7 @@ import { WishlistItem } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { generateId } from '../../utils/id';
 import { WishlistFormModal } from './WishlistFormModal';
+import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import {
   Gift,
@@ -179,7 +180,11 @@ export const WishlistManager: React.FC = () => {
       >
         <View style={styles.toolbarTopRow}>
           {/* Status Filters */}
-          <View style={styles.statusTabs}>
+          <HorizontalScrollRow
+            edgeToEdge={false}
+            gap={6}
+            style={{ flex: 1, marginRight: 8 }}
+          >
             {[
               { id: 'active', label: `Active (${stats.activeCount})` },
               { id: 'purchased', label: `Bought (${stats.purchasedCount})` },
@@ -216,7 +221,7 @@ export const WishlistManager: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </HorizontalScrollRow>
 
           {/* Add Item Button */}
           <TouchableOpacity

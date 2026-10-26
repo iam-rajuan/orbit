@@ -56,16 +56,33 @@ button:active, a:active, [role="button"]:active {
   transform: scale(0.98);
 }
 
-/* Focus ring for accessibility */
-:focus-visible {
-  outline: 2px solid rgba(79, 70, 229, 0.5);
-  outline-offset: 2px;
-  border-radius: 4px;
+/* Remove all outline and focus rings on textfields, inputs, textareas globally */
+*:focus,
+*:focus-visible,
+input,
+textarea,
+select,
+input:focus,
+textarea:focus,
+select:focus,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
 }
 
 /* Remove default input styling */
 input, textarea, select {
   font-family: inherit;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Smooth scroll on iOS */

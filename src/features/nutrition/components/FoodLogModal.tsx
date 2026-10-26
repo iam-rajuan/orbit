@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AppModal } from '../../../components/ui/AppModal';
+import { HorizontalScrollRow } from '../../../components/ui/HorizontalScrollRow';
 import { FoodItem } from '../../../types/nutrition';
 import { useNutritionStore } from '../../../stores/useNutritionStore';
 import {
@@ -235,10 +236,10 @@ export const FoodLogModal: React.FC<FoodLogModalProps> = ({
             </View>
 
             {/* Categories horizontal scroll */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesScroll}
+            <HorizontalScrollRow
+              edgeToEdge={false}
+              gap={6}
+              style={{ marginBottom: 12 }}
             >
               {categories.map((cat) => {
                 const isActive = selectedCategory === cat;
@@ -268,7 +269,7 @@ export const FoodLogModal: React.FC<FoodLogModalProps> = ({
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </HorizontalScrollRow>
 
             {/* Food List */}
             <ScrollView style={styles.foodListScroll} showsVerticalScrollIndicator={false}>

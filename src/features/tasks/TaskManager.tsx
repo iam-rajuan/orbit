@@ -36,6 +36,7 @@ import { generateId } from '../../utils/id';
 import { FutureTaskManager } from './FutureTaskManager';
 import { ForwardBadge } from './ForwardBadge';
 import { SwipeableTaskCard } from './SwipeableTaskCard';
+import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { offsetDateKey, formatAdaptiveDate } from '../../utils/date';
 
 export const TaskManager: React.FC = () => {
@@ -374,11 +375,10 @@ export const TaskManager: React.FC = () => {
             </View>
           </View>
 
-          {/* 3. Filter Chips Row */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterChipsRow}
+          {/* 3. Filter Chips Row (Horizontally slideable & mouse-draggable) */}
+          <HorizontalScrollRow
+            paddingHorizontal={16}
+            gap={6}
           >
             {(['ALL', 'PENDING', 'COMPLETED'] as const).map((st) => {
               const active = filterStatus === st;
@@ -459,7 +459,7 @@ export const TaskManager: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </HorizontalScrollRow>
 
           {/* 4. Quick-Add Task Composer for Today (Borderless text inputs!) */}
           <View style={styles.composerWrapper}>
@@ -468,9 +468,7 @@ export const TaskManager: React.FC = () => {
                 styles.composerCard,
                 {
                   backgroundColor: theme.surface,
-                  borderColor: isComposerExpanded
-                    ? (isDark ? 'rgba(139, 92, 246, 0.5)' : '#8B5CF6')
-                    : theme.border,
+                  borderColor: theme.border,
                 },
               ]}
             >
@@ -514,11 +512,10 @@ export const TaskManager: React.FC = () => {
                   />
 
                   {/* Category Selector Pills */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
+                  <HorizontalScrollRow
+                    edgeToEdge={false}
+                    gap={6}
                     style={{ marginBottom: 8 }}
-                    contentContainerStyle={{ gap: 6 }}
                   >
                     {settings.taskCategories.map((c) => {
                       const active = newCategory === c;
@@ -546,7 +543,7 @@ export const TaskManager: React.FC = () => {
                         </TouchableOpacity>
                       );
                     })}
-                  </ScrollView>
+                  </HorizontalScrollRow>
 
                   {/* Priority Selector Pills */}
                   <View style={styles.composerPriorityRow}>
@@ -947,7 +944,7 @@ export const TaskManager: React.FC = () => {
 
                       {/* Description or Notes Snippet (Indented nicely) */}
                       {(hasDesc || task.notes) ? (
-                        <View style={styles.mobileDescArea}>
+                        <View style={[styles.mobileDescArea, task.completed && styles.mobileContentCompleted]}>
                           {hasDesc && (
                             <Text
                               style={[styles.mobileDescText, { color: theme.textSecondary }]}
@@ -968,7 +965,7 @@ export const TaskManager: React.FC = () => {
                       ) : null}
 
                       {/* Footer Row: Metadata Chips */}
-                      <View style={styles.mobileCardFooter}>
+                      <View style={[styles.mobileCardFooter, task.completed && styles.mobileContentCompleted]}>
                         <View style={styles.mobileCardChipsRow}>
                           <AppBadge label={task.category} variant="category" size="sm" />
                           <AppBadge
@@ -1502,7 +1499,10 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   mobileTaskCardCompleted: {
-    opacity: 0.65,
+    // Keep background solid and opaque so swipe actions never bleed through
+  },
+  mobileContentCompleted: {
+    opacity: 0.6,
   },
   mobileCardHeader: {
     flexDirection: 'row',

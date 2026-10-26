@@ -24,6 +24,7 @@ import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppBadge } from '../../components/ui/AppBadge';
 import { AppButton } from '../../components/ui/AppButton';
+import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { formatCurrency } from '../../utils/currency';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
@@ -278,10 +279,10 @@ export const ExpenseManager: React.FC = () => {
         </View>
 
         {/* Type and Category Filter Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterPillsRow}
+        <HorizontalScrollRow
+          edgeToEdge={false}
+          gap={6}
+          style={{ paddingTop: 4 }}
         >
           <TouchableOpacity
             onPress={() => setFilterType('ALL')}
@@ -384,7 +385,7 @@ export const ExpenseManager: React.FC = () => {
               </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </HorizontalScrollRow>
       </View>
 
       {/* 3. Expense List (Desktop Spreadsheet Table vs Mobile Cards) */}

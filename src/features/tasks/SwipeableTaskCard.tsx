@@ -103,11 +103,30 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
       }),
     [translateX, snapOpen, snapClose, onSwipeStart]
   );
+  const drawerOpacity = translateX.interpolate({
+    inputRange: [-ACTION_WIDTH, -25, 0],
+    outputRange: [1, 0.4, 0],
+    extrapolate: 'clamp',
+  });
+
+  const drawerTranslateX = translateX.interpolate({
+    inputRange: [-ACTION_WIDTH, 0],
+    outputRange: [0, ACTION_WIDTH * 0.3],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={[styles.outerContainer, containerStyle]}>
-      {/* Background Action Drawer (iOS style) */}
-      <View style={styles.actionsDrawer}>
+      {/* Background Action Drawer (iOS style) - strictly hidden when closed */}
+      <Animated.View
+        style={[
+          styles.actionsDrawer,
+          {
+            opacity: drawerOpacity,
+            transform: [{ translateX: drawerTranslateX }],
+          },
+        ]}
+      >
         {/* 1. Postpone / Forward Action */}
         <TouchableOpacity
           activeOpacity={0.75}
@@ -146,7 +165,7 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
         >
           <Trash2 size={18} color="#FFFFFF" strokeWidth={2.2} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Foreground Card Surface that slides smoothly */}
       <Animated.View
@@ -193,9 +212,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 14,
     borderBottomRightRadius: 14,
     overflow: 'hidden',
+    zIndex: 1,
   },
   actionBtn: {
     width: 52,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,6 +231,7 @@ const styles = StyleSheet.create({
   },
   surface: {
     width: '100%',
+    zIndex: 2,
     ...Platform.select({
       web: {
         touchAction: 'pan-y',

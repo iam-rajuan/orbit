@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
 import { generateId } from '../../utils/id';
 import { ForwardBadge } from './ForwardBadge';
+import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import {
   Search,
   Pin,
@@ -600,10 +601,9 @@ export const FutureTaskManager: React.FC = () => {
       </View>
 
       {/* 2. Filter Chips & Color Swatches */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterChipsRow}
+      <HorizontalScrollRow
+        paddingHorizontal={16}
+        gap={6}
       >
         {HORIZON_FILTERS.map((f) => {
           const active = activeFilter === f.id;
@@ -686,7 +686,7 @@ export const FutureTaskManager: React.FC = () => {
             />
           );
         })}
-      </ScrollView>
+      </HorizontalScrollRow>
 
       {/* 3. The "Take a note..." Card Composer */}
       <View style={styles.composerWrapper}>
@@ -694,9 +694,6 @@ export const FutureTaskManager: React.FC = () => {
           style={[
             styles.composerCard,
             getKeepCardStyle(newColor, isDark, theme.surface, theme.border),
-            isComposerExpanded && {
-              borderColor: isDark ? 'rgba(139, 92, 246, 0.5)' : '#8B5CF6',
-            },
           ]}
         >
           {!isComposerExpanded ? (

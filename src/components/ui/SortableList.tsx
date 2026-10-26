@@ -44,6 +44,25 @@ interface DragState {
   translateY: number;
 }
 
+const EDGE_THRESHOLD = 110; // Distance in px from viewport top/bottom to trigger auto-scroll
+const MAX_SCROLL_SPEED = 18; // Max auto-scroll px per frame
+
+function findScrollableParent(el: any): HTMLElement | Window {
+  if (typeof window === 'undefined' || !el) return window;
+  let curr = el.parentElement;
+  while (curr && curr !== document.body && curr !== document.documentElement) {
+    const style = window.getComputedStyle(curr);
+    const overflowY = style.overflowY || style.overflow;
+    if (overflowY === 'auto' || overflowY === 'scroll') {
+      if (curr.scrollHeight > curr.clientHeight) {
+        return curr;
+      }
+    }
+    curr = curr.parentElement;
+  }
+  return window;
+}
+
 export function SortableList<T>({
   data,
   keyExtractor,
@@ -63,14 +82,20 @@ export function SortableList<T>({
     translateY: 0,
   });
 
+  const [itemHeight, setItemHeight] = useState<number>(estimatedItemHeight);
+
+  const containerRef = useRef<View>(null);
+
   // Mutable refs for rock-solid gesture tracking without stale closures
   const holdTimerRef = useRef<any>(null);
   const touchStartYRef = useRef<number>(0);
   const touchStartXRef = useRef<number>(0);
+  const currentClientYRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
   const activeStartIndexRef = useRef<number | null>(null);
   const currentTargetIndexRef = useRef<number | null>(null);
   const itemLayouts = useRef<Record<number, { y: number; height: number }>>({});
+  const autoScrollFrameRef = useRef<number | null>(null);
 
   const handleMove = useCallback(
     (from: number, to: number) => {
@@ -130,19 +155,87 @@ export function SortableList<T>({
     [data.length, getAverageItemHeight]
   );
 
-  // Clean up any pending timer on unmount
+  // Auto-scroll loop when dragging near top/bottom viewport edges
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollFrameRef.current !== null) {
+      cancelAnimationFrame(autoScrollFrameRef.current);
+      autoScrollFrameRef.current = null;
+    }
+  }, []);
+
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollFrameRef.current !== null) return;
+
+    const scrollLoop = () => {
+      if (!isDraggingRef.current) {
+        stopAutoScroll();
+        return;
+      }
+
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const clientY = currentClientYRef.current;
+        const viewportHeight = window.innerHeight;
+        let scrollDelta = 0;
+
+        // Near bottom edge of viewport -> auto-scroll DOWN
+        if (clientY > viewportHeight - EDGE_THRESHOLD) {
+          const proximity = Math.min(1, (clientY - (viewportHeight - EDGE_THRESHOLD)) / EDGE_THRESHOLD);
+          scrollDelta = Math.max(2, Math.round(proximity * MAX_SCROLL_SPEED));
+        }
+        // Near top edge of viewport -> auto-scroll UP
+        else if (clientY < EDGE_THRESHOLD && clientY > 0) {
+          const proximity = Math.min(1, (EDGE_THRESHOLD - clientY) / EDGE_THRESHOLD);
+          scrollDelta = -Math.max(2, Math.round(proximity * MAX_SCROLL_SPEED));
+        }
+
+        if (scrollDelta !== 0) {
+          const scrollParent = findScrollableParent(containerRef.current);
+          if (scrollParent && scrollParent !== window) {
+            (scrollParent as HTMLElement).scrollTop += scrollDelta;
+          } else {
+            window.scrollBy(0, scrollDelta);
+          }
+
+          // Adjust touchStartY so the dragged card remains locked right under the thumb
+          touchStartYRef.current -= scrollDelta;
+
+          // Recalculate target position with new scroll offset
+          const from = activeStartIndexRef.current ?? 0;
+          const currentY = clientY + (window.scrollY || window.pageYOffset || 0);
+          const dy = currentY - touchStartYRef.current;
+          const target = calculateTargetIndex(from, dy);
+          currentTargetIndexRef.current = target;
+
+          setDragState((prev) => ({
+            ...prev,
+            active: true,
+            targetIndex: target,
+            translateY: dy,
+          }));
+        }
+      }
+
+      autoScrollFrameRef.current = requestAnimationFrame(scrollLoop);
+    };
+
+    autoScrollFrameRef.current = requestAnimationFrame(scrollLoop);
+  }, [calculateTargetIndex, stopAutoScroll]);
+
+  // Clean up timers & frames on unmount
   useEffect(() => {
     return () => {
       if (holdTimerRef.current) {
         clearTimeout(holdTimerRef.current);
       }
+      stopAutoScroll();
     };
-  }, []);
+  }, [stopAutoScroll]);
 
-  // Universal touch & pointer start for tap-and-hold anywhere on the card
-  const startHoldGesture = (index: number, clientX: number, clientY: number) => {
-    touchStartXRef.current = clientX;
-    touchStartYRef.current = clientY;
+  // Start hold gesture
+  const startHoldGesture = (index: number, pageX: number, pageY: number, clientY: number) => {
+    touchStartXRef.current = pageX;
+    touchStartYRef.current = pageY;
+    currentClientYRef.current = clientY;
     activeStartIndexRef.current = index;
     currentTargetIndexRef.current = index;
     isDraggingRef.current = false;
@@ -151,7 +244,7 @@ export function SortableList<T>({
       clearTimeout(holdTimerRef.current);
     }
 
-    // Tap-and-hold threshold: 180ms
+    // Tap-and-hold threshold (180ms)
     holdTimerRef.current = setTimeout(() => {
       isDraggingRef.current = true;
       setDragState({
@@ -160,16 +253,17 @@ export function SortableList<T>({
         targetIndex: index,
         translateY: 0,
       });
+      startAutoScroll();
     }, 180);
   };
 
-  const updateDragPosition = (clientX: number, clientY: number) => {
-    const dy = clientY - touchStartYRef.current;
-    const dx = Math.abs(clientX - touchStartXRef.current);
+  const updateDragPosition = (pageX: number, pageY: number, clientY: number) => {
+    currentClientYRef.current = clientY;
+    const dy = pageY - touchStartYRef.current;
+    const dx = Math.abs(pageX - touchStartXRef.current);
 
     if (!isDraggingRef.current) {
-      // If finger/pointer moves noticeably before 180ms hold timer fires,
-      // it means user is scrolling the page or swiping a card -> cancel hold!
+      // If user moved thumb noticeably before 180ms -> scroll or swipe gesture, cancel hold
       if (Math.abs(dy) > 8 || dx > 8) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
@@ -177,7 +271,7 @@ export function SortableList<T>({
         }
       }
     } else {
-      // Dragging is active! Update vertical position & target slot
+      // Drag is active: update position & target slot
       const from = activeStartIndexRef.current ?? 0;
       const target = calculateTargetIndex(from, dy);
       currentTargetIndexRef.current = target;
@@ -192,6 +286,8 @@ export function SortableList<T>({
   };
 
   const endDragGesture = () => {
+    stopAutoScroll();
+
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -220,8 +316,39 @@ export function SortableList<T>({
     });
   };
 
+  // Calculate live displacement shift for items while another item is moving
+  const getItemShiftY = (index: number) => {
+    if (!dragState.active || dragState.startIndex === null || dragState.targetIndex === null) {
+      return 0;
+    }
+    const { startIndex, targetIndex } = dragState;
+
+    // The dragged item itself moves with thumb (translateY)
+    if (index === startIndex) {
+      return dragState.translateY;
+    }
+
+    const shiftAmount = itemHeight + 10; // card height + list gap (10px)
+
+    // Dragging DOWN: items between startIndex + 1 and targetIndex shift UP to open slot
+    if (targetIndex > startIndex) {
+      if (index > startIndex && index <= targetIndex) {
+        return -shiftAmount;
+      }
+    }
+
+    // Dragging UP: items between targetIndex and startIndex - 1 shift DOWN to open slot
+    if (targetIndex < startIndex) {
+      if (index >= targetIndex && index < startIndex) {
+        return shiftAmount;
+      }
+    }
+
+    return 0;
+  };
+
   return (
-    <View style={[styles.container, style, contentContainerStyle]}>
+    <View ref={containerRef} style={[styles.container, style, contentContainerStyle]}>
       {data.map((item, index) => {
         const key = keyExtractor(item);
         const isDragging = dragState.active && dragState.startIndex === index;
@@ -230,15 +357,19 @@ export function SortableList<T>({
           dragState.targetIndex === index &&
           dragState.startIndex !== index;
 
+        const itemShiftY = getItemShiftY(index);
+
         // Mobile touch handlers attached to the whole item wrapper
         const touchHandlers = {
           onTouchStart: (e: any) => {
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
-            startHoldGesture(index, touch.pageX, touch.pageY);
+            const clientY = touch.clientY || touch.pageY;
+            startHoldGesture(index, touch.pageX, touch.pageY, clientY);
           },
           onTouchMove: (e: any) => {
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
-            updateDragPosition(touch.pageX, touch.pageY);
+            const clientY = touch.clientY || touch.pageY;
+            updateDragPosition(touch.pageX, touch.pageY, clientY);
           },
           onTouchEnd: () => {
             endDragGesture();
@@ -258,14 +389,21 @@ export function SortableList<T>({
                     return;
                   }
 
-                  startHoldGesture(index, e.pageX || e.clientX, e.pageY || e.clientY);
+                  const clientY = e.clientY ?? e.pageY ?? 0;
+                  const pageY = e.pageY ?? (clientY + (window.scrollY || 0));
+                  const pageX = e.pageX ?? e.clientX ?? 0;
+
+                  startHoldGesture(index, pageX, pageY, clientY);
 
                   if (typeof window !== 'undefined') {
                     const onPointerMove = (evt: PointerEvent) => {
                       if (isDraggingRef.current) {
                         evt.preventDefault();
                       }
-                      updateDragPosition(evt.pageX, evt.pageY);
+                      const moveClientY = evt.clientY ?? evt.pageY ?? 0;
+                      const movePageY = evt.pageY ?? (moveClientY + (window.scrollY || 0));
+                      const movePageX = evt.pageX ?? evt.clientX ?? 0;
+                      updateDragPosition(movePageX, movePageY, moveClientY);
                     };
 
                     const onPointerUp = () => {
@@ -284,63 +422,62 @@ export function SortableList<T>({
             : {};
 
         return (
-          <React.Fragment key={key}>
-            {/* Insertion drop target line when dragging above this item */}
-            {isTarget && dragState.startIndex !== null && dragState.startIndex > index && (
-              <View style={styles.dropIndicatorContainer}>
-                <View style={styles.dropIndicatorLine} />
-              </View>
-            )}
-
-            <View
-              onLayout={(e) => {
-                itemLayouts.current[index] = {
-                  y: e.nativeEvent.layout.y,
-                  height: e.nativeEvent.layout.height,
-                };
-              }}
-              style={[
-                styles.itemWrapper,
-                itemWrapperStyle,
-                isDragging && [
-                  styles.itemDraggingActive,
-                  {
-                    transform: [{ translateY: dragState.translateY }, { scale: 1.025 }],
-                    borderColor: '#6366F1',
-                    shadowOpacity: isDark ? 0.45 : 0.22,
+          <View
+            key={key}
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              if (h > 0 && Math.abs(h - itemHeight) > 5) {
+                setItemHeight(h);
+              }
+              itemLayouts.current[index] = {
+                y: e.nativeEvent.layout.y,
+                height: h,
+              };
+            }}
+            style={[
+              styles.itemWrapper,
+              itemWrapperStyle,
+              isDragging
+                ? [
+                    styles.itemDraggingActive,
+                    {
+                      transform: [{ translateY: itemShiftY }, { scale: 1.025 }],
+                      borderColor: '#6366F1',
+                      shadowOpacity: isDark ? 0.45 : 0.22,
+                    },
+                  ]
+                : {
+                    transform: [{ translateY: itemShiftY }],
                   },
-                ],
-                Platform.OS === 'web'
-                  ? ({
-                      userSelect: dragState.active ? 'none' : 'auto',
-                      WebkitUserSelect: dragState.active ? 'none' : 'auto',
-                      touchAction: dragState.active ? 'none' : 'pan-y',
-                      cursor: isDragging ? 'grabbing' : 'default',
-                    } as any)
-                  : {},
-              ]}
-              {...touchHandlers}
-              {...webPointerHandlers}
-            >
-              {renderItem({
-                item,
-                index,
-                total: data.length,
-                isDragging,
-                isOver: isTarget,
-                dragHandle: null, // Removed handle button - tap & hold works anywhere on the card!
-                moveUp: () => moveUp(index),
-                moveDown: () => moveDown(index),
-              })}
-            </View>
-
-            {/* Insertion drop target line when dragging below this item */}
-            {isTarget && dragState.startIndex !== null && dragState.startIndex < index && (
-              <View style={styles.dropIndicatorContainer}>
-                <View style={styles.dropIndicatorLine} />
-              </View>
-            )}
-          </React.Fragment>
+              Platform.OS === 'web'
+                ? ({
+                    userSelect: dragState.active ? 'none' : 'auto',
+                    WebkitUserSelect: dragState.active ? 'none' : 'auto',
+                    touchAction: dragState.active ? 'none' : 'pan-y',
+                    cursor: isDragging ? 'grabbing' : 'default',
+                    // Butter smooth slide transition for other shifting items; instantaneous for dragged item
+                    transition: isDragging
+                      ? 'none'
+                      : dragState.active
+                      ? 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)'
+                      : 'none',
+                  } as any)
+                : {},
+            ]}
+            {...touchHandlers}
+            {...webPointerHandlers}
+          >
+            {renderItem({
+              item,
+              index,
+              total: data.length,
+              isDragging,
+              isOver: isTarget,
+              dragHandle: null,
+              moveUp: () => moveUp(index),
+              moveDown: () => moveDown(index),
+            })}
+          </View>
         );
       })}
     </View>
@@ -364,22 +501,5 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 20,
-  },
-  dropIndicatorContainer: {
-    width: '100%',
-    height: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dropIndicatorLine: {
-    width: '98%',
-    height: 4,
-    borderRadius: 9999,
-    backgroundColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 8,
-    elevation: 6,
   },
 });

@@ -11,6 +11,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { AppModal } from '../../../components/ui/AppModal';
 import { MealSlot } from '../../../types/nutrition';
 import { useNutritionStore } from '../../../stores/useNutritionStore';
+import { SortableList } from '../../../components/ui/SortableList';
 import {
   Plus,
   Trash2,
@@ -252,55 +253,63 @@ export const MealRoutineModal: React.FC<MealRoutineModalProps> = ({
 
           {/* Slots list */}
           <View style={styles.slotsList}>
-            {mealSlots.map((slot, index) => (
-              <View
-                key={slot.id}
-                style={[
-                  styles.slotRow,
-                  {
-                    backgroundColor: theme.surfaceSubtle,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={styles.slotOrderBadge}>
-                  <Text style={[styles.slotOrderText, { color: theme.textMuted }]}>
-                    {index + 1}
-                  </Text>
-                </View>
-
-                <View style={styles.slotMainInfo}>
-                  <Text style={[styles.slotRowName, { color: theme.textPrimary }]}>
-                    {slot.name}
-                  </Text>
-                  <View style={styles.slotMeta}>
-                    <Clock size={11} color={theme.textMuted} />
-                    <Text style={[styles.slotMetaText, { color: theme.textMuted }]}>
-                      {slot.time}
-                    </Text>
-                    {slot.targetCalories && (
-                      <>
-                        <Text style={{ color: theme.textMuted, fontSize: 10 }}>•</Text>
-                        <Text style={[styles.slotMetaText, { color: theme.textMuted }]}>
-                          ~{slot.targetCalories} kcal
-                        </Text>
-                      </>
-                    )}
+            <SortableList
+              data={mealSlots}
+              keyExtractor={(slot) => slot.id}
+              onReorder={reorderMealSlots}
+              renderItem={({ item: slot, index, dragHandle }) => (
+                <View
+                  key={slot.id}
+                  style={[
+                    styles.slotRow,
+                    {
+                      backgroundColor: theme.surfaceSubtle,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {dragHandle}
+                    <View style={styles.slotOrderBadge}>
+                      <Text style={[styles.slotOrderText, { color: theme.textMuted }]}>
+                        {index + 1}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                {/* Delete button (allow if more than 2 slots) */}
-                {mealSlots.length > 2 && (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => deleteMealSlot(slot.id)}
-                    style={styles.deleteSlotBtn}
-                  >
-                    <Trash2 size={14} color={theme.textMuted} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+                  <View style={styles.slotMainInfo}>
+                    <Text style={[styles.slotRowName, { color: theme.textPrimary }]}>
+                      {slot.name}
+                    </Text>
+                    <View style={styles.slotMeta}>
+                      <Clock size={11} color={theme.textMuted} />
+                      <Text style={[styles.slotMetaText, { color: theme.textMuted }]}>
+                        {slot.time}
+                      </Text>
+                      {slot.targetCalories && (
+                        <>
+                          <Text style={{ color: theme.textMuted, fontSize: 10 }}>•</Text>
+                          <Text style={[styles.slotMetaText, { color: theme.textMuted }]}>
+                            ~{slot.targetCalories} kcal
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Delete button (allow if more than 2 slots) */}
+                  {mealSlots.length > 2 && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => deleteMealSlot(slot.id)}
+                      style={styles.deleteSlotBtn}
+                    >
+                      <Trash2 size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            />
           </View>
         </View>
 

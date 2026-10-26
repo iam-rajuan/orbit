@@ -38,6 +38,7 @@ interface TaskState {
   togglePinTask: (id: string) => Promise<void>;
   updateTaskColor: (id: string, color: string) => Promise<void>;
   toggleChecklistItem: (taskId: string, itemId: string) => Promise<void>;
+  reorderTasks: (reorderedSubset: Task[]) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -328,5 +329,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     await updateTask(updated);
+  },
+
+  reorderTasks: async (reorderedSubset: Task[]) => {
+    const { tasks } = get();
+    if (reorderedSubset.length === 0) return;
+    const reorderedIds = new Set(reorderedSubset.map((t) => t.id));
+    const firstIdx = tasks.findIndex((t) => reorderedIds.has(t.id));
+    const remainingTasks = tasks.filter((t) => !reorderedIds.has(t.id));
+    const insertAt = firstIdx >= 0 ? firstIdx : 0;
+    const newTasks = [...remainingTasks];
+    newTasks.splice(insertAt, 0, ...reorderedSubset);
+    set({ tasks: newTasks });
+    await taskRepository.saveAllTasks(newTasks);
   },
 }));

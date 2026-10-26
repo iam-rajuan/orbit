@@ -31,6 +31,7 @@ interface ExpenseState {
 
   getFilteredExpenses: (date: string) => Expense[];
   getDailySummary: (date: string) => ExpenseSummary;
+  reorderExpenses: (reorderedSubset: Expense[]) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseState>((set, get) => ({
@@ -128,5 +129,19 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       byCategory,
       byPayment,
     };
+  },
+
+  reorderExpenses: async (reorderedSubset: Expense[]) => {
+    const { expenses } = get();
+    if (reorderedSubset.length === 0) return;
+    const reorderedIds = new Set(reorderedSubset.map((e) => e.id));
+    const firstIdx = expenses.findIndex((e) => reorderedIds.has(e.id));
+    const remaining = expenses.filter((e) => !reorderedIds.has(e.id));
+    const insertAt = firstIdx >= 0 ? firstIdx : 0;
+    const updatedSubset = reorderedSubset.map((e, idx) => ({ ...e, itemNumber: idx + 1 }));
+    const newExpenses = [...remaining];
+    newExpenses.splice(insertAt, 0, ...updatedSubset);
+    set({ expenses: newExpenses });
+    await expenseRepository.saveAllExpenses(newExpenses);
   },
 }));

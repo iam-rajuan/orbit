@@ -19,6 +19,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { AppCheckbox } from '../../components/ui/AppCheckbox';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppProgressBar } from '../../components/ui/AppProgressBar';
+import { SortableList } from '../../components/ui/SortableList';
 import { RoutineFormModal } from './RoutineFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { RoutineItem } from '../../types';
@@ -32,6 +33,7 @@ export const RoutineManager: React.FC = () => {
     completions,
     toggleCompletion,
     deleteRoutine,
+    reorderRoutines,
     getRoutineProgress,
   } = useRoutineStore();
 
@@ -120,97 +122,104 @@ export const RoutineManager: React.FC = () => {
 
       {/* Routine Timeline list */}
       <View style={styles.timelineList}>
-        {dayScheduledRoutines.map((routine, index) => {
-          const comp = completions.find(
-            (c) => c.date === selectedDate && c.routineId === routine.id
-          );
-          const isDone = !!comp?.completed;
+        <SortableList
+          data={dayScheduledRoutines}
+          keyExtractor={(r) => r.id}
+          onReorder={reorderRoutines}
+          renderItem={({ item: routine, dragHandle }) => {
+            const comp = completions.find(
+              (c) => c.date === selectedDate && c.routineId === routine.id
+            );
+            const isDone = !!comp?.completed;
 
-          return (
-            <View
-              key={routine.id}
-              style={[
-                styles.routineCard,
-                {
-                  backgroundColor: isDone
-                    ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
-                    : theme.surface,
-                  borderColor: theme.border,
-                },
-                isDone && styles.routineCardCompleted,
-              ]}
-            >
-              <View style={styles.cardLeft}>
-                <View
-                  style={[
-                    styles.timeTag,
-                    {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5',
-                    },
-                  ]}
-                >
-                  <Text
+            return (
+              <View
+                key={routine.id}
+                style={[
+                  styles.routineCard,
+                  {
+                    backgroundColor: isDone
+                      ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
+                      : theme.surface,
+                    borderColor: theme.border,
+                  },
+                  isDone && styles.routineCardCompleted,
+                ]}
+              >
+                <View style={styles.cardLeft}>
+                  {dragHandle}
+
+                  <View
                     style={[
-                      styles.timeText,
-                      { color: theme.textSecondary },
-                      isDone && styles.timeTextDone,
+                      styles.timeTag,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5',
+                      },
                     ]}
                   >
-                    {routine.time}
-                  </Text>
-                </View>
-
-                <View style={styles.cardDetails}>
-                  <Text
-                    style={[
-                      styles.routineTitle,
-                      { color: theme.textPrimary },
-                      isDone && styles.routineTitleDone,
-                    ]}
-                  >
-                    {routine.title}
-                  </Text>
-                  {routine.description ? (
-                    <Text style={[styles.routineDesc, { color: theme.textMuted }]}>
-                      {routine.description}
+                    <Text
+                      style={[
+                        styles.timeText,
+                        { color: theme.textSecondary },
+                        isDone && styles.timeTextDone,
+                      ]}
+                    >
+                      {routine.time}
                     </Text>
-                  ) : null}
+                  </View>
+
+                  <View style={styles.cardDetails}>
+                    <Text
+                      style={[
+                        styles.routineTitle,
+                        { color: theme.textPrimary },
+                        isDone && styles.routineTitleDone,
+                      ]}
+                    >
+                      {routine.title}
+                    </Text>
+                    {routine.description ? (
+                      <Text style={[styles.routineDesc, { color: theme.textMuted }]}>
+                        {routine.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+
+                <View style={styles.cardRight}>
+                  <AppCheckbox
+                    checked={isDone}
+                    onToggle={() => toggleCompletion(selectedDate, routine.id)}
+                    size={22}
+                  />
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setEditingRoutine(routine);
+                      setModalOpen(true);
+                    }}
+                    style={[
+                      styles.iconBtn,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' },
+                    ]}
+                  >
+                    <Edit2 size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setDeleteConfirmId(routine.id)}
+                    style={[
+                      styles.iconBtn,
+                      { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' },
+                    ]}
+                  >
+                    <Trash2 size={16} color="#F43F5E" />
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <View style={styles.cardRight}>
-                <AppCheckbox
-                  checked={isDone}
-                  onToggle={() => toggleCompletion(selectedDate, routine.id)}
-                  size={22}
-                />
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setEditingRoutine(routine);
-                    setModalOpen(true);
-                  }}
-                  style={[
-                    styles.iconBtn,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' },
-                  ]}
-                >
-                  <Edit2 size={16} color={theme.textMuted} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setDeleteConfirmId(routine.id)}
-                  style={[
-                    styles.iconBtn,
-                    { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' },
-                  ]}
-                >
-                  <Trash2 size={16} color="#F43F5E" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
+            );
+          }}
+        />
       </View>
 
       {/* Routine Form Modal */}

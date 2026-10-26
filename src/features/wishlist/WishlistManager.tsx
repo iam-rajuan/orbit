@@ -19,6 +19,7 @@ import { generateId } from '../../utils/id';
 import { WishlistFormModal } from './WishlistFormModal';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { SortableList } from '../../components/ui/SortableList';
 import {
   Gift,
   Plus,
@@ -54,6 +55,7 @@ export const WishlistManager: React.FC = () => {
     markAsPurchased,
     markAsDropped,
     restoreItem,
+    reorderWishlistItems,
     getFilteredItems,
     getStats,
   } = useWishlistStore();
@@ -324,54 +326,59 @@ export const WishlistManager: React.FC = () => {
             )}
           </View>
         ) : (
-          filteredItems.map((item) => {
-            const isPurchased = item.status === 'purchased';
-            const isDropped = item.status === 'dropped';
-            const priorityColor =
-              item.priority === 'High'
-                ? '#EF4444'
-                : item.priority === 'Medium'
-                ? '#F59E0B'
-                : '#10B981';
+          <SortableList
+            data={filteredItems}
+            keyExtractor={(item) => item.id}
+            onReorder={reorderWishlistItems}
+            renderItem={({ item, dragHandle }) => {
+              const isPurchased = item.status === 'purchased';
+              const isDropped = item.status === 'dropped';
+              const priorityColor =
+                item.priority === 'High'
+                  ? '#EF4444'
+                  : item.priority === 'Medium'
+                  ? '#F59E0B'
+                  : '#10B981';
 
-            return (
-              <View
-                key={item.id}
-                style={[
-                  styles.wishlistCard,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: isPurchased
-                      ? isDark
-                        ? 'rgba(16, 185, 129, 0.3)'
-                        : '#A7F3D0'
-                      : isDropped
-                      ? 'rgba(150, 150, 150, 0.25)'
-                      : theme.border,
-                    opacity: isDropped ? 0.75 : 1,
-                    shadowColor: theme.shadowColor,
-                    shadowOpacity: theme.shadowOpacity,
-                  },
-                ]}
-              >
-                {/* Card Top: Priority & Price */}
-                <View style={styles.cardTopRow}>
-                  <View style={styles.cardBadgesRow}>
-                    {/* Priority Badge */}
-                    <View
-                      style={[
-                        styles.priorityBadge,
-                        {
-                          backgroundColor: `${priorityColor}15`,
-                          borderColor: `${priorityColor}40`,
-                        },
-                      ]}
-                    >
-                      <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
-                      <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
-                        {item.priority === 'High' ? 'Need' : item.priority}
-                      </Text>
-                    </View>
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.wishlistCard,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: isPurchased
+                        ? isDark
+                          ? 'rgba(16, 185, 129, 0.3)'
+                          : '#A7F3D0'
+                        : isDropped
+                        ? 'rgba(150, 150, 150, 0.25)'
+                        : theme.border,
+                      opacity: isDropped ? 0.75 : 1,
+                      shadowColor: theme.shadowColor,
+                      shadowOpacity: theme.shadowOpacity,
+                    },
+                  ]}
+                >
+                  {/* Card Top: Priority & Price */}
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.cardBadgesRow}>
+                      {dragHandle}
+                      {/* Priority Badge */}
+                      <View
+                        style={[
+                          styles.priorityBadge,
+                          {
+                            backgroundColor: `${priorityColor}15`,
+                            borderColor: `${priorityColor}40`,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
+                        <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
+                          {item.priority === 'High' ? 'Need' : item.priority}
+                        </Text>
+                      </View>
 
                     {/* Category Pill */}
                     <View
@@ -530,7 +537,8 @@ export const WishlistManager: React.FC = () => {
                 </View>
               </View>
             );
-          })
+          }}
+        />
         )}
       </View>
 

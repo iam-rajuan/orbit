@@ -19,6 +19,7 @@ import { MealRoutineModal } from './components/MealRoutineModal';
 import { NutritionGoalsModal } from './components/NutritionGoalsModal';
 import { NutritionAnalyticsView } from './components/NutritionAnalyticsView';
 import { WeightGoalCalculatorView } from './components/WeightGoalCalculatorView';
+import { SortableList } from '../../components/ui/SortableList';
 import { offsetDateKey } from '../../utils/date';
 import {
   UtensilsCrossed,
@@ -42,6 +43,7 @@ export const NutritionView: React.FC = () => {
     habits,
     getDayTotals,
     deleteLoggedEntry,
+    reorderMealSlots,
     logWater,
     toggleHabit,
     updateHabitNotes,
@@ -304,18 +306,24 @@ export const NutritionView: React.FC = () => {
                 </View>
               </View>
 
-              {mealSlots.map((slot) => {
-                const slotEntries = dayEntries.filter((e) => e.mealSlotId === slot.id);
-                return (
-                  <MealSlotCard
-                    key={slot.id}
-                    slot={slot}
-                    entries={slotEntries}
-                    onAddFood={(slotId) => setActiveSlotModalId(slotId)}
-                    onDeleteEntry={(entryId) => deleteLoggedEntry(entryId)}
-                  />
-                );
-              })}
+              <SortableList
+                data={mealSlots}
+                keyExtractor={(slot) => slot.id}
+                onReorder={reorderMealSlots}
+                renderItem={({ item: slot, dragHandle }) => {
+                  const slotEntries = dayEntries.filter((e) => e.mealSlotId === slot.id);
+                  return (
+                    <MealSlotCard
+                      key={slot.id}
+                      slot={slot}
+                      entries={slotEntries}
+                      dragHandle={dragHandle}
+                      onAddFood={(slotId) => setActiveSlotModalId(slotId)}
+                      onDeleteEntry={(entryId) => deleteLoggedEntry(entryId)}
+                    />
+                  );
+                }}
+              />
             </View>
           </View>
         ) : mainTab === 'analytics' ? (

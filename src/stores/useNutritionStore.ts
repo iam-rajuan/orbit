@@ -24,6 +24,7 @@ interface NutritionState {
   updateLoggedEntry: (entry: LoggedMealEntry) => Promise<void>;
   deleteLoggedEntry: (id: string) => Promise<void>;
   copyMealsFromDate: (sourceDate: string, targetDate: string) => Promise<void>;
+  reorderLoggedEntries: (reorderedSubset: LoggedMealEntry[]) => Promise<void>;
 
   // Meal Slots / Routine actions
   addMealSlot: (slot: Omit<MealSlot, 'id' | 'order'>) => Promise<void>;
@@ -138,6 +139,19 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const updated = loggedEntries.filter((e) => e.id !== id);
     set({ loggedEntries: updated });
     await nutritionRepository.deleteEntry(id);
+  },
+
+  reorderLoggedEntries: async (reorderedSubset: LoggedMealEntry[]) => {
+    const { loggedEntries } = get();
+    if (reorderedSubset.length === 0) return;
+    const reorderedIds = new Set(reorderedSubset.map((e) => e.id));
+    const firstIdx = loggedEntries.findIndex((e) => reorderedIds.has(e.id));
+    const remaining = loggedEntries.filter((e) => !reorderedIds.has(e.id));
+    const insertAt = firstIdx >= 0 ? firstIdx : 0;
+    const newEntries = [...remaining];
+    newEntries.splice(insertAt, 0, ...reorderedSubset);
+    set({ loggedEntries: newEntries });
+    await nutritionRepository.saveAllEntries(newEntries);
   },
 
   copyMealsFromDate: async (sourceDate, targetDate) => {

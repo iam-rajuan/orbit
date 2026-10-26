@@ -37,6 +37,7 @@ import { FutureTaskManager } from './FutureTaskManager';
 import { ForwardBadge } from './ForwardBadge';
 import { SwipeableTaskCard } from './SwipeableTaskCard';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
+import { SortableList } from '../../components/ui/SortableList';
 import { offsetDateKey, formatAdaptiveDate } from '../../utils/date';
 
 export const TaskManager: React.FC = () => {
@@ -70,6 +71,7 @@ export const TaskManager: React.FC = () => {
     forwardTaskToTomorrow,
     bulkForwardToTomorrow,
     undoForwardTask,
+    reorderTasks,
   } = useTaskStore();
 
   const { settings } = useSettingsStore();
@@ -856,148 +858,155 @@ export const TaskManager: React.FC = () => {
             /* Mobile Cards View (Clean & Modern like Upcoming) */
             /* Mobile Cards View (Clean, Spacious & Production-Grade) */
             <View style={styles.mobileCardsContainer}>
-              {filteredTasks.map((task) => {
-                const isSelected = selectedTaskIds.includes(task.id);
-                const hasDesc = !!task.description && task.description.trim() !== task.title.trim();
+              <SortableList
+                data={filteredTasks}
+                keyExtractor={(t) => t.id}
+                onReorder={reorderTasks}
+                renderItem={({ item: task, dragHandle }) => {
+                  const isSelected = selectedTaskIds.includes(task.id);
+                  const hasDesc = !!task.description && task.description.trim() !== task.title.trim();
 
-                return (
-                  <SwipeableTaskCard
-                    key={task.id}
-                    isCurrentOpen={activeSwipedTaskId === task.id}
-                    onOpen={() => setActiveSwipedTaskId(task.id)}
-                    onClose={() => {
-                      if (activeSwipedTaskId === task.id) {
-                        setActiveSwipedTaskId(null);
-                      }
-                    }}
-                    onSwipeStart={() => {
-                      if (activeSwipedTaskId !== task.id) {
-                        setActiveSwipedTaskId(task.id);
-                      }
-                    }}
-                    onForward={() => handleForwardSingle(task)}
-                    onEdit={() => {
-                      setEditingTask(task);
-                      setModalOpen(true);
-                    }}
-                    onDelete={() => setDeleteConfirmId(task.id)}
-                  >
-                    <View
-                      style={[
-                        styles.mobileTaskCard,
-                        {
-                          backgroundColor: isSelected
-                            ? (isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF')
-                            : theme.surface,
-                          borderColor: isSelected
-                            ? theme.primary
-                            : isDark
-                            ? 'rgba(255,255,255,0.08)'
-                            : '#E2E8F0',
-                        },
-                        task.completed && styles.mobileTaskCardCompleted,
-                      ]}
+                  return (
+                    <SwipeableTaskCard
+                      key={task.id}
+                      isCurrentOpen={activeSwipedTaskId === task.id}
+                      onOpen={() => setActiveSwipedTaskId(task.id)}
+                      onClose={() => {
+                        if (activeSwipedTaskId === task.id) {
+                          setActiveSwipedTaskId(null);
+                        }
+                      }}
+                      onSwipeStart={() => {
+                        if (activeSwipedTaskId !== task.id) {
+                          setActiveSwipedTaskId(task.id);
+                        }
+                      }}
+                      onForward={() => handleForwardSingle(task)}
+                      onEdit={() => {
+                        setEditingTask(task);
+                        setModalOpen(true);
+                      }}
+                      onDelete={() => setDeleteConfirmId(task.id)}
                     >
-                      {/* Header Row: Checkbox + Full-width Title + Deferral Badge */}
-                      <View style={styles.mobileCardHeader}>
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => toggleTaskComplete(task.id)}
-                          style={styles.cardCheckBtn}
-                          accessibilityLabel="Toggle complete"
-                        >
-                          {task.completed ? (
-                            <CheckSquare size={19} color="#10B981" />
-                          ) : (
-                            <Square size={19} color={theme.textMuted} />
-                          )}
-                        </TouchableOpacity>
+                      <View
+                        style={[
+                          styles.mobileTaskCard,
+                          {
+                            backgroundColor: isSelected
+                              ? (isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF')
+                              : theme.surface,
+                            borderColor: isSelected
+                              ? theme.primary
+                              : isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : '#E2E8F0',
+                          },
+                          task.completed && styles.mobileTaskCardCompleted,
+                        ]}
+                      >
+                        {/* Header Row: Drag Handle + Checkbox + Full-width Title + Deferral Badge */}
+                        <View style={styles.mobileCardHeader}>
+                          {dragHandle}
 
-                        <TouchableOpacity
-                          activeOpacity={0.8}
-                          onPress={() => {
-                            setEditingTask(task);
-                            setModalOpen(true);
-                          }}
-                          style={styles.cardTitleArea}
-                        >
-                          <Text
-                            style={[
-                              styles.mobileTaskTitle,
-                              { color: theme.textPrimary },
-                              task.completed && styles.mobileTaskTitleCompleted,
-                            ]}
-                            numberOfLines={2}
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => toggleTaskComplete(task.id)}
+                            style={styles.cardCheckBtn}
+                            accessibilityLabel="Toggle complete"
                           >
-                            {task.title}
-                          </Text>
-                        </TouchableOpacity>
+                            {task.completed ? (
+                              <CheckSquare size={19} color="#10B981" />
+                            ) : (
+                              <Square size={19} color={theme.textMuted} />
+                            )}
+                          </TouchableOpacity>
 
-                        {task.forwardCount && task.forwardCount > 0 ? (
-                          <ForwardBadge
-                            count={task.forwardCount}
-                            originalDate={task.originalDate}
-                            size="sm"
-                          />
-                        ) : null}
-                      </View>
-
-                      {/* Description or Notes Snippet (Indented nicely) */}
-                      {(hasDesc || task.notes) ? (
-                        <View style={[styles.mobileDescArea, task.completed && styles.mobileContentCompleted]}>
-                          {hasDesc && (
+                          <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                              setEditingTask(task);
+                              setModalOpen(true);
+                            }}
+                            style={styles.cardTitleArea}
+                          >
                             <Text
-                              style={[styles.mobileDescText, { color: theme.textSecondary }]}
+                              style={[
+                                styles.mobileTaskTitle,
+                                { color: theme.textPrimary },
+                                task.completed && styles.mobileTaskTitleCompleted,
+                              ]}
                               numberOfLines={2}
                             >
-                              {task.description!.replace(/\n/g, ' ')}
+                              {task.title}
                             </Text>
-                          )}
-                          {task.notes && task.notes !== task.description && (
-                            <Text
-                              style={[styles.mobileNotesText, { color: theme.textMuted }]}
-                              numberOfLines={1}
-                            >
-                              📝 {task.notes}
-                            </Text>
-                          )}
-                        </View>
-                      ) : null}
+                          </TouchableOpacity>
 
-                      {/* Footer Row: Metadata Chips */}
-                      <View style={[styles.mobileCardFooter, task.completed && styles.mobileContentCompleted]}>
-                        <View style={styles.mobileCardChipsRow}>
-                          <AppBadge label={task.category} variant="category" size="sm" />
-                          <AppBadge
-                            label={task.priority}
-                            variant="priority"
-                            priority={task.priority}
-                            size="sm"
-                          />
-                          {task.projectName ? (
-                            <View
-                              style={[
-                                styles.projectChip,
-                                {
-                                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
-                                  borderColor: theme.border,
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[styles.projectChipText, { color: theme.textSecondary }]}
-                                numberOfLines={1}
-                              >
-                                📁 {task.projectName}
-                              </Text>
-                            </View>
+                          {task.forwardCount && task.forwardCount > 0 ? (
+                            <ForwardBadge
+                              count={task.forwardCount}
+                              originalDate={task.originalDate}
+                              size="sm"
+                            />
                           ) : null}
                         </View>
+
+                        {/* Description or Notes Snippet (Indented nicely) */}
+                        {(hasDesc || task.notes) ? (
+                          <View style={[styles.mobileDescArea, task.completed && styles.mobileContentCompleted]}>
+                            {hasDesc && (
+                              <Text
+                                style={[styles.mobileDescText, { color: theme.textSecondary }]}
+                                numberOfLines={2}
+                              >
+                                {task.description!.replace(/\n/g, ' ')}
+                              </Text>
+                            )}
+                            {task.notes && task.notes !== task.description && (
+                              <Text
+                                style={[styles.mobileNotesText, { color: theme.textMuted }]}
+                                numberOfLines={1}
+                              >
+                                📝 {task.notes}
+                              </Text>
+                            )}
+                          </View>
+                        ) : null}
+
+                        {/* Footer Row: Metadata Chips */}
+                        <View style={[styles.mobileCardFooter, task.completed && styles.mobileContentCompleted]}>
+                          <View style={styles.mobileCardChipsRow}>
+                            <AppBadge label={task.category} variant="category" size="sm" />
+                            <AppBadge
+                              label={task.priority}
+                              variant="priority"
+                              priority={task.priority}
+                              size="sm"
+                            />
+                            {task.projectName ? (
+                              <View
+                                style={[
+                                  styles.projectChip,
+                                  {
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
+                                    borderColor: theme.border,
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[styles.projectChipText, { color: theme.textSecondary }]}
+                                  numberOfLines={1}
+                                >
+                                  📁 {task.projectName}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        </View>
                       </View>
-                    </View>
-                  </SwipeableTaskCard>
-                );
-              })}
+                    </SwipeableTaskCard>
+                  );
+                }}
+              />
             </View>
           )}
         </ScrollView>

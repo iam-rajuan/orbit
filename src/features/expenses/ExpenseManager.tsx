@@ -28,6 +28,7 @@ import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { formatCurrency } from '../../utils/currency';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { SortableList } from '../../components/ui/SortableList';
 import { Expense } from '../../types';
 import { WishlistManager } from '../wishlist/WishlistManager';
 
@@ -50,6 +51,7 @@ export const ExpenseManager: React.FC = () => {
     setFilterCategory,
     setFilterType,
     deleteExpense,
+    reorderExpenses,
     getFilteredExpenses,
     getDailySummary,
   } = useExpenseStore();
@@ -409,7 +411,7 @@ export const ExpenseManager: React.FC = () => {
               },
             ]}
           >
-            <View style={[styles.thCell, { width: 45 }]}>
+            <View style={[styles.thCell, { width: 56 }]}>
               <Text style={[styles.thText, { color: theme.textMuted }]}>#</Text>
             </View>
             <View style={[styles.thCell, { width: 120 }]}>
@@ -440,80 +442,86 @@ export const ExpenseManager: React.FC = () => {
               <Text style={[styles.emptyText, { color: theme.textMuted }]}>No expenses found for this date.</Text>
             </View>
           ) : (
-            filteredExpenses.map((expense, idx) => (
-              <View
-                key={expense.id}
-                style={[
-                  styles.tableRow,
-                  {
-                    backgroundColor: theme.surface,
-                    borderBottomColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={[styles.tdCell, { width: 45 }]}>
-                  <Text style={[styles.tdTextMuted, { color: theme.textMuted }]}>{expense.itemNumber || idx + 1}</Text>
-                </View>
+            <SortableList
+              data={filteredExpenses}
+              keyExtractor={(expense) => expense.id}
+              onReorder={reorderExpenses}
+              renderItem={({ item: expense, index: idx, dragHandle }) => (
+                <View
+                  key={expense.id}
+                  style={[
+                    styles.tableRow,
+                    {
+                      backgroundColor: theme.surface,
+                      borderBottomColor: theme.border,
+                    },
+                  ]}
+                >
+                  <View style={[styles.tdCell, { width: 56, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                    {dragHandle}
+                    <Text style={[styles.tdTextMuted, { color: theme.textMuted }]}>{expense.itemNumber || idx + 1}</Text>
+                  </View>
 
-                <View style={[styles.tdCell, { width: 120 }]}>
-                  <AppBadge label={expense.category} variant="category" size="sm" />
-                </View>
+                  <View style={[styles.tdCell, { width: 120 }]}>
+                    <AppBadge label={expense.category} variant="category" size="sm" />
+                  </View>
 
-                <View style={[styles.tdCell, { width: 100 }]}>
-                  <Text
-                    style={[
-                      styles.tdTextPayment,
-                      {
-                        backgroundColor: theme.surfaceSubtle,
-                        color: theme.textSecondary,
-                      },
-                    ]}
-                  >
-                    {expense.paymentMethod}
-                  </Text>
-                </View>
+                  <View style={[styles.tdCell, { width: 100 }]}>
+                    <Text
+                      style={[
+                        styles.tdTextPayment,
+                        {
+                          backgroundColor: theme.surfaceSubtle,
+                          color: theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {expense.paymentMethod}
+                    </Text>
+                  </View>
 
-                <View style={[styles.tdCell, { width: 85 }]}>
-                  <AppBadge label={expense.type} variant="expenseType" size="sm" />
-                </View>
+                  <View style={[styles.tdCell, { width: 85 }]}>
+                    <AppBadge label={expense.type} variant="expenseType" size="sm" />
+                  </View>
 
-                <View style={[styles.tdCell, { flex: 1.2 }]}>
-                  <Text style={[styles.tdTextTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
-                </View>
+                  <View style={[styles.tdCell, { flex: 1.2 }]}>
+                    <Text style={[styles.tdTextTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
+                  </View>
 
-                <View style={[styles.tdCell, { flex: 1.5 }]}>
-                  <Text style={[styles.tdTextNotes, { color: theme.textSecondary }]} numberOfLines={2}>
-                    {expense.description || '—'}
-                  </Text>
-                </View>
+                  <View style={[styles.tdCell, { flex: 1.5 }]}>
+                    <Text style={[styles.tdTextNotes, { color: theme.textSecondary }]} numberOfLines={2}>
+                      {expense.description || '—'}
+                    </Text>
+                  </View>
 
-                <View style={[styles.tdCell, { width: 120, justifyContent: 'flex-end' }]}>
-                  <Text style={[styles.tdTextAmount, { color: theme.textPrimary }]}>
-                    {formatCurrency(expense.amount, settings.currency)}
-                  </Text>
-                </View>
+                  <View style={[styles.tdCell, { width: 120, justifyContent: 'flex-end' }]}>
+                    <Text style={[styles.tdTextAmount, { color: theme.textPrimary }]}>
+                      {formatCurrency(expense.amount, settings.currency)}
+                    </Text>
+                  </View>
 
-                <View style={[styles.tdCell, { width: 80, justifyContent: 'flex-end', flexDirection: 'row', gap: 6 }]}>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setEditingExpense(expense);
-                      setModalOpen(true);
-                    }}
-                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
-                  >
-                    <Edit2 size={15} color={theme.textMuted} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => setDeleteConfirmId(expense.id)}
-                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
-                  >
-                    <Trash2 size={15} color="#F43F5E" />
-                  </TouchableOpacity>
+                  <View style={[styles.tdCell, { width: 80, justifyContent: 'flex-end', flexDirection: 'row', gap: 6 }]}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setEditingExpense(expense);
+                        setModalOpen(true);
+                      }}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
+                    >
+                      <Edit2 size={15} color={theme.textMuted} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setDeleteConfirmId(expense.id)}
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
+                    >
+                      <Trash2 size={15} color="#F43F5E" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
+              )}
+            />
           )}
 
           {/* Table Footer with Total */}
@@ -543,64 +551,72 @@ export const ExpenseManager: React.FC = () => {
               <Text style={[styles.emptyText, { color: theme.textMuted }]}>No expenses recorded for this day.</Text>
             </View>
           ) : (
-            filteredExpenses.map((expense) => (
-              <View
-                key={expense.id}
-                style={[
-                  styles.mobileExpenseCard,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={styles.mobileCardTop}>
-                  <View style={styles.mobileBadges}>
-                    <AppBadge label={expense.category} variant="category" size="sm" />
-                    <AppBadge label={expense.type} variant="expenseType" size="sm" />
-                    <Text
-                      style={[
-                        styles.mobilePayment,
-                        {
-                          backgroundColor: theme.surfaceSubtle,
-                          color: theme.textSecondary,
-                        },
-                      ]}
-                    >
-                      {expense.paymentMethod}
+            <SortableList
+              data={filteredExpenses}
+              keyExtractor={(expense) => expense.id}
+              onReorder={reorderExpenses}
+              renderItem={({ item: expense, dragHandle }) => (
+                <View
+                  key={expense.id}
+                  style={[
+                    styles.mobileExpenseCard,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.mobileCardTop}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                      {dragHandle}
+                      <View style={styles.mobileBadges}>
+                        <AppBadge label={expense.category} variant="category" size="sm" />
+                        <AppBadge label={expense.type} variant="expenseType" size="sm" />
+                        <Text
+                          style={[
+                            styles.mobilePayment,
+                            {
+                              backgroundColor: theme.surfaceSubtle,
+                              color: theme.textSecondary,
+                            },
+                          ]}
+                        >
+                          {expense.paymentMethod}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.mobileActions}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEditingExpense(expense);
+                          setModalOpen(true);
+                        }}
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
+                      >
+                        <Edit2 size={15} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setDeleteConfirmId(expense.id)}
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
+                      >
+                        <Trash2 size={15} color="#F43F5E" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.mobileCardMiddle}>
+                    <Text style={[styles.mobileTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
+                    <Text style={[styles.mobileAmount, { color: theme.textPrimary }]}>
+                      {formatCurrency(expense.amount, settings.currency)}
                     </Text>
                   </View>
-                  <View style={styles.mobileActions}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setEditingExpense(expense);
-                        setModalOpen(true);
-                      }}
-                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
-                    >
-                      <Edit2 size={15} color={theme.textMuted} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setDeleteConfirmId(expense.id)}
-                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
-                    >
-                      <Trash2 size={15} color="#F43F5E" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
 
-                <View style={styles.mobileCardMiddle}>
-                  <Text style={[styles.mobileTitle, { color: theme.textPrimary }]}>{expense.title}</Text>
-                  <Text style={[styles.mobileAmount, { color: theme.textPrimary }]}>
-                    {formatCurrency(expense.amount, settings.currency)}
-                  </Text>
+                  {expense.description ? (
+                    <Text style={[styles.mobileDesc, { color: theme.textSecondary }]}>{expense.description}</Text>
+                  ) : null}
                 </View>
-
-                {expense.description ? (
-                  <Text style={[styles.mobileDesc, { color: theme.textSecondary }]}>{expense.description}</Text>
-                ) : null}
-              </View>
-            ))
+              )}
+            />
           )}
         </View>
       )}

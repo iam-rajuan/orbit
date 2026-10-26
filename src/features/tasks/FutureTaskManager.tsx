@@ -18,6 +18,7 @@ import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
 import { generateId } from '../../utils/id';
 import { ForwardBadge } from './ForwardBadge';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
+import { SortableList } from '../../components/ui/SortableList';
 import {
   Search,
   Pin,
@@ -78,6 +79,7 @@ export const FutureTaskManager: React.FC = () => {
   const {
     tasks,
     createTask,
+    reorderTasks,
     toggleTaskComplete,
     deleteTask,
     moveToToday,
@@ -237,7 +239,7 @@ export const FutureTaskManager: React.FC = () => {
   };
 
   // Render a Note / Task Card
-  const renderCard = (task: Task) => {
+  const renderCard = (task: Task, dragHandle?: React.ReactNode) => {
     const cardStyle = getKeepCardStyle(task.color, isDark, theme.surface, theme.border);
     const isShowingColorPicker = showColorPickerForId === task.id;
     const isGrid = viewMode === 'grid';
@@ -247,12 +249,9 @@ export const FutureTaskManager: React.FC = () => {
         key={task.id}
         style={[
           styles.noteCard,
-          isGrid
-            ? isDesktop
-              ? styles.cardGridDesktop
-              : styles.cardGridMobile
-            : styles.cardList,
           {
+            width: '100%',
+            padding: isGrid ? (isDesktop ? 14 : 10) : 14,
             backgroundColor: cardStyle.backgroundColor,
             borderColor: cardStyle.borderColor,
           },
@@ -261,6 +260,7 @@ export const FutureTaskManager: React.FC = () => {
       >
         {/* Card Header: Checkbox for task done + Title + Pin Icon */}
         <View style={styles.cardHeader}>
+          {dragHandle}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => toggleTaskComplete(task.id)}
@@ -986,9 +986,14 @@ export const FutureTaskManager: React.FC = () => {
               <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
                 📌 PINNED
               </Text>
-              <View style={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}>
-                {pinnedTasks.map(renderCard)}
-              </View>
+              <SortableList
+                data={pinnedTasks}
+                keyExtractor={(task) => task.id}
+                onReorder={reorderTasks}
+                contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
+                itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
+                renderItem={({ item: task, dragHandle }) => renderCard(task, dragHandle)}
+              />
             </View>
           )}
 
@@ -1000,9 +1005,14 @@ export const FutureTaskManager: React.FC = () => {
                   ALL UPCOMING
                 </Text>
               )}
-              <View style={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}>
-                {otherTasks.map(renderCard)}
-              </View>
+              <SortableList
+                data={otherTasks}
+                keyExtractor={(task) => task.id}
+                onReorder={reorderTasks}
+                contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
+                itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
+                renderItem={({ item: task, dragHandle }) => renderCard(task, dragHandle)}
+              />
             </View>
           )}
         </View>

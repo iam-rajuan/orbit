@@ -13,9 +13,13 @@ import {
   Moon,
 } from 'lucide-react-native';
 
+import { useNutritionStore } from '../../../stores/useNutritionStore';
+import { SortableList } from '../../../components/ui/SortableList';
+
 interface MealSlotCardProps {
   slot: MealSlot;
   entries: LoggedMealEntry[];
+  dragHandle?: React.ReactNode;
   onAddFood: (slotId: string) => void;
   onDeleteEntry: (entryId: string) => void;
 }
@@ -23,10 +27,12 @@ interface MealSlotCardProps {
 export const MealSlotCard: React.FC<MealSlotCardProps> = ({
   slot,
   entries,
+  dragHandle,
   onAddFood,
   onDeleteEntry,
 }) => {
   const { theme, isDark } = useTheme();
+  const { reorderLoggedEntries } = useNutritionStore();
 
   // Calculate slot totals
   let slotCals = 0;
@@ -79,6 +85,7 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
       {/* Header Row */}
       <View style={styles.header}>
         <View style={styles.leftHeader}>
+          {dragHandle}
           <View
             style={[
               styles.iconWrapper,
@@ -136,44 +143,52 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
       {/* Entries List - Clean list view with hairline dividers (no nested card boxes) */}
       {entries.length > 0 ? (
         <View style={[styles.entriesList, { borderTopColor: theme.border }]}>
-          {entries.map((entry, index) => (
-            <View
-              key={entry.id}
-              style={[
-                styles.entryRow,
-                index > 0 && [
-                  styles.entryDivider,
-                  { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-                ],
-              ]}
-            >
-              <View style={styles.entryLeft}>
-                <Text style={[styles.entryName, { color: theme.textPrimary }]} numberOfLines={1}>
-                  {entry.name}
-                </Text>
-                <Text style={[styles.entryServing, { color: theme.textMuted }]} numberOfLines={1}>
-                  {formatServing(entry.portion, entry.servingUnit)}
-                </Text>
-              </View>
+          <SortableList
+            data={entries}
+            keyExtractor={(entry) => entry.id}
+            onReorder={reorderLoggedEntries}
+            renderItem={({ item: entry, index, dragHandle: itemDragHandle }) => (
+              <View
+                key={entry.id}
+                style={[
+                  styles.entryRow,
+                  index > 0 && [
+                    styles.entryDivider,
+                    { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+                  ],
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  {itemDragHandle}
+                  <View style={styles.entryLeft}>
+                    <Text style={[styles.entryName, { color: theme.textPrimary }]} numberOfLines={1}>
+                      {entry.name}
+                    </Text>
+                    <Text style={[styles.entryServing, { color: theme.textMuted }]} numberOfLines={1}>
+                      {formatServing(entry.portion, entry.servingUnit)}
+                    </Text>
+                  </View>
+                </View>
 
-              <View style={styles.entryRight}>
-                <Text style={[styles.entryCals, { color: theme.textPrimary }]}>
-                  {entry.calories}{' '}
-                  <Text style={[styles.entryCalsUnit, { color: theme.textMuted }]}>kcal</Text>
-                </Text>
+                <View style={styles.entryRight}>
+                  <Text style={[styles.entryCals, { color: theme.textPrimary }]}>
+                    {entry.calories}{' '}
+                    <Text style={[styles.entryCalsUnit, { color: theme.textMuted }]}>kcal</Text>
+                  </Text>
 
-                <TouchableOpacity
-                  activeOpacity={0.6}
-                  onPress={() => onDeleteEntry(entry.id)}
-                  style={styles.deleteBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityLabel={`Remove ${entry.name}`}
-                >
-                  <Trash2 size={13} color={theme.textMuted} />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={() => onDeleteEntry(entry.id)}
+                    style={styles.deleteBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel={`Remove ${entry.name}`}
+                  >
+                    <Trash2 size={13} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
+            )}
+          />
         </View>
       ) : (
         <TouchableOpacity

@@ -19,6 +19,7 @@ interface WishlistState {
   markAsPurchased: (id: string, convertedExpenseId?: string) => Promise<void>;
   markAsDropped: (id: string) => Promise<void>;
   restoreItem: (id: string) => Promise<void>;
+  reorderWishlistItems: (reorderedSubset: WishlistItem[]) => Promise<void>;
 
   // Filter setters
   setSearchQuery: (query: string) => void;
@@ -126,6 +127,21 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     set((state) => ({
       items: state.items.map((i) => (i.id === id ? updated : i)),
     }));
+  },
+
+  reorderWishlistItems: async (reorderedSubset: WishlistItem[]) => {
+    const currentItems = get().items;
+    const subsetIds = new Set(reorderedSubset.map((i) => i.id));
+    const firstIndex = currentItems.findIndex((i) => subsetIds.has(i.id));
+    const insertAt = firstIndex >= 0 ? firstIndex : 0;
+    const remaining = currentItems.filter((i) => !subsetIds.has(i.id));
+    const merged = [
+      ...remaining.slice(0, insertAt),
+      ...reorderedSubset,
+      ...remaining.slice(insertAt),
+    ];
+    set({ items: merged });
+    await wishlistRepository.saveAllItems(merged);
   },
 
   setSearchQuery: (searchQuery) => set({ searchQuery }),

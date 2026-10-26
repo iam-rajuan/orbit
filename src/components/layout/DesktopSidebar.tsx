@@ -34,8 +34,8 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const navItems = [
     { title: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { title: 'Daily Routine', path: '/routine', icon: Clock },
-    { title: 'Nutrition & Diet', path: '/nutrition', icon: UtensilsCrossed },
     { title: 'Tasks', path: '/tasks', icon: CheckSquare },
+    { title: 'Nutrition & Diet', path: '/nutrition', icon: UtensilsCrossed },
     { title: 'Expenses', path: '/expenses', icon: Receipt },
     { title: 'Calendar', path: '/calendar', icon: Calendar },
     { title: 'Settings', path: '/settings', icon: Settings },

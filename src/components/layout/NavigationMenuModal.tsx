@@ -110,19 +110,19 @@ export const NavigationMenuModal: React.FC<NavigationMenuModalProps> = ({
       color: '#10B981',
     },
     {
+      title: 'Tasks',
+      subtitle: 'High-impact to-dos & priorities',
+      path: '/tasks',
+      icon: CheckSquare,
+      color: '#8B5CF6',
+    },
+    {
       title: 'Diet & Nutrition',
       subtitle: 'Meal logs, calories & macros',
       path: '/nutrition',
       icon: UtensilsCrossed,
       color: '#0EA5E9',
       badge: 'New',
-    },
-    {
-      title: 'Tasks',
-      subtitle: 'High-impact to-dos & priorities',
-      path: '/tasks',
-      icon: CheckSquare,
-      color: '#8B5CF6',
     },
     {
       title: 'Expenses',

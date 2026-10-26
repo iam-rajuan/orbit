@@ -2,6 +2,7 @@ import { Task } from '../../types';
 import { appStorage } from '../storage/storageAdapter';
 import { SEED_TASKS } from '../../data/seed/initialData';
 import { SEED_FUTURE_TASKS } from '../../data/seed/futureTasksData';
+import { offsetDateKey } from '../../utils/date';
 
 const TASKS_KEY = 'daily_view_tasks_v1';
 const INITIALIZED_KEY = 'daily_view_initialized_v1';
@@ -97,6 +98,51 @@ export class TaskRepository {
     const all = await this.getAllTasks();
     const filtered = all.filter((t) => !ids.includes(t.id));
     await this.saveAllTasks(filtered);
+  }
+
+  async forwardTaskToTomorrow(id: string): Promise<Task | null> {
+    const all = await this.getAllTasks();
+    const index = all.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+
+    const task = all[index];
+    const targetDate = task.date === 'someday' ? new Date().toISOString().slice(0, 10) : task.date;
+    const nextDate = offsetDateKey(targetDate, 1);
+    const forwardCount = (task.forwardCount || 0) + 1;
+    const originalDate = task.originalDate || task.date;
+    const now = new Date().toISOString();
+
+    const updated: Task = {
+      ...task,
+      date: nextDate,
+      forwardCount,
+      originalDate,
+      lastForwardedAt: now,
+      updatedAt: now,
+    };
+    all[index] = updated;
+    await this.saveAllTasks([...all]);
+    return updated;
+  }
+
+  async bulkForwardToTomorrow(ids: string[]): Promise<void> {
+    const all = await this.getAllTasks();
+    const now = new Date().toISOString();
+    const updated = all.map((t) => {
+      if (ids.includes(t.id)) {
+        const targetDate = t.date === 'someday' ? new Date().toISOString().slice(0, 10) : t.date;
+        return {
+          ...t,
+          date: offsetDateKey(targetDate, 1),
+          forwardCount: (t.forwardCount || 0) + 1,
+          originalDate: t.originalDate || t.date,
+          lastForwardedAt: now,
+          updatedAt: now,
+        };
+      }
+      return t;
+    });
+    await this.saveAllTasks(updated);
   }
 }
 

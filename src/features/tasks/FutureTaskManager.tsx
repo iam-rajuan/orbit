@@ -16,6 +16,7 @@ import { FutureTaskFormModal } from './FutureTaskFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
 import { generateId } from '../../utils/id';
+import { ForwardBadge } from './ForwardBadge';
 import {
   Search,
   Pin,
@@ -448,6 +449,14 @@ export const FutureTaskManager: React.FC = () => {
               </Text>
             </View>
           )}
+
+          {task.forwardCount && task.forwardCount > 0 ? (
+            <ForwardBadge
+              count={task.forwardCount}
+              originalDate={task.originalDate}
+              size="sm"
+            />
+          ) : null}
         </View>
 
         {/* Color Palette Popover Row */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import {
   Check,
   X,
   Sparkles,
+  CornerUpRight,
+  RotateCcw,
 } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useDateStore } from '../../stores/useDateStore';
@@ -32,6 +34,8 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Task, TaskPriority } from '../../types';
 import { generateId } from '../../utils/id';
 import { FutureTaskManager } from './FutureTaskManager';
+import { ForwardBadge } from './ForwardBadge';
+import { offsetDateKey, formatAdaptiveDate } from '../../utils/date';
 
 export const TaskManager: React.FC = () => {
   const { width } = useWindowDimensions();
@@ -42,7 +46,7 @@ export const TaskManager: React.FC = () => {
   const activeView = selectedTab ?? (params.tab === 'upcoming' ? 'upcoming' : 'today');
 
   const { theme, isDark } = useTheme();
-  const { selectedDate } = useDateStore();
+  const { selectedDate, setSelectedDate } = useDateStore();
   const {
     searchQuery,
     filterCategory,
@@ -61,6 +65,9 @@ export const TaskManager: React.FC = () => {
     bulkDelete,
     getFilteredTasks,
     getTaskProgress,
+    forwardTaskToTomorrow,
+    bulkForwardToTomorrow,
+    undoForwardTask,
   } = useTaskStore();
 
   const { settings } = useSettingsStore();
@@ -69,6 +76,70 @@ export const TaskManager: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [forwardToast, setForwardToast] = useState<{
+    taskTitle: string;
+    taskId: string;
+    previousDate: string;
+    previousCount?: number;
+    previousOriginalDate?: string;
+    newDate: string;
+    count: number;
+    isBulk?: boolean;
+    bulkCount?: number;
+  } | null>(null);
+
+  const handleForwardSingle = async (task: Task) => {
+    const updated = await forwardTaskToTomorrow(task.id);
+    if (updated) {
+      setForwardToast({
+        taskTitle: task.title,
+        taskId: task.id,
+        previousDate: task.date,
+        previousCount: task.forwardCount,
+        previousOriginalDate: task.originalDate,
+        newDate: updated.date,
+        count: updated.forwardCount || 1,
+      });
+    }
+  };
+
+  const handleBulkForward = async () => {
+    const count = await bulkForwardToTomorrow(selectedTaskIds);
+    if (count > 0) {
+      setForwardToast({
+        taskTitle: `${count} tasks`,
+        taskId: '',
+        previousDate: selectedDate,
+        newDate: offsetDateKey(selectedDate, 1),
+        count: 1,
+        isBulk: true,
+        bulkCount: count,
+      });
+    }
+  };
+
+  const handleUndoForward = async () => {
+    if (!forwardToast || forwardToast.isBulk) {
+      setForwardToast(null);
+      return;
+    }
+    await undoForwardTask(
+      forwardToast.taskId,
+      forwardToast.previousDate,
+      forwardToast.previousCount,
+      forwardToast.previousOriginalDate
+    );
+    setForwardToast(null);
+  };
+
+  useEffect(() => {
+    if (forwardToast) {
+      const timer = setTimeout(() => {
+        setForwardToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [forwardToast]);
 
   // Quick Composer State for Today
   const [isComposerExpanded, setIsComposerExpanded] = useState(false);
@@ -562,6 +633,13 @@ export const TaskManager: React.FC = () => {
                   onPress={() => bulkComplete(false)}
                 />
                 <AppButton
+                  title="Forward"
+                  size="sm"
+                  variant="outline"
+                  icon={<CornerUpRight size={14} color={theme.primary} />}
+                  onPress={handleBulkForward}
+                />
+                <AppButton
                   title="Delete Selected"
                   size="sm"
                   variant="danger"
@@ -635,7 +713,7 @@ export const TaskManager: React.FC = () => {
                 <View style={[styles.thCell, { width: 160 }]}>
                   <Text style={[styles.thText, { color: theme.textMuted }]}>Notes</Text>
                 </View>
-                <View style={[styles.thCell, { width: 80, justifyContent: 'flex-end' }]}>
+                <View style={[styles.thCell, { width: 110, justifyContent: 'flex-end' }]}>
                   <Text style={[styles.thText, { color: theme.textMuted }]}>Actions</Text>
                 </View>
               </View>
@@ -702,15 +780,35 @@ export const TaskManager: React.FC = () => {
                     </View>
 
                     <View style={[styles.tdCell, { flex: 1 }]}>
-                      <Text
-                        style={[
-                          styles.tdTextTitle,
-                          { color: theme.textPrimary },
-                          task.completed && styles.tdTextCompleted,
-                        ]}
-                      >
-                        {task.description || task.title}
-                      </Text>
+                      <View style={{ flexDirection: 'column', gap: 3, alignItems: 'flex-start' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Text
+                            style={[
+                              styles.tdTextTitle,
+                              { color: theme.textPrimary },
+                              task.completed && styles.tdTextCompleted,
+                            ]}
+                          >
+                            {task.title}
+                          </Text>
+                          {task.forwardCount && task.forwardCount > 0 ? (
+                            <ForwardBadge
+                              count={task.forwardCount}
+                              originalDate={task.originalDate}
+                              size="sm"
+                              showOriginalDate={true}
+                            />
+                          ) : null}
+                        </View>
+                        {task.description && task.description !== task.title ? (
+                          <Text
+                            style={[styles.tdTextDesc, { color: theme.textMuted }]}
+                            numberOfLines={1}
+                          >
+                            {task.description.replace(/\n/g, ' ')}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
 
                     <View style={[styles.tdCell, { width: 160 }]}>
@@ -719,7 +817,18 @@ export const TaskManager: React.FC = () => {
                       </Text>
                     </View>
 
-                    <View style={[styles.tdCell, { width: 80, justifyContent: 'flex-end', flexDirection: 'row', gap: 6 }]}>
+                    <View style={[styles.tdCell, { width: 110, justifyContent: 'flex-end', flexDirection: 'row', gap: 6 }]}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleForwardSingle(task)}
+                        style={[
+                          styles.actionBtn,
+                          { backgroundColor: isDark ? 'rgba(99,102,241,0.14)' : '#EEF2FF' },
+                        ]}
+                        accessibilityLabel="Forward to tomorrow"
+                      >
+                        <CornerUpRight size={14} color="#8B5CF6" />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         activeOpacity={0.7}
                         onPress={() => {
@@ -727,6 +836,7 @@ export const TaskManager: React.FC = () => {
                           setModalOpen(true);
                         }}
                         style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}
+                        accessibilityLabel="Edit task"
                       >
                         <Edit2 size={15} color={theme.textMuted} />
                       </TouchableOpacity>
@@ -734,6 +844,7 @@ export const TaskManager: React.FC = () => {
                         activeOpacity={0.7}
                         onPress={() => setDeleteConfirmId(task.id)}
                         style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' }]}
+                        accessibilityLabel="Delete task"
                       >
                         <Trash2 size={15} color="#F43F5E" />
                       </TouchableOpacity>
@@ -744,9 +855,12 @@ export const TaskManager: React.FC = () => {
             </View>
           ) : (
             /* Mobile Cards View (Clean & Modern like Upcoming) */
+            /* Mobile Cards View (Clean, Spacious & Production-Grade) */
             <View style={styles.mobileCardsContainer}>
               {filteredTasks.map((task) => {
                 const isSelected = selectedTaskIds.includes(task.id);
+                const hasDesc = !!task.description && task.description.trim() !== task.title.trim();
+
                 return (
                   <View
                     key={task.id}
@@ -756,13 +870,17 @@ export const TaskManager: React.FC = () => {
                         backgroundColor: isSelected
                           ? (isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF')
                           : theme.surface,
-                        borderColor: isSelected ? theme.primary : theme.border,
+                        borderColor: isSelected
+                          ? theme.primary
+                          : isDark
+                          ? 'rgba(255,255,255,0.08)'
+                          : '#E2E8F0',
                       },
                       task.completed && styles.mobileTaskCardCompleted,
                     ]}
                   >
-                    {/* Header: Checkbox + Title + Actions */}
-                    <View style={styles.cardHeaderRow}>
+                    {/* Header Row: Checkbox + Full-width Title + Deferral Badge */}
+                    <View style={styles.mobileCardHeader}>
                       <TouchableOpacity
                         activeOpacity={0.7}
                         onPress={() => toggleTaskComplete(task.id)}
@@ -770,9 +888,9 @@ export const TaskManager: React.FC = () => {
                         accessibilityLabel="Toggle complete"
                       >
                         {task.completed ? (
-                          <CheckSquare size={18} color="#10B981" />
+                          <CheckSquare size={19} color="#10B981" />
                         ) : (
-                          <Square size={18} color={theme.textMuted} />
+                          <Square size={19} color={theme.textMuted} />
                         )}
                       </TouchableOpacity>
 
@@ -790,71 +908,116 @@ export const TaskManager: React.FC = () => {
                             { color: theme.textPrimary },
                             task.completed && styles.mobileTaskTitleCompleted,
                           ]}
+                          numberOfLines={2}
                         >
-                          {task.description || task.title}
+                          {task.title}
                         </Text>
                       </TouchableOpacity>
 
-                      <View style={styles.cardActionsRow}>
+                      {task.forwardCount && task.forwardCount > 0 ? (
+                        <ForwardBadge
+                          count={task.forwardCount}
+                          originalDate={task.originalDate}
+                          size="sm"
+                        />
+                      ) : null}
+                    </View>
+
+                    {/* Description or Notes Snippet (Indented nicely) */}
+                    {(hasDesc || task.notes) ? (
+                      <View style={styles.mobileDescArea}>
+                        {hasDesc && (
+                          <Text
+                            style={[styles.mobileDescText, { color: theme.textSecondary }]}
+                            numberOfLines={2}
+                          >
+                            {task.description!.replace(/\n/g, ' ')}
+                          </Text>
+                        )}
+                        {task.notes && task.notes !== task.description && (
+                          <Text
+                            style={[styles.mobileNotesText, { color: theme.textMuted }]}
+                            numberOfLines={1}
+                          >
+                            📝 {task.notes}
+                          </Text>
+                        )}
+                      </View>
+                    ) : null}
+
+                    {/* Footer Row: Metadata Chips (Left) + Quick Actions (Right) */}
+                    <View style={styles.mobileCardFooter}>
+                      <View style={styles.mobileCardChipsRow}>
+                        <AppBadge label={task.category} variant="category" size="sm" />
+                        <AppBadge
+                          label={task.priority}
+                          variant="priority"
+                          priority={task.priority}
+                          size="sm"
+                        />
+                        {task.projectName ? (
+                          <View
+                            style={[
+                              styles.projectChip,
+                              {
+                                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
+                                borderColor: theme.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[styles.projectChipText, { color: theme.textSecondary }]}
+                              numberOfLines={1}
+                            >
+                              📁 {task.projectName}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+
+                      {/* Action buttons: Tomorrow postponement + Edit + Delete */}
+                      <View style={styles.mobileCardActions}>
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => handleForwardSingle(task)}
+                          style={[
+                            styles.mobileActionIconBtn,
+                            {
+                              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.16)' : '#EEF2FF',
+                            },
+                          ]}
+                          accessibilityLabel="Postpone to tomorrow"
+                        >
+                          <CornerUpRight size={13.5} color={theme.primary} strokeWidth={2.4} />
+                        </TouchableOpacity>
+
                         <TouchableOpacity
                           activeOpacity={0.7}
                           onPress={() => {
                             setEditingTask(task);
                             setModalOpen(true);
                           }}
-                          style={styles.cardActionIconBtn}
+                          style={[
+                            styles.mobileActionIconBtn,
+                            { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F4F4F5' },
+                          ]}
                           accessibilityLabel="Edit task"
                         >
-                          <Edit2 size={14} color={theme.textSecondary} />
+                          <Edit2 size={13} color={theme.textMuted} />
                         </TouchableOpacity>
+
                         <TouchableOpacity
                           activeOpacity={0.7}
                           onPress={() => setDeleteConfirmId(task.id)}
-                          style={styles.cardActionIconBtn}
+                          style={[
+                            styles.mobileActionIconBtn,
+                            { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' },
+                          ]}
                           accessibilityLabel="Delete task"
                         >
-                          <Trash2 size={14} color="#F43F5E" />
+                          <Trash2 size={13} color="#F43F5E" />
                         </TouchableOpacity>
                       </View>
-                    </View>
-
-                    {/* Notes Snippet */}
-                    {task.notes ? (
-                      <Text
-                        style={[styles.mobileNotesText, { color: theme.textMuted }]}
-                        numberOfLines={2}
-                      >
-                        {task.notes}
-                      </Text>
-                    ) : null}
-
-                    {/* Badges & Project Pill Row */}
-                    <View style={styles.mobileCardChipsRow}>
-                      <AppBadge label={task.category} variant="category" size="sm" />
-                      <AppBadge
-                        label={task.priority}
-                        variant="priority"
-                        priority={task.priority}
-                        size="sm"
-                      />
-                      {task.projectName ? (
-                        <View
-                          style={[
-                            styles.projectChip,
-                            {
-                              backgroundColor: theme.surfaceSubtle,
-                              borderColor: theme.border,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[styles.projectChipText, { color: theme.textSecondary }]}
-                            numberOfLines={1}
-                          >
-                            📁 {task.projectName}
-                          </Text>
-                        </View>
-                      ) : null}
                     </View>
                   </View>
                 );
@@ -903,6 +1066,61 @@ export const TaskManager: React.FC = () => {
         }}
         onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
+
+      {/* Production Floating Toast Snackbar */}
+      {forwardToast && (
+        <View
+          style={[
+            styles.floatingSnackbar,
+            {
+              backgroundColor: isDark ? '#18181B' : '#0F172A',
+            },
+          ]}
+        >
+          <View style={styles.snackbarLeft}>
+            <View style={styles.snackbarIconBadge}>
+              <CornerUpRight size={13} color="#818CF8" strokeWidth={2.4} />
+            </View>
+            <View style={styles.snackbarTextCol}>
+              <Text style={styles.snackbarTitle} numberOfLines={1}>
+                {forwardToast.isBulk
+                  ? `${forwardToast.bulkCount} tasks postponed to tomorrow`
+                  : `Postponed to tomorrow (${formatAdaptiveDate(forwardToast.newDate, 'short')})`}
+              </Text>
+              {!forwardToast.isBulk && (
+                <Text style={styles.snackbarSub} numberOfLines={1}>
+                  {forwardToast.count}x transferred • {forwardToast.taskTitle}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.snackbarActions}>
+            {!forwardToast.isBulk && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleUndoForward}
+                style={styles.snackbarUndoBtn}
+                accessibilityLabel="Undo postponement"
+              >
+                <RotateCcw size={11} color="#A5B4FC" />
+                <Text style={styles.snackbarUndoText}>Undo</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setSelectedDate(forwardToast.newDate);
+                setForwardToast(null);
+              }}
+              style={styles.snackbarViewBtn}
+            >
+              <Text style={styles.snackbarViewText}>View →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -1282,76 +1500,184 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  /* Mobile Task Cards (Modern & Clean like Upcoming) */
+  tdTextDesc: {
+    fontSize: 11.5,
+    lineHeight: 15,
+  },
+
+  /* Mobile Task Cards (Modern & Clean like Linear / Things 3) */
   mobileCardsContainer: {
     gap: 10,
+    paddingBottom: 24,
   },
   mobileTaskCard: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 12,
-    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 1,
   },
   mobileTaskCardCompleted: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
-  cardHeaderRow: {
+  mobileCardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
   },
   cardCheckBtn: {
-    padding: 2,
+    paddingTop: 1,
+    paddingRight: 2,
   },
   cardTitleArea: {
     flex: 1,
   },
   mobileTaskTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '600',
-    lineHeight: 19,
+    lineHeight: 20,
+    letterSpacing: -0.15,
   },
   mobileTaskTitleCompleted: {
     textDecorationLine: 'line-through',
     color: '#94A3B8',
   },
-  cardActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  mobileDescArea: {
+    paddingLeft: 31,
+    gap: 2,
+    marginTop: -2,
   },
-  cardActionIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+  mobileDescText: {
+    fontSize: 12,
+    lineHeight: 16.5,
   },
   mobileNotesText: {
-    fontSize: 12,
-    lineHeight: 17,
-    paddingLeft: 30,
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  mobileCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 31,
+    paddingTop: 4,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   mobileCardChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 6,
-    paddingLeft: 30,
+    flex: 1,
   },
   projectChip: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
   projectChipText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '500',
+  },
+  mobileCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mobileActionIconBtn: {
+    width: 27,
+    height: 27,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Floating Toast Snackbar */
+  floatingSnackbar: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    right: 14,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 8,
+    zIndex: 9999,
+    gap: 8,
+  },
+  snackbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  snackbarIconBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(129, 140, 248, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  snackbarTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  snackbarTitle: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  snackbarSub: {
+    color: '#94A3B8',
+    fontSize: 10,
+    marginTop: 0.5,
+  },
+  snackbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  snackbarUndoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  snackbarUndoText: {
+    color: '#A5B4FC',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  snackbarViewBtn: {
+    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#6366F1',
+  },
+  snackbarViewText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

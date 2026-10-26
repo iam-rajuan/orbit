@@ -40,6 +40,9 @@ export interface Task {
   checklist?: { id: string; text: string; completed: boolean }[]; // Google Keep checklist items
   completed: boolean;
   completedAt?: string;
+  forwardCount?: number; // times task was forwarded/postponed from one day to another
+  originalDate?: string; // original scheduled date (YYYY-MM-DD)
+  lastForwardedAt?: string; // ISO timestamp of last forward action
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Task } from '../types';
 import { taskRepository } from '../services/repositories/taskRepository';
+import { offsetDateKey } from '../utils/date';
 
 interface TaskState {
   tasks: Task[];
@@ -30,6 +31,10 @@ interface TaskState {
   getFilteredTasks: (date: string) => Task[];
   getTaskProgress: (date: string) => { total: number; completed: number; pending: number; percentage: number };
   moveToToday: (taskId: string, todayDate: string) => Promise<void>;
+  forwardTaskToTomorrow: (id: string) => Promise<Task | null>;
+  bulkForwardToTomorrow: (ids?: string[]) => Promise<number>;
+  undoForwardTask: (id: string, previousDate: string, previousCount?: number, previousOriginalDate?: string) => Promise<void>;
+  resetForwardCount: (id: string) => Promise<void>;
   togglePinTask: (id: string) => Promise<void>;
   updateTaskColor: (id: string, color: string) => Promise<void>;
   toggleChecklistItem: (taskId: string, itemId: string) => Promise<void>;
@@ -197,6 +202,90 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       date: todayDate,
       isUpcoming: false,
       horizon: 'today' as any,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
+  },
+
+  forwardTaskToTomorrow: async (id: string): Promise<Task | null> => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return null;
+
+    const targetDate = target.date === 'someday' ? new Date().toISOString().slice(0, 10) : target.date;
+    const nextDate = offsetDateKey(targetDate, 1);
+    const forwardCount = (target.forwardCount || 0) + 1;
+    const originalDate = target.originalDate || target.date;
+    const now = new Date().toISOString();
+
+    const updated: Task = {
+      ...target,
+      date: nextDate,
+      forwardCount,
+      originalDate,
+      lastForwardedAt: now,
+      updatedAt: now,
+    };
+    await updateTask(updated);
+    return updated;
+  },
+
+  bulkForwardToTomorrow: async (ids?: string[]): Promise<number> => {
+    const { tasks, selectedTaskIds } = get();
+    const targetIds = ids && ids.length > 0 ? ids : selectedTaskIds;
+    if (targetIds.length === 0) return 0;
+
+    const now = new Date().toISOString();
+    const updated = tasks.map((t) => {
+      if (targetIds.includes(t.id)) {
+        const targetDate = t.date === 'someday' ? new Date().toISOString().slice(0, 10) : t.date;
+        return {
+          ...t,
+          date: offsetDateKey(targetDate, 1),
+          forwardCount: (t.forwardCount || 0) + 1,
+          originalDate: t.originalDate || t.date,
+          lastForwardedAt: now,
+          updatedAt: now,
+        };
+      }
+      return t;
+    });
+
+    set({ tasks: updated, selectedTaskIds: [] });
+    await taskRepository.bulkForwardToTomorrow(targetIds);
+    return targetIds.length;
+  },
+
+  undoForwardTask: async (
+    id: string,
+    previousDate: string,
+    previousCount?: number,
+    previousOriginalDate?: string
+  ) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+
+    const updated: Task = {
+      ...target,
+      date: previousDate,
+      forwardCount: previousCount,
+      originalDate: previousOriginalDate,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateTask(updated);
+  },
+
+  resetForwardCount: async (id: string) => {
+    const { tasks, updateTask } = get();
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+
+    const updated: Task = {
+      ...target,
+      forwardCount: 0,
+      originalDate: undefined,
+      lastForwardedAt: undefined,
       updatedAt: new Date().toISOString(),
     };
     await updateTask(updated);

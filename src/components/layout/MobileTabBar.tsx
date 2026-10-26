@@ -64,9 +64,9 @@ export const MobileTabBar: React.FC = () => {
               accessibilityLabel={tab.title}
             >
               <Icon
-                size={20}
+                size={19}
                 color={isActive ? theme.primary : theme.textMuted}
-                strokeWidth={isActive ? 2.5 : 2}
+                strokeWidth={isActive ? 2.4 : 1.8}
               />
               <Text
                 style={[
@@ -74,9 +74,18 @@ export const MobileTabBar: React.FC = () => {
                   { color: isActive ? theme.primary : theme.textMuted },
                   isActive && styles.tabTitleActive,
                 ]}
+                numberOfLines={1}
               >
                 {tab.title}
               </Text>
+              {isActive && (
+                <View
+                  style={[
+                    styles.activeDot,
+                    { backgroundColor: theme.primary },
+                  ]}
+                />
+              )}
             </TouchableOpacity>
           );
         })}
@@ -93,12 +102,14 @@ export const MobileTabBar: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    height: 60,
+    height: 64,
     borderTopWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    paddingBottom: 6,
     shadowOffset: { width: 0, height: -2 },
     shadowRadius: 6,
     elevation: 3,
@@ -106,16 +117,23 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 2,
     flex: 1,
     cursor: 'pointer' as any,
   },
   tabTitle: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 2,
+    letterSpacing: -0.1,
   },
   tabTitleActive: {
     fontWeight: '700',
+  },
+  activeDot: {
+    width: 3.5,
+    height: 3.5,
+    borderRadius: 2,
+    marginTop: 2,
   },
 });

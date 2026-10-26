@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { CornerUpRight, RotateCcw, Calendar } from 'lucide-react-native';
 import { AppModal } from '../../components/ui/AppModal';
 import { AppSelect } from '../../components/ui/AppSelect';
 import { AppButton } from '../../components/ui/AppButton';
@@ -9,6 +10,8 @@ import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useDateStore } from '../../stores/useDateStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { generateId } from '../../utils/id';
+import { ForwardBadge } from './ForwardBadge';
+import { offsetDateKey, formatAdaptiveDate } from '../../utils/date';
 
 interface TaskFormModalProps {
   visible: boolean;
@@ -20,7 +23,7 @@ const TaskFormContent: React.FC<{
   taskToEdit?: Task | null;
   onClose: () => void;
 }> = ({ taskToEdit, onClose }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { selectedDate } = useDateStore();
   const { createTask, updateTask } = useTaskStore();
   const { settings } = useSettingsStore();
@@ -32,6 +35,9 @@ const TaskFormContent: React.FC<{
   const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority || 'Medium');
   const [projectName, setProjectName] = useState(taskToEdit?.projectName || '');
   const [notes, setNotes] = useState(taskToEdit?.notes || '');
+  const [taskDate, setTaskDate] = useState(taskToEdit?.date || selectedDate);
+  const [forwardCount, setForwardCount] = useState(taskToEdit?.forwardCount || 0);
+  const [originalDate, setOriginalDate] = useState(taskToEdit?.originalDate || taskToEdit?.date);
   const [error, setError] = useState<string | null>(null);
 
   const validate = () => {
@@ -41,6 +47,20 @@ const TaskFormContent: React.FC<{
     }
     setError(null);
     return true;
+  };
+
+  const handleForwardToTomorrow = () => {
+    const nextDate = offsetDateKey(taskDate === 'someday' ? new Date().toISOString().slice(0, 10) : taskDate, 1);
+    setTaskDate(nextDate);
+    setForwardCount((prev) => prev + 1);
+    if (!originalDate) {
+      setOriginalDate(taskDate);
+    }
+  };
+
+  const handleResetForwardCount = () => {
+    setForwardCount(0);
+    setOriginalDate(undefined);
   };
 
   const handleSave = async () => {
@@ -58,6 +78,9 @@ const TaskFormContent: React.FC<{
         priority,
         projectName: projectName.trim() || undefined,
         notes: notes.trim() || undefined,
+        date: taskDate,
+        forwardCount: forwardCount > 0 ? forwardCount : undefined,
+        originalDate: forwardCount > 0 ? originalDate : undefined,
         updatedAt: now,
       };
       await updateTask(updated);
@@ -71,7 +94,9 @@ const TaskFormContent: React.FC<{
         priority,
         projectName: projectName.trim() || undefined,
         notes: notes.trim() || undefined,
-        date: selectedDate,
+        date: taskDate || selectedDate,
+        forwardCount: forwardCount > 0 ? forwardCount : undefined,
+        originalDate: forwardCount > 0 ? originalDate : undefined,
         completed: false,
         createdAt: now,
         updatedAt: now,
@@ -207,6 +232,54 @@ const TaskFormContent: React.FC<{
         />
       </View>
 
+      {/* Date & Forwarding Controls */}
+      <View
+        style={[
+          styles.deferralCard,
+          {
+            backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : '#F5F3FF',
+            borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#DDD6FE',
+          },
+        ]}
+      >
+        <View style={styles.deferralTopRow}>
+          <View style={styles.deferralDateInfo}>
+            <Calendar size={14} color="#8B5CF6" />
+            <Text style={[styles.deferralDateLabel, { color: theme.textSecondary }]}>
+              Scheduled Date: <Text style={{ fontWeight: '700', color: theme.textPrimary }}>{formatAdaptiveDate(taskDate, 'medium')}</Text>
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleForwardToTomorrow}
+            style={[styles.forwardTomorrowBtn, { backgroundColor: theme.primary }]}
+            accessibilityLabel="Forward to tomorrow"
+          >
+            <CornerUpRight size={14} color="#FFFFFF" strokeWidth={2.4} />
+          </TouchableOpacity>
+        </View>
+
+        {forwardCount > 0 ? (
+          <View style={styles.deferralHistoryRow}>
+            <ForwardBadge
+              count={forwardCount}
+              originalDate={originalDate}
+              size="md"
+              showOriginalDate={true}
+            />
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleResetForwardCount}
+              style={styles.resetCountBtn}
+            >
+              <RotateCcw size={11} color={theme.textMuted} />
+              <Text style={[styles.resetCountText, { color: theme.textMuted }]}>Reset Count</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
+
       {/* Footer Buttons */}
       <View style={styles.buttonRow}>
         <AppButton
@@ -300,5 +373,54 @@ const styles = StyleSheet.create({
   },
   btn: {
     minWidth: 110,
+  },
+  deferralCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 14,
+    gap: 10,
+  },
+  deferralTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  deferralDateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deferralDateLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  forwardTomorrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deferralHistoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  resetCountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+  },
+  resetCountText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

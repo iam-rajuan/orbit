@@ -476,7 +476,7 @@ export const ExpenseManager: React.FC = () => {
               data={filteredExpenses}
               keyExtractor={(expense) => expense.id}
               onReorder={reorderExpenses}
-              renderItem={({ item: expense, index: idx, dragHandle }) => (
+              renderItem={({ item: expense, index: idx }) => (
                 <View
                   key={expense.id}
                   style={[
@@ -487,8 +487,7 @@ export const ExpenseManager: React.FC = () => {
                     },
                   ]}
                 >
-                  <View style={[styles.tdCell, { width: 56, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
-                    {dragHandle}
+                  <View style={[styles.tdCell, { width: 44, flexDirection: 'row', alignItems: 'center' }]}>
                     <Text style={[styles.tdTextMuted, { color: theme.textMuted }]}>{expense.itemNumber || idx + 1}</Text>
                   </View>
 
@@ -585,7 +584,7 @@ export const ExpenseManager: React.FC = () => {
               data={filteredExpenses}
               keyExtractor={(expense) => expense.id}
               onReorder={reorderExpenses}
-              renderItem={({ item: expense, dragHandle }) => (
+              renderItem={({ item: expense }) => (
                 <View
                   key={expense.id}
                   style={[
@@ -608,7 +607,6 @@ export const ExpenseManager: React.FC = () => {
                 >
                   <View style={styles.mobileCardTop}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-                      {dragHandle}
                       <View style={styles.mobileBadges}>
                         <AppBadge label={expense.category} variant="category" size="sm" />
                         <AppBadge label={expense.type} variant="expenseType" size="sm" />

@@ -137,7 +137,7 @@ export const RoutineManager: React.FC = () => {
           data={dayScheduledRoutines}
           keyExtractor={(r) => r.id}
           onReorder={reorderRoutines}
-          renderItem={({ item: routine, dragHandle }) => {
+          renderItem={({ item: routine }) => {
             const comp = completions.find(
               (c) => c.date === selectedDate && c.routineId === routine.id
             );
@@ -172,8 +172,6 @@ export const RoutineManager: React.FC = () => {
                 ]}
               >
                 <View style={styles.cardLeft}>
-                  {dragHandle}
-
                   <View
                     style={[
                       styles.timeTag,

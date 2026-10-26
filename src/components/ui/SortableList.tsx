@@ -6,7 +6,6 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { GripVertical } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 export function arrayMove<T>(array: T[], from: number, to: number): T[] {
@@ -22,7 +21,7 @@ export interface SortableRenderItemProps<T> {
   total: number;
   isDragging: boolean;
   isOver: boolean;
-  dragHandle: React.ReactNode;
+  dragHandle?: React.ReactNode;
   moveUp: () => void;
   moveDown: () => void;
 }
@@ -108,8 +107,25 @@ export function SortableList<T>({
   const calculateTargetIndex = useCallback(
     (fromIndex: number, deltaY: number) => {
       const avgHeight = getAverageItemHeight();
-      const slotDelta = Math.round(deltaY / avgHeight);
-      return Math.max(0, Math.min(data.length - 1, fromIndex + slotDelta));
+      const fromY = itemLayouts.current[fromIndex]?.y ?? fromIndex * avgHeight;
+      const fromH = itemLayouts.current[fromIndex]?.height ?? avgHeight;
+      const currentCenterY = fromY + fromH / 2 + deltaY;
+
+      let bestIndex = fromIndex;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < data.length; i++) {
+        const itemY = itemLayouts.current[i]?.y ?? i * avgHeight;
+        const itemH = itemLayouts.current[i]?.height ?? avgHeight;
+        const itemCenter = itemY + itemH / 2;
+        const dist = Math.abs(currentCenterY - itemCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestIndex = i;
+        }
+      }
+
+      return Math.max(0, Math.min(data.length - 1, bestIndex));
     },
     [data.length, getAverageItemHeight]
   );
@@ -123,7 +139,7 @@ export function SortableList<T>({
     };
   }, []);
 
-  // Universal touch & pointer start for tap-and-hold
+  // Universal touch & pointer start for tap-and-hold anywhere on the card
   const startHoldGesture = (index: number, clientX: number, clientY: number) => {
     touchStartXRef.current = clientX;
     touchStartYRef.current = clientY;
@@ -135,7 +151,7 @@ export function SortableList<T>({
       clearTimeout(holdTimerRef.current);
     }
 
-    // Tap and hold threshold (180ms)
+    // Tap-and-hold threshold: 180ms
     holdTimerRef.current = setTimeout(() => {
       isDraggingRef.current = true;
       setDragState({
@@ -152,8 +168,8 @@ export function SortableList<T>({
     const dx = Math.abs(clientX - touchStartXRef.current);
 
     if (!isDraggingRef.current) {
-      // If user moved thumb/pointer noticeably before 180ms hold timer fires,
-      // it means they are scrolling or swiping -> cancel hold immediately!
+      // If finger/pointer moves noticeably before 180ms hold timer fires,
+      // it means user is scrolling the page or swiping a card -> cancel hold!
       if (Math.abs(dy) > 8 || dx > 8) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
@@ -209,9 +225,12 @@ export function SortableList<T>({
       {data.map((item, index) => {
         const key = keyExtractor(item);
         const isDragging = dragState.active && dragState.startIndex === index;
-        const isTarget = dragState.active && dragState.targetIndex === index && dragState.startIndex !== index;
+        const isTarget =
+          dragState.active &&
+          dragState.targetIndex === index &&
+          dragState.startIndex !== index;
 
-        // Mobile touch handlers
+        // Mobile touch handlers attached to the whole item wrapper
         const touchHandlers = {
           onTouchStart: (e: any) => {
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
@@ -234,6 +253,11 @@ export function SortableList<T>({
           Platform.OS === 'web'
             ? {
                 onPointerDown: (e: any) => {
+                  const targetTagName = (e.target?.tagName || '').toLowerCase();
+                  if (targetTagName === 'input' || targetTagName === 'textarea') {
+                    return;
+                  }
+
                   startHoldGesture(index, e.pageX || e.clientX, e.pageY || e.clientY);
 
                   if (typeof window !== 'undefined') {
@@ -258,50 +282,6 @@ export function SortableList<T>({
                 },
               }
             : {};
-
-        const dragHandle = (
-          <View
-            style={[
-              styles.dragHandle,
-              {
-                backgroundColor: isDragging
-                  ? 'rgba(99, 102, 241, 0.22)'
-                  : isDark
-                  ? 'rgba(255, 255, 255, 0.05)'
-                  : 'rgba(0, 0, 0, 0.03)',
-                borderColor: isDragging
-                  ? '#6366F1'
-                  : isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.06)',
-              },
-              isDragging && { transform: [{ scale: 1.1 }] },
-              Platform.OS === 'web'
-                ? ({
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    touchAction: 'none',
-                  } as any)
-                : {},
-            ]}
-            accessibilityLabel={`Hold and drag to reorder item ${index + 1}`}
-            {...touchHandlers}
-            {...webPointerHandlers}
-          >
-            <GripVertical
-              size={15}
-              color={
-                isDragging
-                  ? '#6366F1'
-                  : isDark
-                  ? 'rgba(255, 255, 255, 0.45)'
-                  : 'rgba(0, 0, 0, 0.35)'
-              }
-              strokeWidth={2.4}
-            />
-          </View>
-        );
 
         return (
           <React.Fragment key={key}>
@@ -330,7 +310,17 @@ export function SortableList<T>({
                     shadowOpacity: isDark ? 0.45 : 0.22,
                   },
                 ],
+                Platform.OS === 'web'
+                  ? ({
+                      userSelect: dragState.active ? 'none' : 'auto',
+                      WebkitUserSelect: dragState.active ? 'none' : 'auto',
+                      touchAction: dragState.active ? 'none' : 'pan-y',
+                      cursor: isDragging ? 'grabbing' : 'default',
+                    } as any)
+                  : {},
               ]}
+              {...touchHandlers}
+              {...webPointerHandlers}
             >
               {renderItem({
                 item,
@@ -338,7 +328,7 @@ export function SortableList<T>({
                 total: data.length,
                 isDragging,
                 isOver: isTarget,
-                dragHandle,
+                dragHandle: null, // Removed handle button - tap & hold works anywhere on the card!
                 moveUp: () => moveUp(index),
                 moveDown: () => moveDown(index),
               })}
@@ -374,15 +364,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 20,
-  },
-  dragHandle: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
   },
   dropIndicatorContainer: {
     width: '100%',

@@ -343,7 +343,7 @@ export const WishlistManager: React.FC = () => {
             data={filteredItems}
             keyExtractor={(item) => item.id}
             onReorder={reorderWishlistItems}
-            renderItem={({ item, dragHandle }) => {
+            renderItem={({ item }) => {
               const isPurchased = item.status === 'purchased';
               const isDropped = item.status === 'dropped';
               const priorityColor =
@@ -394,7 +394,6 @@ export const WishlistManager: React.FC = () => {
                   {/* Card Top: Priority & Price */}
                   <View style={styles.cardTopRow}>
                     <View style={styles.cardBadgesRow}>
-                      {dragHandle}
                       {/* Priority Badge */}
                       <View
                         style={[

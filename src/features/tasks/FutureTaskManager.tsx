@@ -240,7 +240,7 @@ export const FutureTaskManager: React.FC = () => {
   };
 
   // Render a Note / Task Card
-  const renderCard = (task: Task, dragHandle?: React.ReactNode) => {
+  const renderCard = (task: Task) => {
     const cardStyle = getKeepCardStyle(task.color, isDark, theme.surface, theme.border);
     const isShowingColorPicker = showColorPickerForId === task.id;
     const isGrid = viewMode === 'grid';
@@ -267,7 +267,6 @@ export const FutureTaskManager: React.FC = () => {
       >
         {/* Card Header: Checkbox for task done + Title + Pin Icon */}
         <View style={styles.cardHeader}>
-          {dragHandle}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => toggleTaskComplete(task.id)}
@@ -999,7 +998,7 @@ export const FutureTaskManager: React.FC = () => {
                 onReorder={reorderTasks}
                 contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
                 itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
-                renderItem={({ item: task, dragHandle }) => renderCard(task, dragHandle)}
+                renderItem={({ item: task }) => renderCard(task)}
               />
             </View>
           )}
@@ -1018,7 +1017,7 @@ export const FutureTaskManager: React.FC = () => {
                 onReorder={reorderTasks}
                 contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
                 itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
-                renderItem={({ item: task, dragHandle }) => renderCard(task, dragHandle)}
+                renderItem={({ item: task }) => renderCard(task)}
               />
             </View>
           )}

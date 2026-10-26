@@ -875,7 +875,7 @@ export const TaskManager: React.FC = () => {
                 data={filteredTasks}
                 keyExtractor={(t) => t.id}
                 onReorder={reorderTasks}
-                renderItem={({ item: task, dragHandle }) => {
+                renderItem={({ item: task }) => {
                   const isSelected = selectedTaskIds.includes(task.id);
                   const hasDesc = !!task.description && task.description.trim() !== task.title.trim();
 
@@ -927,9 +927,8 @@ export const TaskManager: React.FC = () => {
                           task.completed && styles.mobileTaskCardCompleted,
                         ]}
                       >
-                        {/* Header Row: Drag Handle + Checkbox + Full-width Title + Deferral Badge */}
+                        {/* Header Row: Checkbox + Full-width Title + Deferral Badge */}
                         <View style={styles.mobileCardHeader}>
-                          {dragHandle}
 
                           <TouchableOpacity
                             activeOpacity={0.7}

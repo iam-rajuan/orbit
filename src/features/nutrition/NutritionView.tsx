@@ -341,14 +341,13 @@ export const NutritionView: React.FC = () => {
                 data={mealSlots}
                 keyExtractor={(slot) => slot.id}
                 onReorder={reorderMealSlots}
-                renderItem={({ item: slot, dragHandle }) => {
+                renderItem={({ item: slot }) => {
                   const slotEntries = dayEntries.filter((e) => e.mealSlotId === slot.id);
                   return (
                     <MealSlotCard
                       key={slot.id}
                       slot={slot}
                       entries={slotEntries}
-                      dragHandle={dragHandle}
                       onAddFood={(slotId) => setActiveSlotModalId(slotId)}
                       onDeleteEntry={(entryId) => deleteLoggedEntry(entryId)}
                     />

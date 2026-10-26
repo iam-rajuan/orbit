@@ -257,7 +257,7 @@ export const MealRoutineModal: React.FC<MealRoutineModalProps> = ({
               data={mealSlots}
               keyExtractor={(slot) => slot.id}
               onReorder={reorderMealSlots}
-              renderItem={({ item: slot, index, dragHandle }) => (
+              renderItem={({ item: slot, index }) => (
                 <View
                   key={slot.id}
                   style={[
@@ -269,7 +269,6 @@ export const MealRoutineModal: React.FC<MealRoutineModalProps> = ({
                   ]}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {dragHandle}
                     <View style={styles.slotOrderBadge}>
                       <Text style={[styles.slotOrderText, { color: theme.textMuted }]}>
                         {index + 1}

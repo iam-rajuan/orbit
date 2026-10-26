@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useTaskStore } from '../../stores/useTaskStore';
@@ -254,6 +255,12 @@ export const FutureTaskManager: React.FC = () => {
             padding: isGrid ? (isDesktop ? 14 : 10) : 14,
             backgroundColor: cardStyle.backgroundColor,
             borderColor: cardStyle.borderColor,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                } as any)
+              : {}),
           },
           task.completed && styles.noteCardCompleted,
         ]}
@@ -1082,7 +1089,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 42,
-    borderRadius: 12,
+    borderRadius: 9999,
     borderWidth: 0,
     paddingHorizontal: 14,
   },
@@ -1115,9 +1122,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   filterChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 6,
-    borderRadius: 14,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   filterChipText: {
@@ -1148,14 +1155,14 @@ const styles = StyleSheet.create({
   composerCard: {
     width: '100%',
     maxWidth: 620,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   composerCollapsed: {
     flexDirection: 'row',
@@ -1357,13 +1364,13 @@ const styles = StyleSheet.create({
 
   /* Note Card */
   noteCard: {
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 2,
     marginBottom: 2,
   },

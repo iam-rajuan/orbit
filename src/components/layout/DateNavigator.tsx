@@ -7,6 +7,7 @@ import {
   ViewStyle,
   Modal,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
@@ -21,7 +22,7 @@ interface DateNavigatorProps {
 export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
   const { selectedDate, setSelectedDate, goToPreviousDay, goToNextDay, goToToday } =
     useDateStore();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -49,10 +50,19 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
         style={[
           styles.navGroup,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
-            shadowColor: theme.shadowColor,
-            shadowOpacity: theme.shadowOpacity,
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.82)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+            borderRadius: 9999,
+            shadowColor: '#000',
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 8,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                } as any)
+              : {}),
           },
         ]}
       >
@@ -70,7 +80,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           onPress={() => setPickerOpen(true)}
           style={styles.dateSelector}
         >
-          <CalendarIcon size={10} color={theme.primary} strokeWidth={2.2} style={styles.calIcon} />
+          <CalendarIcon size={11} color={theme.primary} strokeWidth={2.4} style={styles.calIcon} />
           <View style={styles.dateTextContainer}>
             <Text
               style={[styles.dateTitle, { color: theme.textPrimary }]}
@@ -99,8 +109,9 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({ style }) => {
           style={[
             styles.todayBtn,
             {
-              backgroundColor: theme.primaryBg,
-              borderColor: theme.primaryBorder,
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.18)' : 'rgba(79, 70, 229, 0.09)',
+              borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(79, 70, 229, 0.18)',
+              borderRadius: 9999,
             },
           ]}
           accessibilityLabel="Jump to today"

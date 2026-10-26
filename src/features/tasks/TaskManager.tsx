@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   TextInput,
+  Platform,
 } from 'react-native';
 import {
   CheckSquare,
@@ -469,8 +470,14 @@ export const TaskManager: React.FC = () => {
               style={[
                 styles.composerCard,
                 {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
+                  backgroundColor: isDark ? 'rgba(24, 24, 28, 0.72)' : 'rgba(255, 255, 255, 0.85)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+                  ...(Platform.OS === 'web'
+                    ? ({
+                        backdropFilter: 'blur(24px) saturate(190%)',
+                        WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                      } as any)
+                    : {}),
                 },
               ]}
             >
@@ -675,8 +682,14 @@ export const TaskManager: React.FC = () => {
               style={[
                 styles.tableCard,
                 {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
+                  backgroundColor: isDark ? 'rgba(22, 22, 26, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                  ...(Platform.OS === 'web'
+                    ? ({
+                        backdropFilter: 'blur(24px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                      } as any)
+                    : {}),
                 },
               ]}
             >
@@ -893,13 +906,23 @@ export const TaskManager: React.FC = () => {
                           styles.mobileTaskCard,
                           {
                             backgroundColor: isSelected
-                              ? (isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF')
-                              : theme.surface,
+                              ? isDark
+                                ? 'rgba(99,102,241,0.16)'
+                                : 'rgba(79, 70, 229, 0.08)'
+                              : isDark
+                              ? 'rgba(24, 24, 28, 0.76)'
+                              : 'rgba(255, 255, 255, 0.85)',
                             borderColor: isSelected
                               ? theme.primary
                               : isDark
-                              ? 'rgba(255,255,255,0.08)'
-                              : '#E2E8F0',
+                              ? 'rgba(255, 255, 255, 0.08)'
+                              : 'rgba(0, 0, 0, 0.06)',
+                            ...(Platform.OS === 'web'
+                              ? ({
+                                  backdropFilter: 'blur(20px) saturate(180%)',
+                                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                                } as any)
+                              : {}),
                           },
                           task.completed && styles.mobileTaskCardCompleted,
                         ]}
@@ -1257,9 +1280,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   filterChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 6,
-    borderRadius: 14,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   filterChipText: {
@@ -1281,14 +1304,14 @@ const styles = StyleSheet.create({
   },
   composerCard: {
     width: '100%',
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   composerCollapsed: {
     flexDirection: 'row',
@@ -1496,16 +1519,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   mobileTaskCard: {
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
     gap: 7,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowRadius: 10,
+    elevation: 2,
   },
   mobileTaskCardCompleted: {
     // Keep background solid and opaque so swipe actions never bleed through

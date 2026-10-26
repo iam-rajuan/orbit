@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   Linking,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useWishlistStore } from '../../stores/useWishlistStore';
@@ -120,10 +121,16 @@ export const WishlistManager: React.FC = () => {
           style={[
             styles.headerMetricCard,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
               shadowColor: theme.shadowColor,
               shadowOpacity: theme.shadowOpacity,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  } as any)
+                : {}),
             },
           ]}
         >
@@ -175,8 +182,14 @@ export const WishlistManager: React.FC = () => {
         style={[
           styles.toolbarCard,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                } as any)
+              : {}),
           },
         ]}
       >
@@ -346,17 +359,35 @@ export const WishlistManager: React.FC = () => {
                   style={[
                     styles.wishlistCard,
                     {
-                      backgroundColor: theme.surface,
+                      backgroundColor: isPurchased
+                        ? isDark
+                          ? 'rgba(16, 185, 129, 0.14)'
+                          : 'rgba(236, 253, 245, 0.85)'
+                        : isDropped
+                        ? isDark
+                          ? 'rgba(24, 24, 28, 0.5)'
+                          : 'rgba(244, 244, 245, 0.7)'
+                        : isDark
+                        ? 'rgba(24, 24, 28, 0.78)'
+                        : 'rgba(255, 255, 255, 0.85)',
                       borderColor: isPurchased
                         ? isDark
-                          ? 'rgba(16, 185, 129, 0.3)'
+                          ? 'rgba(16, 185, 129, 0.35)'
                           : '#A7F3D0'
                         : isDropped
                         ? 'rgba(150, 150, 150, 0.25)'
-                        : theme.border,
+                        : isDark
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(255, 255, 255, 0.7)',
                       opacity: isDropped ? 0.75 : 1,
                       shadowColor: theme.shadowColor,
                       shadowOpacity: theme.shadowOpacity,
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            backdropFilter: 'blur(20px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                          } as any)
+                        : {}),
                     },
                   ]}
                 >
@@ -599,7 +630,7 @@ const styles = StyleSheet.create({
   headerMetricCard: {
     flex: 1,
     minWidth: 160,
-    borderRadius: 14,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 14,
     shadowOffset: { width: 0, height: 2 },
@@ -615,7 +646,7 @@ const styles = StyleSheet.create({
   metricIconCircle: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -635,9 +666,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   toolbarCard: {
-    borderRadius: 14,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 12,
+    padding: 14,
     marginBottom: 16,
     gap: 12,
   },
@@ -654,9 +685,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statusTab: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
     cursor: 'pointer' as any,
   },
@@ -671,9 +702,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 9999,
     cursor: 'pointer' as any,
   },
   addBtnText: {
@@ -692,9 +723,9 @@ const styles = StyleSheet.create({
     minWidth: 180,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     height: 38,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   searchInput: {
@@ -707,9 +738,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   priorityFilterBtn: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 7,
+    borderRadius: 9999,
     borderWidth: 1,
     cursor: 'pointer' as any,
   },
@@ -722,7 +753,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   emptyStateCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 32,
     alignItems: 'center',
@@ -746,12 +777,12 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 9999,
     marginTop: 10,
     cursor: 'pointer' as any,
   },
   wishlistCard: {
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
     gap: 8,
@@ -776,9 +807,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   priorityDot: {
@@ -795,9 +826,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   categoryPillText: {
@@ -808,9 +839,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
   },
   statusPillText: {
     color: '#FFFFFF',

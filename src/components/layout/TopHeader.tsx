@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, TouchableOpacity, Platform } from 'react-native';
 
 import { DateNavigator } from './DateNavigator';
 import { AppButton } from '../ui/AppButton';
@@ -27,11 +27,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       style={[
         styles.header,
         {
-          backgroundColor: theme.surface,
-          borderBottomColor: theme.border,
+          backgroundColor: isDark ? 'rgba(12, 12, 16, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+          borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
           paddingHorizontal: isMobile ? 12 : 20,
           minHeight: isMobile ? 54 : 60,
           paddingVertical: isMobile ? 8 : 10,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(25px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+              } as any)
+            : {}),
         },
       ]}
     >
@@ -45,23 +51,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </View>
 
       <View style={styles.actions}>
-        {/* Quick Theme Toggle Button - Harmonized with Theme Surface */}
+        {/* Quick Theme Toggle Button - Harmonized with iOS Glass Surface */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={toggleTheme}
           style={[
             styles.themeToggleBtn,
             {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: isDark ? theme.border : theme.borderSubtle,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.75)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.2 : 0.04,
+              shadowOffset: { width: 0, height: 2 },
+              shadowRadius: 6,
             },
           ]}
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {isDark ? (
-            <Sun size={17} color="#FBBF24" />
+            <Sun size={16} color="#FBBF24" />
           ) : (
-            <Moon size={17} color="#4F46E5" />
+            <Moon size={16} color="#4F46E5" />
           )}
         </TouchableOpacity>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { DailyHabitLog } from '../../../types/nutrition';
 import {
@@ -43,10 +43,16 @@ export const WaterHabitCard: React.FC<WaterHabitCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: theme.surface,
-          borderColor: theme.border,
+          backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
           shadowColor: theme.shadowColor,
           shadowOpacity: theme.shadowOpacity,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              } as any)
+            : {}),
         },
       ]}
     >
@@ -187,7 +193,7 @@ export const WaterHabitCard: React.FC<WaterHabitCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     marginBottom: 16,
@@ -249,9 +255,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
     cursor: 'pointer' as any,
   },

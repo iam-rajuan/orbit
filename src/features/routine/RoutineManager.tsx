@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import {
   Clock,
@@ -58,8 +59,18 @@ export const RoutineManager: React.FC = () => {
         style={[
           styles.headerCard,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.72)' : 'rgba(255, 255, 255, 0.85)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowRadius: 12,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                } as any)
+              : {}),
           },
         ]}
       >
@@ -139,9 +150,23 @@ export const RoutineManager: React.FC = () => {
                   styles.routineCard,
                   {
                     backgroundColor: isDone
-                      ? (isDark ? 'rgba(255,255,255,0.02)' : '#FAFAFA')
-                      : theme.surface,
-                    borderColor: theme.border,
+                      ? isDark
+                        ? 'rgba(255,255,255,0.03)'
+                        : 'rgba(255,255,255,0.5)'
+                      : isDark
+                      ? 'rgba(24, 24, 28, 0.76)'
+                      : 'rgba(255, 255, 255, 0.85)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: isDark ? 0.25 : 0.04,
+                    shadowRadius: 10,
+                    ...(Platform.OS === 'web'
+                      ? ({
+                          backdropFilter: 'blur(20px) saturate(180%)',
+                          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                        } as any)
+                      : {}),
                   },
                   isDone && styles.routineCardCompleted,
                 ]}
@@ -255,13 +280,13 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 20,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
     elevation: 2,
   },
   headerTop: {
@@ -280,7 +305,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 100,
+    borderRadius: 9999,
     gap: 4,
   },
   completeBadgeText: {
@@ -325,13 +350,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 16,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 1,
   },
   routineCardCompleted: {
@@ -341,13 +366,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 14,
+    gap: 12,
   },
   timeTag: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    minWidth: 80,
+    paddingVertical: 5,
+    borderRadius: 9999,
+    minWidth: 76,
     alignItems: 'center',
   },
   timeText: {

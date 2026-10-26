@@ -10,7 +10,7 @@ function ThemedRoot() {
   const { theme, isDark } = useTheme();
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? 'transparent' : theme.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Slot />
     </GestureHandlerRootView>

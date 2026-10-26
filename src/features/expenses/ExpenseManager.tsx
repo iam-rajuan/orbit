@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   TextInput,
+  Platform,
 } from 'react-native';
 import {
   Receipt,
@@ -79,15 +80,28 @@ export const ExpenseManager: React.FC = () => {
         <View
           style={[
             styles.viewSwitchContainer,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' },
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+              borderRadius: 9999,
+              padding: 4,
+            },
           ]}
         >
           <TouchableOpacity
             style={[
               styles.viewSwitchButton,
+              { borderRadius: 9999 },
               activeView === 'expenses' && [
                 styles.viewSwitchButtonActive,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                {
+                  backgroundColor: isDark ? 'rgba(40, 40, 46, 0.9)' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                  borderRadius: 9999,
+                  shadowColor: '#000',
+                  shadowOpacity: isDark ? 0.3 : 0.06,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowRadius: 6,
+                },
               ],
             ]}
             onPress={() => setSelectedTab('expenses')}
@@ -114,9 +128,18 @@ export const ExpenseManager: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.viewSwitchButton,
+              { borderRadius: 9999 },
               activeView === 'wishlist' && [
                 styles.viewSwitchButtonActive,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                {
+                  backgroundColor: isDark ? 'rgba(40, 40, 46, 0.9)' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                  borderRadius: 9999,
+                  shadowColor: '#000',
+                  shadowOpacity: isDark ? 0.3 : 0.06,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowRadius: 6,
+                },
               ],
             ]}
             onPress={() => setSelectedTab('wishlist')}
@@ -397,8 +420,15 @@ export const ExpenseManager: React.FC = () => {
           style={[
             styles.tableCard,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(22, 22, 26, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+              borderRadius: 20,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(24px) saturate(190%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                  } as any)
+                : {}),
             },
           ]}
         >
@@ -561,8 +591,18 @@ export const ExpenseManager: React.FC = () => {
                   style={[
                     styles.mobileExpenseCard,
                     {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
+                      backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.85)',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: isDark ? 0.25 : 0.04,
+                      shadowRadius: 10,
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            backdropFilter: 'blur(20px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                          } as any)
+                        : {}),
                     },
                   ]}
                 >
@@ -909,15 +949,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   mobileExpenseCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 14,
+    padding: 15,
     gap: 10,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   mobileCardTop: {
     flexDirection: 'row',

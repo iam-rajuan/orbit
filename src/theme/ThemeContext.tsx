@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { useColorScheme } from 'react-native';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
+import { useColorScheme, Platform } from 'react-native';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -41,23 +41,27 @@ export interface ThemeColors {
   shadowColor: string;
   shadowOpacity: number;
   backdrop: string;
+  // iOS Glass tokens
+  glassSurface: string;
+  glassBorder: string;
+  glassShadow: string;
 }
 
 export const LIGHT_THEME: ThemeColors = {
   isDark: false,
-  background: '#FAFAF9', // warm stone-50
-  surface: '#FFFFFF',
-  surfaceSubtle: '#F4F4F5', // zinc-100
-  surfaceElevated: '#FFFFFF',
-  border: '#F4F4F5',
-  borderSubtle: '#E4E4E7', // zinc-200
-  borderStrong: '#D4D4D8',
-  textPrimary: '#18181B', // zinc-900
-  textSecondary: '#52525B', // zinc-600
-  textMuted: '#71717A', // zinc-500
-  primary: '#4F46E5', // indigo-600
-  primaryBg: '#EEF2FF',
-  primaryBorder: '#C7D2FE',
+  background: '#F2F2F7', // Apple iOS System Grouped Background
+  surface: 'rgba(255, 255, 255, 0.85)', // Frosted Glass surface
+  surfaceSubtle: 'rgba(0, 0, 0, 0.038)',
+  surfaceElevated: 'rgba(255, 255, 255, 0.96)',
+  border: 'rgba(0, 0, 0, 0.06)',
+  borderSubtle: 'rgba(0, 0, 0, 0.035)',
+  borderStrong: 'rgba(0, 0, 0, 0.12)',
+  textPrimary: '#000000', // Apple primary text
+  textSecondary: '#3C3C43', // Apple secondary label
+  textMuted: '#8E8E93', // Apple tertiary label
+  primary: '#4F46E5', // Indigo accent
+  primaryBg: 'rgba(79, 70, 229, 0.08)',
+  primaryBorder: 'rgba(79, 70, 229, 0.20)',
   primaryText: '#4338CA',
   success: '#10B981',
   successBg: '#ECFDF5',
@@ -71,26 +75,29 @@ export const LIGHT_THEME: ThemeColors = {
   warningBg: '#FFFBEB',
   warningBorder: '#FDE68A',
   warningText: '#B45309',
-  shadowColor: '#18181B',
-  shadowOpacity: 0.03,
-  backdrop: 'rgba(9, 9, 11, 0.45)',
+  shadowColor: '#000000',
+  shadowOpacity: 0.04,
+  backdrop: 'rgba(0, 0, 0, 0.35)',
+  glassSurface: 'rgba(255, 255, 255, 0.75)',
+  glassBorder: 'rgba(255, 255, 255, 0.85)',
+  glassShadow: 'rgba(0, 0, 0, 0.04)',
 };
 
 export const DARK_THEME: ThemeColors = {
   isDark: true,
-  background: '#09090B', // zinc-950 obsidian
-  surface: '#121215', // premium deep surface
-  surfaceSubtle: '#18181B', // zinc-900
-  surfaceElevated: '#1F1F23', // zinc-850
-  border: '#27272A', // zinc-800
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  borderStrong: '#3F3F46', // zinc-700
-  textPrimary: '#FAFAFA', // zinc-50
-  textSecondary: '#A1A1AA', // zinc-400
-  textMuted: '#71717A', // zinc-500
-  primary: '#6366F1', // indigo-500 glow
-  primaryBg: 'rgba(99, 102, 241, 0.15)',
-  primaryBorder: 'rgba(99, 102, 241, 0.3)',
+  background: '#09090B', // Deep Obsidian System Grouped Background
+  surface: 'rgba(24, 24, 28, 0.78)', // Frosted Dark Glass surface
+  surfaceSubtle: 'rgba(255, 255, 255, 0.05)',
+  surfaceElevated: 'rgba(34, 34, 40, 0.88)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  borderSubtle: 'rgba(255, 255, 255, 0.05)',
+  borderStrong: 'rgba(255, 255, 255, 0.16)',
+  textPrimary: '#FFFFFF', // Apple primary dark text
+  textSecondary: '#EBEBF5', // Apple secondary dark text
+  textMuted: '#8E8E93', // Apple tertiary dark text
+  primary: '#6366F1', // Indigo glow
+  primaryBg: 'rgba(99, 102, 241, 0.16)',
+  primaryBorder: 'rgba(99, 102, 241, 0.32)',
   primaryText: '#A5B4FC',
   success: '#34D399',
   successBg: 'rgba(16, 185, 129, 0.15)',
@@ -105,8 +112,11 @@ export const DARK_THEME: ThemeColors = {
   warningBorder: 'rgba(245, 158, 11, 0.3)',
   warningText: '#FCD34D',
   shadowColor: '#000000',
-  shadowOpacity: 0.35,
-  backdrop: 'rgba(0, 0, 0, 0.75)',
+  shadowOpacity: 0.28,
+  backdrop: 'rgba(0, 0, 0, 0.65)',
+  glassSurface: 'rgba(24, 24, 28, 0.72)',
+  glassBorder: 'rgba(255, 255, 255, 0.12)',
+  glassShadow: 'rgba(0, 0, 0, 0.25)',
 };
 
 export interface ThemeContextType {
@@ -141,6 +151,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const theme = useMemo(() => {
     return isDark ? DARK_THEME : LIGHT_THEME;
+  }, [isDark]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.body.classList.remove('light-theme', 'dark-theme');
+      document.body.classList.add(isDark ? 'dark-theme' : 'light-theme');
+    }
   }, [isDark]);
 
   const setThemeMode = (newMode: ThemeMode) => {

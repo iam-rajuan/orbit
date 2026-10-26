@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import {
   LayoutDashboard,
@@ -28,7 +28,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
@@ -46,8 +46,14 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       style={[
         styles.sidebar,
         {
-          backgroundColor: theme.surface,
-          borderRightColor: theme.border,
+          backgroundColor: isDark ? 'rgba(15, 15, 18, 0.78)' : 'rgba(255, 255, 255, 0.75)',
+          borderRightColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(28px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+              } as any)
+            : {}),
         },
         collapsed && styles.sidebarCollapsed,
       ]}
@@ -74,7 +80,11 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               onPress={() => router.push(item.path as any)}
               style={[
                 styles.navItem,
-                isActive && { backgroundColor: theme.primaryBg },
+                isActive && {
+                  backgroundColor: isDark ? 'rgba(99, 102, 241, 0.16)' : 'rgba(79, 70, 229, 0.08)',
+                  borderColor: isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(79, 70, 229, 0.15)',
+                  borderWidth: 1,
+                },
                 collapsed && styles.navItemCollapsed,
               ]}
               accessibilityLabel={item.title}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { MealSlot, LoggedMealEntry } from '../../../types/nutrition';
 import {
@@ -75,10 +75,18 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: theme.surface,
-          borderColor: theme.border,
-          shadowColor: theme.shadowColor,
-          shadowOpacity: theme.shadowOpacity,
+          backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.85)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: isDark ? 0.25 : 0.04,
+          shadowRadius: 10,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              } as any)
+            : {}),
         },
       ]}
     >
@@ -207,14 +215,14 @@ export const MealSlotCard: React.FC<MealSlotCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     marginBottom: 12,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -228,9 +236,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -197,7 +197,7 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
 const styles = StyleSheet.create({
   outerContainer: {
     position: 'relative',
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden',
   },
   actionsDrawer: {
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'flex-end',
-    borderTopRightRadius: 14,
-    borderBottomRightRadius: 14,
+    borderTopRightRadius: 18,
+    borderBottomRightRadius: 18,
     overflow: 'hidden',
     zIndex: 1,
   },

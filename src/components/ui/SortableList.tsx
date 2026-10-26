@@ -1,15 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
   Platform,
   StyleProp,
   ViewStyle,
-  Modal,
-  Text,
 } from 'react-native';
-import { GripVertical, ArrowUp, ArrowDown } from 'lucide-react-native';
+import { GripVertical } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 export function arrayMove<T>(array: T[], from: number, to: number): T[] {
@@ -41,6 +38,13 @@ interface SortableListProps<T> {
   estimatedItemHeight?: number;
 }
 
+interface DragState {
+  active: boolean;
+  startIndex: number | null;
+  targetIndex: number | null;
+  translateY: number;
+}
+
 export function SortableList<T>({
   data,
   keyExtractor,
@@ -49,19 +53,24 @@ export function SortableList<T>({
   style,
   contentContainerStyle,
   itemWrapperStyle,
-  estimatedItemHeight = 72,
+  estimatedItemHeight = 76,
 }: SortableListProps<T>) {
-  const { theme, isDark } = useTheme();
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const { isDark } = useTheme();
 
-  // Quick Move Sheet state for tap on grip handle
-  const [quickMoveIndex, setQuickMoveIndex] = useState<number | null>(null);
+  const [dragState, setDragState] = useState<DragState>({
+    active: false,
+    startIndex: null,
+    targetIndex: null,
+    translateY: 0,
+  });
 
-  // Touch tracking for mobile
-  const touchStartY = useRef<number>(0);
-  const touchStartIndex = useRef<number | null>(null);
-  const currentOverIndex = useRef<number | null>(null);
+  // Mutable refs for rock-solid gesture tracking without stale closures
+  const holdTimerRef = useRef<any>(null);
+  const touchStartYRef = useRef<number>(0);
+  const touchStartXRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+  const activeStartIndexRef = useRef<number | null>(null);
+  const currentTargetIndexRef = useRef<number | null>(null);
   const itemLayouts = useRef<Record<number, { y: number; height: number }>>({});
 
   const handleMove = useCallback(
@@ -87,224 +96,263 @@ export function SortableList<T>({
     [handleMove, data.length]
   );
 
+  const getAverageItemHeight = useCallback(() => {
+    const layouts = Object.values(itemLayouts.current);
+    if (layouts.length > 0) {
+      const totalHeight = layouts.reduce((sum, item) => sum + item.height, 0);
+      return Math.max(45, totalHeight / layouts.length);
+    }
+    return estimatedItemHeight;
+  }, [estimatedItemHeight]);
+
+  const calculateTargetIndex = useCallback(
+    (fromIndex: number, deltaY: number) => {
+      const avgHeight = getAverageItemHeight();
+      const slotDelta = Math.round(deltaY / avgHeight);
+      return Math.max(0, Math.min(data.length - 1, fromIndex + slotDelta));
+    },
+    [data.length, getAverageItemHeight]
+  );
+
+  // Clean up any pending timer on unmount
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Universal touch & pointer start for tap-and-hold
+  const startHoldGesture = (index: number, clientX: number, clientY: number) => {
+    touchStartXRef.current = clientX;
+    touchStartYRef.current = clientY;
+    activeStartIndexRef.current = index;
+    currentTargetIndexRef.current = index;
+    isDraggingRef.current = false;
+
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+    }
+
+    // Tap and hold threshold (180ms)
+    holdTimerRef.current = setTimeout(() => {
+      isDraggingRef.current = true;
+      setDragState({
+        active: true,
+        startIndex: index,
+        targetIndex: index,
+        translateY: 0,
+      });
+    }, 180);
+  };
+
+  const updateDragPosition = (clientX: number, clientY: number) => {
+    const dy = clientY - touchStartYRef.current;
+    const dx = Math.abs(clientX - touchStartXRef.current);
+
+    if (!isDraggingRef.current) {
+      // If user moved thumb/pointer noticeably before 180ms hold timer fires,
+      // it means they are scrolling or swiping -> cancel hold immediately!
+      if (Math.abs(dy) > 8 || dx > 8) {
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      }
+    } else {
+      // Dragging is active! Update vertical position & target slot
+      const from = activeStartIndexRef.current ?? 0;
+      const target = calculateTargetIndex(from, dy);
+      currentTargetIndexRef.current = target;
+
+      setDragState((prev) => ({
+        ...prev,
+        active: true,
+        targetIndex: target,
+        translateY: dy,
+      }));
+    }
+  };
+
+  const endDragGesture = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+
+    if (
+      isDraggingRef.current &&
+      activeStartIndexRef.current !== null &&
+      currentTargetIndexRef.current !== null
+    ) {
+      const from = activeStartIndexRef.current;
+      const to = currentTargetIndexRef.current;
+      if (from !== to) {
+        handleMove(from, to);
+      }
+    }
+
+    isDraggingRef.current = false;
+    activeStartIndexRef.current = null;
+    currentTargetIndexRef.current = null;
+    setDragState({
+      active: false,
+      startIndex: null,
+      targetIndex: null,
+      translateY: 0,
+    });
+  };
+
   return (
     <View style={[styles.container, style, contentContainerStyle]}>
       {data.map((item, index) => {
         const key = keyExtractor(item);
-        const isDragging = draggedIndex === index;
-        const isOver = overIndex === index && draggedIndex !== null && draggedIndex !== index;
+        const isDragging = dragState.active && dragState.startIndex === index;
+        const isTarget = dragState.active && dragState.targetIndex === index && dragState.startIndex !== index;
 
-        // Web drag events
-        const webDragProps =
+        // Mobile touch handlers
+        const touchHandlers = {
+          onTouchStart: (e: any) => {
+            const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
+            startHoldGesture(index, touch.pageX, touch.pageY);
+          },
+          onTouchMove: (e: any) => {
+            const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
+            updateDragPosition(touch.pageX, touch.pageY);
+          },
+          onTouchEnd: () => {
+            endDragGesture();
+          },
+          onTouchCancel: () => {
+            endDragGesture();
+          },
+        };
+
+        // Web pointer handlers for seamless mouse & touch tracking on web
+        const webPointerHandlers =
           Platform.OS === 'web'
             ? {
-                draggable: true,
-                onDragStart: (e: any) => {
-                  setDraggedIndex(index);
-                  if (e.dataTransfer) {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', String(index));
+                onPointerDown: (e: any) => {
+                  startHoldGesture(index, e.pageX || e.clientX, e.pageY || e.clientY);
+
+                  if (typeof window !== 'undefined') {
+                    const onPointerMove = (evt: PointerEvent) => {
+                      if (isDraggingRef.current) {
+                        evt.preventDefault();
+                      }
+                      updateDragPosition(evt.pageX, evt.pageY);
+                    };
+
+                    const onPointerUp = () => {
+                      endDragGesture();
+                      window.removeEventListener('pointermove', onPointerMove);
+                      window.removeEventListener('pointerup', onPointerUp);
+                      window.removeEventListener('pointercancel', onPointerUp);
+                    };
+
+                    window.addEventListener('pointermove', onPointerMove, { passive: false });
+                    window.addEventListener('pointerup', onPointerUp);
+                    window.addEventListener('pointercancel', onPointerUp);
                   }
-                },
-                onDragOver: (e: any) => {
-                  e.preventDefault();
-                  if (e.dataTransfer) {
-                    e.dataTransfer.dropEffect = 'move';
-                  }
-                  if (overIndex !== index) {
-                    setOverIndex(index);
-                  }
-                },
-                onDragEnd: () => {
-                  if (draggedIndex !== null && overIndex !== null && draggedIndex !== overIndex) {
-                    handleMove(draggedIndex, overIndex);
-                  }
-                  setDraggedIndex(null);
-                  setOverIndex(null);
-                },
-                onDrop: (e: any) => {
-                  e.preventDefault();
-                  if (draggedIndex !== null && draggedIndex !== index) {
-                    handleMove(draggedIndex, index);
-                  }
-                  setDraggedIndex(null);
-                  setOverIndex(null);
                 },
               }
             : {};
 
-        // Mobile touch drag handlers
-        const touchDragProps = {
-          onTouchStart: (e: any) => {
-            const pageY = e.nativeEvent.pageY;
-            touchStartY.current = pageY;
-            touchStartIndex.current = index;
-            currentOverIndex.current = index;
-            setDraggedIndex(index);
-          },
-          onTouchMove: (e: any) => {
-            if (touchStartIndex.current === null) return;
-            const deltaY = e.nativeEvent.pageY - touchStartY.current;
-            const steps = Math.round(deltaY / estimatedItemHeight);
-            const target = Math.max(0, Math.min(data.length - 1, touchStartIndex.current + steps));
-            if (currentOverIndex.current !== target) {
-              currentOverIndex.current = target;
-              setOverIndex(target);
-            }
-          },
-          onTouchEnd: () => {
-            if (
-              touchStartIndex.current !== null &&
-              currentOverIndex.current !== null &&
-              touchStartIndex.current !== currentOverIndex.current
-            ) {
-              handleMove(touchStartIndex.current, currentOverIndex.current);
-            }
-            touchStartIndex.current = null;
-            currentOverIndex.current = null;
-            setDraggedIndex(null);
-            setOverIndex(null);
-          },
-        };
-
         const dragHandle = (
-          <TouchableOpacity
-            activeOpacity={0.6}
-            onPress={() => setQuickMoveIndex(index)}
-            style={styles.dragHandle}
-            accessibilityLabel={`Drag to reorder item ${index + 1}`}
-            {...touchDragProps}
-            {...(Platform.OS === 'web'
-              ? {
-                  style: [
-                    styles.dragHandle,
-                    {
-                      cursor: isDragging ? 'grabbing' : 'grab',
-                    } as any,
-                  ],
-                }
-              : {})}
+          <View
+            style={[
+              styles.dragHandle,
+              {
+                backgroundColor: isDragging
+                  ? 'rgba(99, 102, 241, 0.22)'
+                  : isDark
+                  ? 'rgba(255, 255, 255, 0.05)'
+                  : 'rgba(0, 0, 0, 0.03)',
+                borderColor: isDragging
+                  ? '#6366F1'
+                  : isDark
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.06)',
+              },
+              isDragging && { transform: [{ scale: 1.1 }] },
+              Platform.OS === 'web'
+                ? ({
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    touchAction: 'none',
+                  } as any)
+                : {},
+            ]}
+            accessibilityLabel={`Hold and drag to reorder item ${index + 1}`}
+            {...touchHandlers}
+            {...webPointerHandlers}
           >
-            <GripVertical size={16} color={theme.textMuted} strokeWidth={2.2} />
-          </TouchableOpacity>
+            <GripVertical
+              size={15}
+              color={
+                isDragging
+                  ? '#6366F1'
+                  : isDark
+                  ? 'rgba(255, 255, 255, 0.45)'
+                  : 'rgba(0, 0, 0, 0.35)'
+              }
+              strokeWidth={2.4}
+            />
+          </View>
         );
 
         return (
-          <View
-            key={key}
-            onLayout={(e) => {
-              itemLayouts.current[index] = {
-                y: e.nativeEvent.layout.y,
-                height: e.nativeEvent.layout.height,
-              };
-            }}
-            style={[
-              styles.itemWrapper,
-              itemWrapperStyle,
-              isDragging && styles.itemDragging,
-              isOver && {
-                borderTopWidth: 2,
-                borderTopColor: theme.primary,
-                transform: [{ translateY: -2 }],
-              },
-            ]}
-            {...webDragProps}
-          >
-            {renderItem({
-              item,
-              index,
-              total: data.length,
-              isDragging,
-              isOver,
-              dragHandle,
-              moveUp: () => moveUp(index),
-              moveDown: () => moveDown(index),
-            })}
-          </View>
-        );
-      })}
+          <React.Fragment key={key}>
+            {/* Insertion drop target line when dragging above this item */}
+            {isTarget && dragState.startIndex !== null && dragState.startIndex > index && (
+              <View style={styles.dropIndicatorContainer}>
+                <View style={styles.dropIndicatorLine} />
+              </View>
+            )}
 
-      {/* Quick Move Dialog when tap on grip icon */}
-      {quickMoveIndex !== null && (
-        <Modal
-          visible={true}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setQuickMoveIndex(null)}
-        >
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setQuickMoveIndex(null)}
-          >
             <View
+              onLayout={(e) => {
+                itemLayouts.current[index] = {
+                  y: e.nativeEvent.layout.y,
+                  height: e.nativeEvent.layout.height,
+                };
+              }}
               style={[
-                styles.modalCard,
-                {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
-                },
+                styles.itemWrapper,
+                itemWrapperStyle,
+                isDragging && [
+                  styles.itemDraggingActive,
+                  {
+                    transform: [{ translateY: dragState.translateY }, { scale: 1.025 }],
+                    borderColor: '#6366F1',
+                    shadowOpacity: isDark ? 0.45 : 0.22,
+                  },
+                ],
               ]}
             >
-              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-                Reorder Item (#{quickMoveIndex + 1})
-              </Text>
-              <Text style={[styles.modalSub, { color: theme.textMuted }]}>
-                Drag the grip icon or use quick move buttons below:
-              </Text>
-
-              <View style={styles.modalButtonsRow}>
-                <TouchableOpacity
-                  disabled={quickMoveIndex === 0}
-                  onPress={() => {
-                    moveUp(quickMoveIndex);
-                    setQuickMoveIndex(quickMoveIndex - 1);
-                  }}
-                  style={[
-                    styles.modalMoveBtn,
-                    {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                      opacity: quickMoveIndex === 0 ? 0.4 : 1,
-                    },
-                  ]}
-                >
-                  <ArrowUp size={16} color={theme.textPrimary} />
-                  <Text style={[styles.modalMoveBtnText, { color: theme.textPrimary }]}>
-                    Move Up
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  disabled={quickMoveIndex === data.length - 1}
-                  onPress={() => {
-                    moveDown(quickMoveIndex);
-                    setQuickMoveIndex(quickMoveIndex + 1);
-                  }}
-                  style={[
-                    styles.modalMoveBtn,
-                    {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                      opacity: quickMoveIndex === data.length - 1 ? 0.4 : 1,
-                    },
-                  ]}
-                >
-                  <ArrowDown size={16} color={theme.textPrimary} />
-                  <Text style={[styles.modalMoveBtnText, { color: theme.textPrimary }]}>
-                    Move Down
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setQuickMoveIndex(null)}
-                style={[styles.modalDoneBtn, { backgroundColor: theme.primary }]}
-              >
-                <Text style={styles.modalDoneBtnText}>Done</Text>
-              </TouchableOpacity>
+              {renderItem({
+                item,
+                index,
+                total: data.length,
+                isDragging,
+                isOver: isTarget,
+                dragHandle,
+                moveUp: () => moveUp(index),
+                moveDown: () => moveDown(index),
+              })}
             </View>
-          </TouchableOpacity>
-        </Modal>
-      )}
+
+            {/* Insertion drop target line when dragging below this item */}
+            {isTarget && dragState.startIndex !== null && dragState.startIndex < index && (
+              <View style={styles.dropIndicatorContainer}>
+                <View style={styles.dropIndicatorLine} />
+              </View>
+            )}
+          </React.Fragment>
+        );
+      })}
     </View>
   );
 }
@@ -313,76 +361,44 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     gap: 10,
+    position: 'relative',
   },
   itemWrapper: {
     width: '100%',
   },
-  itemDragging: {
-    opacity: 0.4,
-    transform: [{ scale: 0.98 }],
+  itemDraggingActive: {
+    zIndex: 9999,
+    elevation: 20,
+    borderWidth: 1.5,
+    borderRadius: 18,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 20,
   },
   dragHandle: {
-    padding: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 320,
-    borderRadius: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 9,
     borderWidth: 1,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  modalSub: {
-    fontSize: 12,
-    marginBottom: 16,
-    lineHeight: 16,
-  },
-  modalButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  modalMoveBtn: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
+    marginRight: 6,
   },
-  modalMoveBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  modalDoneBtn: {
-    alignItems: 'center',
+  dropIndicatorContainer: {
+    width: '100%',
+    height: 10,
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
+    alignItems: 'center',
   },
-  modalDoneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+  dropIndicatorLine: {
+    width: '98%',
+    height: 4,
+    borderRadius: 9999,
+    backgroundColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

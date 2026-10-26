@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, useWindowDimensions, SafeAreaView } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, SafeAreaView, Platform } from 'react-native';
 import { DesktopSidebar } from './DesktopSidebar';
 import { TopHeader } from './TopHeader';
 import { MobileTabBar } from './MobileTabBar';
@@ -48,9 +48,11 @@ export const AppShell: React.FC<AppShellProps> = ({
     loadWishlist();
   }, []);
 
+  const bg = Platform.OS === 'web' ? 'transparent' : (isDark ? '#09090B' : theme.background);
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#09090B' : theme.background }]}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+      <View style={[styles.container, { backgroundColor: bg }]}>
         {/* Sidebar on Desktop / Tablet */}
         {!isMobile && (
           <DesktopSidebar
@@ -66,7 +68,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             onAddExpense={onAddExpense}
             onAddRoutine={onAddRoutine}
           />
-          <View style={[styles.contentArea, { backgroundColor: theme.background }]}>{children}</View>
+          <View style={[styles.contentArea, { backgroundColor: bg }]}>{children}</View>
           {isMobile && <MobileTabBar />}
         </View>
       </View>

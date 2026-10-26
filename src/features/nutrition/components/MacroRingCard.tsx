@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useTheme } from '../../../theme/ThemeContext';
 import { DayNutritionSummary } from '../../../types/nutrition';
@@ -42,10 +42,16 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: theme.surface,
-          borderColor: theme.border,
+          backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
           shadowColor: theme.shadowColor,
           shadowOpacity: theme.shadowOpacity,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              } as any)
+            : {}),
         },
       ]}
     >
@@ -314,7 +320,7 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 18,
     marginBottom: 16,
@@ -352,7 +358,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
     cursor: 'pointer' as any,
   },

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useDateStore } from '../../stores/useDateStore';
@@ -33,7 +34,7 @@ import {
 export const NutritionView: React.FC = () => {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const { selectedDate } = useDateStore();
   const {
@@ -83,21 +84,41 @@ export const NutritionView: React.FC = () => {
         style={[
           styles.subHeader,
           {
-            backgroundColor: theme.surface,
-            borderBottomColor: theme.border,
+            backgroundColor: isDark ? 'rgba(12, 12, 16, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+            borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             paddingHorizontal: isMobile ? 12 : 24,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                } as any)
+              : {}),
           },
         ]}
       >
-        <View style={styles.viewModeTabs}>
+        <View
+          style={[
+            styles.viewModeTabs,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+              borderRadius: 9999,
+              padding: 3,
+            },
+          ]}
+        >
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setMainTab('log')}
             style={[
               styles.modeTab,
+              { borderRadius: 9999 },
               mainTab === 'log' && {
-                backgroundColor: theme.primaryBg,
-                borderColor: theme.primaryBorder,
+                backgroundColor: isDark ? 'rgba(40, 40, 46, 0.9)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                shadowColor: '#000',
+                shadowOpacity: isDark ? 0.3 : 0.06,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 6,
               },
             ]}
           >
@@ -121,9 +142,14 @@ export const NutritionView: React.FC = () => {
             onPress={() => setMainTab('analytics')}
             style={[
               styles.modeTab,
+              { borderRadius: 9999 },
               mainTab === 'analytics' && {
-                backgroundColor: theme.primaryBg,
-                borderColor: theme.primaryBorder,
+                backgroundColor: isDark ? 'rgba(40, 40, 46, 0.9)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                shadowColor: '#000',
+                shadowOpacity: isDark ? 0.3 : 0.06,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 6,
               },
             ]}
           >
@@ -147,9 +173,14 @@ export const NutritionView: React.FC = () => {
             onPress={() => setMainTab('calculator')}
             style={[
               styles.modeTab,
+              { borderRadius: 9999 },
               mainTab === 'calculator' && {
-                backgroundColor: theme.primaryBg,
-                borderColor: theme.primaryBorder,
+                backgroundColor: isDark ? 'rgba(40, 40, 46, 0.9)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                shadowColor: '#000',
+                shadowOpacity: isDark ? 0.3 : 0.06,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 6,
               },
             ]}
           >

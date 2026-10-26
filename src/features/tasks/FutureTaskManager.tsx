@@ -36,6 +36,7 @@ import {
   X,
   Bell,
   Plus,
+  Maximize2,
 } from 'lucide-react-native';
 
 const QUICK_LABELS = [
@@ -252,7 +253,7 @@ export const FutureTaskManager: React.FC = () => {
           styles.noteCard,
           {
             width: '100%',
-            padding: isGrid ? (isDesktop ? 14 : 10) : 14,
+            padding: isGrid ? (isDesktop ? 12 : 8) : 12,
             backgroundColor: cardStyle.backgroundColor,
             borderColor: cardStyle.borderColor,
             ...(Platform.OS === 'web'
@@ -269,7 +270,10 @@ export const FutureTaskManager: React.FC = () => {
         <View style={styles.cardHeader}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => toggleTaskComplete(task.id)}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              toggleTaskComplete(task.id);
+            }}
             style={styles.cardCompleteBtn}
             accessibilityLabel="Mark complete"
           >
@@ -280,14 +284,7 @@ export const FutureTaskManager: React.FC = () => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.cardTitleArea}
-            activeOpacity={0.8}
-            onPress={() => {
-              setEditingTask(task);
-              setEditModalOpen(true);
-            }}
-          >
+          <View style={styles.cardTitleArea}>
             <Text
               style={[
                 styles.cardTitle,
@@ -299,12 +296,15 @@ export const FutureTaskManager: React.FC = () => {
             >
               {task.title}
             </Text>
-          </TouchableOpacity>
+          </View>
 
           {/* Pin Icon */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => togglePinTask(task.id)}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              togglePinTask(task.id);
+            }}
             style={styles.pinBtn}
             accessibilityLabel={task.pinned ? 'Unpin note' : 'Pin note'}
           >
@@ -317,21 +317,17 @@ export const FutureTaskManager: React.FC = () => {
         </View>
 
         {/* Card Body: Interactive Checklist OR Notes Text */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => {
-            setEditingTask(task);
-            setEditModalOpen(true);
-          }}
-          style={styles.cardBody}
-        >
+        <View style={styles.cardBody}>
           {task.checklist && task.checklist.length > 0 ? (
             <View style={styles.checklistList}>
               {task.checklist.slice(0, isGrid && !isDesktop ? 3 : 5).map((chk) => (
                 <View key={chk.id} style={styles.checklistItemRow}>
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => toggleChecklistItem(task.id, chk.id)}
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      toggleChecklistItem(task.id, chk.id);
+                    }}
                     style={styles.chkToggle}
                   >
                     {chk.completed ? (
@@ -372,99 +368,102 @@ export const FutureTaskManager: React.FC = () => {
               {task.notes}
             </Text>
           ) : null}
-        </TouchableOpacity>
-
-        {/* Card Chips: Workstream Label, Reminder, Effort */}
-        <View style={styles.cardChipsRow}>
-          {task.heading && (
-            <View
-              style={[
-                styles.cardChip,
-                isGrid && !isDesktop && styles.cardChipMobile,
-                {
-                  backgroundColor: cardStyle.chipBg,
-                  borderColor: cardStyle.chipBorder,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.cardChipText,
-                  isGrid && !isDesktop && styles.cardChipTextMobile,
-                  { color: cardStyle.textColor },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {formatShortHeading(task.heading)}
-              </Text>
-            </View>
-          )}
-
-          {task.horizon && (
-            <View
-              style={[
-                styles.cardChip,
-                isGrid && !isDesktop && styles.cardChipMobile,
-                {
-                  backgroundColor: cardStyle.chipBg,
-                  borderColor: cardStyle.chipBorder,
-                },
-              ]}
-            >
-              <Bell size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
-              <Text
-                style={[
-                  styles.cardChipText,
-                  isGrid && !isDesktop && styles.cardChipTextMobile,
-                  { color: cardStyle.textColor },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {task.horizon === 'next_7_days'
-                  ? 'Next 7 Days'
-                  : task.horizon === 'this_month'
-                  ? 'This Month'
-                  : 'Someday'}
-              </Text>
-            </View>
-          )}
-
-          {task.estimatedTime && (
-            <View
-              style={[
-                styles.cardChip,
-                isGrid && !isDesktop && styles.cardChipMobile,
-                {
-                  backgroundColor: cardStyle.chipBg,
-                  borderColor: cardStyle.chipBorder,
-                },
-              ]}
-            >
-              <Clock size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
-              <Text
-                style={[
-                  styles.cardChipText,
-                  isGrid && !isDesktop && styles.cardChipTextMobile,
-                  { color: cardStyle.textColor },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {task.estimatedTime}
-              </Text>
-            </View>
-          )}
-
-          {task.forwardCount && task.forwardCount > 0 ? (
-            <ForwardBadge
-              count={task.forwardCount}
-              originalDate={task.originalDate}
-              size="sm"
-            />
-          ) : null}
         </View>
+
+        {/* Card Chips: Clean single horizontally scrollable line */}
+        {(task.heading || task.horizon || task.estimatedTime || (task.forwardCount && task.forwardCount > 0)) ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cardChipsScroll}
+          >
+            {task.heading && (
+              <View
+                style={[
+                  styles.cardChip,
+                  isGrid && !isDesktop && styles.cardChipMobile,
+                  {
+                    backgroundColor: cardStyle.chipBg,
+                    borderColor: cardStyle.chipBorder,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.cardChipText,
+                    isGrid && !isDesktop && styles.cardChipTextMobile,
+                    { color: cardStyle.textColor },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {formatShortHeading(task.heading)}
+                </Text>
+              </View>
+            )}
+
+            {task.horizon && (
+              <View
+                style={[
+                  styles.cardChip,
+                  isGrid && !isDesktop && styles.cardChipMobile,
+                  {
+                    backgroundColor: cardStyle.chipBg,
+                    borderColor: cardStyle.chipBorder,
+                  },
+                ]}
+              >
+                <Bell size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
+                <Text
+                  style={[
+                    styles.cardChipText,
+                    isGrid && !isDesktop && styles.cardChipTextMobile,
+                    { color: cardStyle.textColor },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {task.horizon === 'next_7_days'
+                    ? '7 Days'
+                    : task.horizon === 'this_month'
+                    ? 'This Month'
+                    : 'Someday'}
+                </Text>
+              </View>
+            )}
+
+            {task.estimatedTime && (
+              <View
+                style={[
+                  styles.cardChip,
+                  isGrid && !isDesktop && styles.cardChipMobile,
+                  {
+                    backgroundColor: cardStyle.chipBg,
+                    borderColor: cardStyle.chipBorder,
+                  },
+                ]}
+              >
+                <Clock size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
+                <Text
+                  style={[
+                    styles.cardChipText,
+                    isGrid && !isDesktop && styles.cardChipTextMobile,
+                    { color: cardStyle.textColor },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {task.estimatedTime}
+                </Text>
+              </View>
+            )}
+
+            {task.forwardCount && task.forwardCount > 0 ? (
+              <ForwardBadge
+                count={task.forwardCount}
+                originalDate={task.originalDate}
+                size="sm"
+              />
+            ) : null}
+          </ScrollView>
+        ) : null}
 
         {/* Color Palette Popover Row */}
         {isShowingColorPicker && (
@@ -494,66 +493,65 @@ export const FutureTaskManager: React.FC = () => {
           </View>
         )}
 
-        {/* Card Action Toolbar */}
-        <View style={[styles.cardFooter, isGrid && !isDesktop && styles.cardFooterMobile]}>
-          {/* 1-Tap "⚡ Move to Today" */}
-          {!task.completed && (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setMoveToTodayTask(task)}
-              style={[
-                styles.doTodayChip,
-                isGrid && !isDesktop && styles.doTodayChipMobile,
-                {
-                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
-                  borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
-                },
-              ]}
-            >
-              <Zap size={isGrid && !isDesktop ? 9 : 11} color="#8B5CF6" />
-              <Text style={[styles.doTodayChipText, isGrid && !isDesktop && styles.doTodayChipTextMobile]}>
-                {isGrid && !isDesktop ? 'Today' : '⚡ Do Today'}
-              </Text>
-            </TouchableOpacity>
-          )}
+        {/* Card Action Toolbar (Only on desktop or list view to keep mobile cards neat & clean) */}
+        {(!isGrid || isDesktop) && (
+          <View style={styles.cardFooter}>
+            {/* 1-Tap "⚡ Move to Today" */}
+            {!task.completed && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setMoveToTodayTask(task)}
+                style={[
+                  styles.doTodayChip,
+                  {
+                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
+                    borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
+                  },
+                ]}
+              >
+                <Zap size={11} color="#8B5CF6" />
+                <Text style={styles.doTodayChipText}>⚡ Do Today</Text>
+              </TouchableOpacity>
+            )}
 
-          <View style={[styles.cardActionIcons, isGrid && !isDesktop && styles.cardActionIconsMobile]}>
-            {/* Color Palette */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setShowColorPickerForId(isShowingColorPicker ? null : task.id)
-              }
-              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
-              accessibilityLabel="Change color"
-            >
-              <Palette size={isGrid && !isDesktop ? 12 : 14} color={cardStyle.subTextColor} />
-            </TouchableOpacity>
+            <View style={styles.cardActionIcons}>
+              {/* Color Palette */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  setShowColorPickerForId(isShowingColorPicker ? null : task.id)
+                }
+                style={styles.cardActionIconBtn}
+                accessibilityLabel="Change color"
+              >
+                <Palette size={13} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
 
-            {/* Edit */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setEditingTask(task);
-                setEditModalOpen(true);
-              }}
-              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
-              accessibilityLabel="Edit note"
-            >
-              <Edit3 size={isGrid && !isDesktop ? 11 : 13} color={cardStyle.subTextColor} />
-            </TouchableOpacity>
+              {/* Edit */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setEditingTask(task);
+                  setEditModalOpen(true);
+                }}
+                style={styles.cardActionIconBtn}
+                accessibilityLabel="Edit note"
+              >
+                <Edit3 size={13} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
 
-            {/* Delete */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setDeleteConfirmId(task.id)}
-              style={[styles.cardActionIconBtn, isGrid && !isDesktop && styles.cardActionIconBtnMobile]}
-              accessibilityLabel="Delete note"
-            >
-              <Trash2 size={isGrid && !isDesktop ? 11 : 13} color={cardStyle.subTextColor} />
-            </TouchableOpacity>
+              {/* Delete */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setDeleteConfirmId(task.id)}
+                style={styles.cardActionIconBtn}
+                accessibilityLabel="Delete note"
+              >
+                <Trash2 size={13} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
       </View>
     );
   };
@@ -760,29 +758,45 @@ export const FutureTaskManager: React.FC = () => {
               </View>
             </TouchableOpacity>
           ) : (
-            /* Expanded Note Card */
+            /* Expanded Note Card (Neat & Clean) */
             <View style={styles.composerExpanded}>
-              {/* Title row + Pin button */}
+              {/* Title row + Actions */}
               <View style={styles.composerTitleRow}>
                 <TextInput
                   style={[styles.composerTitleInput, { color: theme.textPrimary }]}
-                  placeholder="Task or Note Title"
+                  placeholder="Title"
                   placeholderTextColor={theme.textMuted}
                   value={newTitle}
                   onChangeText={setNewTitle}
                   autoFocus
                 />
-                <TouchableOpacity
-                  onPress={() => setNewPinned(!newPinned)}
-                  style={styles.composerPinBtn}
-                  accessibilityLabel={newPinned ? 'Unpin' : 'Pin to top'}
-                >
-                  <Pin
-                    size={18}
-                    color={newPinned ? '#F59E0B' : theme.textSecondary}
-                    fill={newPinned ? '#F59E0B' : 'transparent'}
-                  />
-                </TouchableOpacity>
+                <View style={styles.composerTopRightActions}>
+                  {/* Pin button */}
+                  <TouchableOpacity
+                    onPress={() => setNewPinned(!newPinned)}
+                    style={styles.composerIconBtn}
+                    accessibilityLabel={newPinned ? 'Unpin' : 'Pin to top'}
+                  >
+                    <Pin
+                      size={16}
+                      color={newPinned ? '#F59E0B' : theme.textSecondary}
+                      fill={newPinned ? '#F59E0B' : 'transparent'}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Open in full Google Keep editor modal */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsComposerExpanded(false);
+                      setEditingTask(null);
+                      setEditModalOpen(true);
+                    }}
+                    style={styles.composerIconBtn}
+                    accessibilityLabel="Open in full note editor"
+                  >
+                    <Maximize2 size={15} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Body: Checklist Mode vs Standard Note */}
@@ -790,7 +804,7 @@ export const FutureTaskManager: React.FC = () => {
                 <View style={styles.composerChecklistBlock}>
                   {newChecklist.map((item) => (
                     <View key={item.id} style={styles.composerChecklistRow}>
-                      <Square size={16} color={theme.textSecondary} />
+                      <Square size={15} color={theme.textSecondary} />
                       <TextInput
                         style={[
                           styles.composerChecklistInput,
@@ -805,7 +819,7 @@ export const FutureTaskManager: React.FC = () => {
                         onPress={() => handleRemoveChecklistItem(item.id)}
                         style={styles.removeChkBtn}
                       >
-                        <X size={14} color={theme.textMuted} />
+                        <X size={13} color={theme.textMuted} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -815,8 +829,8 @@ export const FutureTaskManager: React.FC = () => {
                     onPress={handleAddChecklistItem}
                     style={styles.addListItemBtn}
                   >
-                    <Plus size={15} color="#8B5CF6" />
-                    <Text style={styles.addListItemText}>Add checklist item</Text>
+                    <Plus size={14} color="#8B5CF6" />
+                    <Text style={styles.addListItemText}>Add item</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -825,7 +839,7 @@ export const FutureTaskManager: React.FC = () => {
                     styles.composerNoteInput,
                     { color: theme.textPrimary },
                   ]}
-                  placeholder="Take a note, context or steps (so you never forget)..."
+                  placeholder="Take a note..."
                   placeholderTextColor={theme.textMuted}
                   value={newNotes}
                   onChangeText={setNewNotes}
@@ -833,46 +847,24 @@ export const FutureTaskManager: React.FC = () => {
                 />
               )}
 
-              {/* Workstream & Horizon Pills */}
+              {/* Single Sleek Horizontally Scrollable Row for Horizon & Tags (Clean gap) */}
               <View style={styles.composerMetaBlock}>
-                {/* Heading selector */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
-                  {QUICK_LABELS.map((h) => {
-                    const active = newHeading === h;
-                    return (
-                      <TouchableOpacity
-                        key={h}
-                        onPress={() => setNewHeading(h)}
-                        style={[
-                          styles.composerMiniPill,
-                          active && { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#EDE9FE', borderColor: '#8B5CF6' },
-                          !active && { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
-                        ]}
-                      >
-                        <Text style={[styles.composerMiniPillText, { color: active ? '#8B5CF6' : theme.textSecondary }]}>
-                          {h}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-
-                {/* Horizon pills */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.composerHorizonRow}
+                <HorizontalScrollRow
+                  edgeToEdge={false}
+                  paddingHorizontal={0}
+                  gap={5}
                 >
+                  {/* Horizon pills */}
                   {[
-                    { id: 'next_7_days', label: '⚡ Next 7 Days' },
-                    { id: 'this_month', label: '📅 This Month' },
+                    { id: 'next_7_days', label: '⚡ 7 Days' },
+                    { id: 'this_month', label: '📅 Month' },
                     { id: 'someday', label: '💡 Someday' },
                   ].map((hz) => {
                     const active = newHorizon === hz.id;
                     return (
                       <TouchableOpacity
                         key={hz.id}
-                        onPress={() => setNewHorizon(hz.id as any)}
+                        onPress={() => setNewHorizon(active ? 'next_7_days' : hz.id as any)}
                         style={[
                           styles.composerMiniPill,
                           active && { backgroundColor: theme.primary, borderColor: theme.primary },
@@ -883,6 +875,7 @@ export const FutureTaskManager: React.FC = () => {
                           style={[
                             styles.composerMiniPillText,
                             { color: active ? '#FFFFFF' : theme.textSecondary },
+                            active && { fontWeight: '700' },
                           ]}
                           numberOfLines={1}
                         >
@@ -891,7 +884,36 @@ export const FutureTaskManager: React.FC = () => {
                       </TouchableOpacity>
                     );
                   })}
-                </ScrollView>
+
+                  <View style={[styles.metaDivider, { backgroundColor: theme.border }]} />
+
+                  {/* Workstream / Label tags */}
+                  {QUICK_LABELS.map((h) => {
+                    const active = newHeading === h;
+                    return (
+                      <TouchableOpacity
+                        key={h}
+                        onPress={() => setNewHeading(active ? '' : h)}
+                        style={[
+                          styles.composerMiniPill,
+                          active && { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#EDE9FE', borderColor: '#8B5CF6' },
+                          !active && { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.composerMiniPillText,
+                            { color: active ? '#8B5CF6' : theme.textSecondary },
+                            active && { fontWeight: '700' },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {h}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </HorizontalScrollRow>
               </View>
 
               {/* Color dots row (if open) */}
@@ -963,7 +985,7 @@ export const FutureTaskManager: React.FC = () => {
                     onPress={handleSaveInlineNote}
                     style={[styles.composerSaveBtn, { backgroundColor: theme.primary }]}
                   >
-                    <Text style={styles.composerSaveBtnText}>Save Task</Text>
+                    <Text style={styles.composerSaveBtnText}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -996,6 +1018,10 @@ export const FutureTaskManager: React.FC = () => {
                 data={pinnedTasks}
                 keyExtractor={(task) => task.id}
                 onReorder={reorderTasks}
+                onItemPress={(task) => {
+                  setEditingTask(task);
+                  setEditModalOpen(true);
+                }}
                 contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
                 itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
                 renderItem={({ item: task }) => renderCard(task)}
@@ -1015,6 +1041,10 @@ export const FutureTaskManager: React.FC = () => {
                 data={otherTasks}
                 keyExtractor={(task) => task.id}
                 onReorder={reorderTasks}
+                onItemPress={(task) => {
+                  setEditingTask(task);
+                  setEditModalOpen(true);
+                }}
                 contentContainerStyle={viewMode === 'grid' ? (isDesktop ? styles.grid3Col : styles.grid2Col) : styles.listCol}
                 itemWrapperStyle={viewMode === 'grid' ? (isDesktop ? styles.cardGridDesktop : styles.cardGridMobile) : styles.cardList}
                 renderItem={({ item: task }) => renderCard(task)}
@@ -1081,13 +1111,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   searchBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 42,
+    height: 38,
     borderRadius: 9999,
     borderWidth: 0,
     paddingHorizontal: 14,
@@ -1097,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     paddingVertical: 4,
     outlineStyle: 'none' as any,
   },
@@ -1105,8 +1135,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   viewModeBtn: {
-    width: 42,
-    height: 42,
+    width: 38,
+    height: 38,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
@@ -1118,11 +1148,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   filterChip: {
-    paddingHorizontal: 13,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 9999,
     borderWidth: 1,
   },
@@ -1134,9 +1164,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   colorFilterDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
     marginHorizontal: 2,
@@ -1149,29 +1179,29 @@ const styles = StyleSheet.create({
   /* Composer */
   composerWrapper: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 6,
   },
   composerCard: {
     width: '100%',
     maxWidth: 620,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   composerCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    height: 46,
+    paddingHorizontal: 12,
+    height: 38,
   },
   composerPlaceholder: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   composerCollapsedActions: {
@@ -1180,25 +1210,38 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   collapsedActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   composerExpanded: {
-    padding: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   composerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 2,
+  },
+  composerTopRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  composerIconBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   composerTitleInput: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     padding: 0,
     borderWidth: 0,
     outlineStyle: 'none' as any,
@@ -1207,40 +1250,40 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   composerNoteInput: {
-    fontSize: 13,
-    lineHeight: 20,
-    minHeight: 65,
+    fontSize: 12,
+    lineHeight: 17,
+    minHeight: 26,
     padding: 0,
-    marginBottom: 10,
+    marginBottom: 4,
     borderWidth: 0,
     outlineStyle: 'none' as any,
   },
   composerChecklistBlock: {
-    marginBottom: 10,
+    marginBottom: 4,
   },
   composerChecklistRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: 6,
+    marginBottom: 3,
   },
   composerChecklistInput: {
     flex: 1,
     fontSize: 13,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
     borderRadius: 6,
     borderWidth: 0,
     outlineStyle: 'none' as any,
   },
   removeChkBtn: {
-    padding: 4,
+    padding: 2,
   },
   addListItemBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   addListItemText: {
     fontSize: 12,
@@ -1248,34 +1291,41 @@ const styles = StyleSheet.create({
     color: '#8B5CF6',
   },
   composerMetaBlock: {
-    marginBottom: 10,
+    marginBottom: 4,
+  },
+  composerHorizontalMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 1,
+  },
+  metaDivider: {
+    width: 1,
+    height: 12,
+    marginHorizontal: 1,
+    opacity: 0.35,
   },
   composerMiniPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
     borderWidth: 1,
   },
   composerMiniPillText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-  },
-  composerHorizonRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
   },
   composerColorSwatchesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    paddingVertical: 6,
-    marginBottom: 8,
+    paddingVertical: 4,
+    marginBottom: 6,
   },
   paletteDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.15)',
   },
@@ -1288,9 +1338,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(150,150,150,0.15)',
+    borderTopColor: 'rgba(150,150,150,0.12)',
   },
   composerFooterLeftIcons: {
     flexDirection: 'row',
@@ -1298,8 +1348,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   composerFooterIconBtn: {
-    width: 30,
-    height: 30,
+    width: 26,
+    height: 26,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1307,23 +1357,23 @@ const styles = StyleSheet.create({
   composerRightBtns: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   composerCancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   composerCancelBtnText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
   composerSaveBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   composerSaveBtnText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -1333,29 +1383,29 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionBlock: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
-    marginBottom: 10,
+    marginBottom: 8,
     paddingLeft: 2,
   },
   grid3Col: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: 12,
   },
   grid2Col: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
     justifyContent: 'space-between',
   },
   listCol: {
     flexDirection: 'column',
-    gap: 10,
+    gap: 8,
     maxWidth: 620,
     alignSelf: 'center',
     width: '100%',
@@ -1363,41 +1413,41 @@ const styles = StyleSheet.create({
 
   /* Note Card */
   noteCard: {
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 2,
-    marginBottom: 2,
+    marginBottom: 0,
   },
   cardGridMobile: {
     width: '48.5%',
     minWidth: 0,
     maxWidth: '49%',
-    padding: 10,
+    padding: 0,
   },
   cardGridDesktop: {
     width: '31.5%',
     minWidth: 240,
     maxWidth: 380,
-    padding: 14,
+    padding: 0,
   },
   cardList: {
     width: '100%',
     minWidth: '100%',
     maxWidth: '100%',
-    padding: 14,
+    padding: 0,
   },
   cardTitleGridMobile: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 15,
   },
   cardNotesGridMobile: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 14,
   },
   noteCardCompleted: {
     opacity: 0.6,
@@ -1405,8 +1455,8 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 6,
+    gap: 6,
+    marginBottom: 4,
   },
   cardCompleteBtn: {
     paddingTop: 1,
@@ -1415,9 +1465,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    lineHeight: 19,
+    lineHeight: 17,
   },
   cardTitleCompleted: {
     textDecorationLine: 'line-through',
@@ -1426,11 +1476,11 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   cardBody: {
-    marginBottom: 10,
+    marginBottom: 4,
   },
   cardNotes: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 15,
   },
   cardNotesCompleted: {
     textDecorationLine: 'line-through',
@@ -1459,13 +1509,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 2,
   },
-  cardChipsRow: {
+  cardChipsScroll: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: 8,
-    maxWidth: '100%',
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 2,
+    marginBottom: 4,
   },
   cardChip: {
     flexDirection: 'row',

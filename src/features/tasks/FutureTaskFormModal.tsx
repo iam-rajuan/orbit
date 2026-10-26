@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
+  Pressable,
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
@@ -56,15 +56,34 @@ const HORIZON_OPTIONS: { id: TaskHorizon; label: string }[] = [
 
 const EFFORT_OPTIONS = ['15m', '30m', '1h', '2h+'];
 
+const formatEditedTime = (isoString?: string) => {
+  if (!isoString) return 'New note';
+  try {
+    const d = new Date(isoString);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (isToday) {
+      return `Edited ${timeStr}`;
+    }
+    return `Edited ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+  } catch {
+    return 'Edited recently';
+  }
+};
+
 const FutureTaskNoteEditor: React.FC<{
   taskToEdit?: Task | null;
   onClose: () => void;
 }> = ({ taskToEdit, onClose }) => {
-  const { theme, isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { selectedDate } = useDateStore();
   const { createTask, updateTask, deleteTask, moveToToday } = useTaskStore();
+
+  const titleInputRef = useRef<TextInput>(null);
+  const noteInputRef = useRef<TextInput>(null);
 
   // Note State directly initialized
   const [title, setTitle] = useState(taskToEdit?.title || '');
@@ -83,7 +102,13 @@ const FutureTaskNoteEditor: React.FC<{
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [showHorizonPicker, setShowHorizonPicker] = useState(false);
 
-  const cardStyle = getKeepCardStyle(color, isDark, theme.surface, theme.border);
+  // Always solid opaque background for note editing to guarantee zero bleed-through
+  const cardStyle = getKeepCardStyle(
+    color,
+    isDark,
+    isDark ? '#202124' : '#FFFFFF',
+    isDark ? '#3C4043' : '#E2E8F0'
+  );
 
   // Save changes
   const handleSaveAndClose = async () => {
@@ -201,197 +226,199 @@ const FutureTaskNoteEditor: React.FC<{
       animationType={isMobile ? 'slide' : 'fade'}
       onRequestClose={handleSaveAndClose}
     >
-      <TouchableWithoutFeedback onPress={handleSaveAndClose}>
-        <View style={styles.backdrop}>
-          <TouchableWithoutFeedback>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={[
-                styles.modalCard,
-                isMobile ? styles.modalCardMobile : styles.modalCardDesktop,
-                {
-                  backgroundColor: cardStyle.backgroundColor,
-                  borderColor: cardStyle.borderColor,
-                },
-              ]}
+      <View style={styles.backdrop}>
+        {/* Dimmed backdrop click on desktop */}
+        {!isMobile && (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={handleSaveAndClose}
+          />
+        )}
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[
+            styles.modalCard,
+            isMobile ? styles.modalCardMobile : styles.modalCardDesktop,
+            {
+              backgroundColor: cardStyle.backgroundColor,
+              borderColor: cardStyle.borderColor,
+            },
+          ]}
+        >
+          {/* 1. Google Keep Top Navigation Bar */}
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleSaveAndClose}
+              style={styles.topIconBtn}
+              accessibilityLabel="Back / Close"
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              {/* 1. Google Keep Top Navigation Bar */}
-              <View style={styles.topBar}>
+              <ArrowLeft size={22} color={cardStyle.textColor} />
+            </TouchableOpacity>
+
+            <View style={styles.topBarRightActions}>
+              {/* Pin button */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setPinned(!pinned)}
+                style={styles.topIconBtn}
+                accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Pin
+                  size={20}
+                  color={pinned ? '#F59E0B' : cardStyle.subTextColor}
+                  fill={pinned ? '#F59E0B' : 'transparent'}
+                />
+              </TouchableOpacity>
+
+              {/* Move to today (Orbit Zap) */}
+              {taskToEdit && !taskToEdit.completed && (
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={handleSaveAndClose}
+                  onPress={handlePromoteToToday}
                   style={styles.topIconBtn}
-                  accessibilityLabel="Back / Close"
+                  accessibilityLabel="Do today"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <ArrowLeft size={20} color={cardStyle.textColor} />
+                  <Zap size={20} color="#8B5CF6" />
                 </TouchableOpacity>
+              )}
 
-                <View style={styles.topBarRightActions}>
-                  {/* Pin button */}
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => setPinned(!pinned)}
-                    style={styles.topIconBtn}
-                    accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
-                  >
-                    <Pin
-                      size={18}
-                      color={pinned ? '#F59E0B' : cardStyle.subTextColor}
-                      fill={pinned ? '#F59E0B' : 'transparent'}
+              {/* Delete button */}
+              {taskToEdit && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleDelete}
+                  style={styles.topIconBtn}
+                  accessibilityLabel="Delete note"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Trash2 size={20} color={cardStyle.subTextColor} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* 2. Note Body: Google Keep Fluid Scrolling Canvas */}
+          <ScrollView
+            style={styles.contentScroll}
+            contentContainerStyle={styles.contentScrollContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {/* Clean Borderless Auto-Expanding Title (scrollEnabled=false delegates scrolling to parent) */}
+            <TextInput
+              ref={titleInputRef}
+              style={[
+                styles.titleInput,
+                { color: cardStyle.textColor },
+              ]}
+              placeholder="Title"
+              placeholderTextColor={cardStyle.subTextColor}
+              value={title}
+              onChangeText={setTitle}
+              multiline
+              scrollEnabled={false}
+              returnKeyType="next"
+              onSubmitEditing={() => noteInputRef.current?.focus()}
+            />
+
+            {/* Checklist items (Google Keep style) */}
+            {checklist.length > 0 && (
+              <View style={styles.checklistSection}>
+                {checklist.map((item) => (
+                  <View key={item.id} style={styles.checklistItemRow}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleToggleCheckItem(item.id)}
+                      style={styles.chkBoxBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      {item.completed ? (
+                        <CheckSquare size={18} color="#10B981" />
+                      ) : (
+                        <Square size={18} color={cardStyle.subTextColor} />
+                      )}
+                    </TouchableOpacity>
+
+                    <TextInput
+                      style={[
+                        styles.checklistTextInput,
+                        { color: cardStyle.textColor },
+                        item.completed && styles.checklistTextInputDone,
+                      ]}
+                      placeholder="List item"
+                      placeholderTextColor={cardStyle.subTextColor}
+                      value={item.text}
+                      onChangeText={(txt) => handleUpdateCheckItem(item.id, txt)}
+                      multiline
+                      scrollEnabled={false}
                     />
-                  </TouchableOpacity>
 
-                  {/* Move to today (Orbit Zap) */}
-                  {taskToEdit && !taskToEdit.completed && (
                     <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={handlePromoteToToday}
-                      style={styles.topIconBtn}
-                      accessibilityLabel="Do today"
+                      onPress={() => handleRemoveCheckItem(item.id)}
+                      style={styles.chkRemoveBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Zap size={18} color="#8B5CF6" />
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Delete button */}
-                  {taskToEdit && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={handleDelete}
-                      style={styles.topIconBtn}
-                      accessibilityLabel="Delete note"
-                    >
-                      <Trash2 size={18} color={cardStyle.subTextColor} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* 2. Note Body: Title + Checklist or Text Note */}
-              <ScrollView
-                style={styles.contentScroll}
-                contentContainerStyle={styles.contentScrollContainer}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                {/* Clean Borderless Title */}
-                <TextInput
-                  style={[
-                    styles.titleInput,
-                    { color: cardStyle.textColor },
-                  ]}
-                  placeholder="Title"
-                  placeholderTextColor={cardStyle.subTextColor}
-                  value={title}
-                  onChangeText={setTitle}
-                  multiline
-                />
-
-                {/* Checklist items (if any exist or added) */}
-                {checklist.length > 0 && (
-                  <View style={styles.checklistSection}>
-                    {checklist.map((item) => (
-                      <View key={item.id} style={styles.checklistItemRow}>
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => handleToggleCheckItem(item.id)}
-                          style={styles.chkBoxBtn}
-                        >
-                          {item.completed ? (
-                            <CheckSquare size={16} color="#10B981" />
-                          ) : (
-                            <Square size={16} color={cardStyle.subTextColor} />
-                          )}
-                        </TouchableOpacity>
-
-                        <TextInput
-                          style={[
-                            styles.checklistTextInput,
-                            { color: cardStyle.textColor },
-                            item.completed && styles.checklistTextInputDone,
-                          ]}
-                          placeholder="List item"
-                          placeholderTextColor={cardStyle.subTextColor}
-                          value={item.text}
-                          onChangeText={(txt) => handleUpdateCheckItem(item.id, txt)}
-                        />
-
-                        <TouchableOpacity
-                          onPress={() => handleRemoveCheckItem(item.id)}
-                          style={styles.chkRemoveBtn}
-                        >
-                          <X size={14} color={cardStyle.subTextColor} />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-
-                    {/* + Add List item */}
-                    <TouchableOpacity
-                      onPress={handleAddCheckItem}
-                      style={styles.addCheckItemRow}
-                    >
-                      <Plus size={16} color={cardStyle.subTextColor} />
-                      <Text style={[styles.addCheckItemText, { color: cardStyle.subTextColor }]}>
-                        List item
-                      </Text>
+                      <X size={16} color={cardStyle.subTextColor} />
                     </TouchableOpacity>
                   </View>
-                )}
+                ))}
 
-                {/* Clean Borderless Multiline Note */}
-                <TextInput
-                  style={[
-                    styles.noteBodyInput,
-                    { color: cardStyle.textColor },
-                  ]}
-                  placeholder="Note"
-                  placeholderTextColor={cardStyle.subTextColor}
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  textAlignVertical="top"
-                />
-
-                {/* Chips Area: Workstream tag, Reminder, Effort badge */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.chipsScrollRow}
+                {/* + Add List item */}
+                <TouchableOpacity
+                  onPress={handleAddCheckItem}
+                  style={styles.addCheckItemRow}
+                  activeOpacity={0.7}
                 >
-                  {/* Workstream / Label Chip */}
-                  {heading ? (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setShowLabelPicker(!showLabelPicker);
-                        setShowColorPicker(false);
-                        setShowHorizonPicker(false);
-                      }}
-                      style={[
-                        styles.keepChip,
-                        {
-                          backgroundColor: cardStyle.chipBg,
-                          borderColor: cardStyle.chipBorder,
-                        },
-                      ]}
-                    >
-                      <Tag size={11} color={cardStyle.subTextColor} />
-                      <Text
-                        style={[styles.keepChipText, { color: cardStyle.textColor }]}
-                        numberOfLines={1}
-                      >
-                        {heading}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
+                  <Plus size={16} color={cardStyle.subTextColor} />
+                  <Text style={[styles.addCheckItemText, { color: cardStyle.subTextColor }]}>
+                    List item
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-                  {/* Horizon / Reminder Chip */}
+            {/* Note Body Area (scrollEnabled=false + tap anywhere to focus) */}
+            <Pressable
+              onPress={() => noteInputRef.current?.focus()}
+              style={styles.noteBodyPressable}
+            >
+              <TextInput
+                ref={noteInputRef}
+                style={[
+                  styles.noteBodyInput,
+                  { color: cardStyle.textColor },
+                ]}
+                placeholder="Note"
+                placeholderTextColor={cardStyle.subTextColor}
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                scrollEnabled={false}
+                textAlignVertical="top"
+              />
+            </Pressable>
+
+            {/* Chips Area: Workstream tag, Reminder, Effort badge */}
+            <View style={styles.chipsSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsScrollRow}
+              >
+                {/* Workstream / Label Chip */}
+                {heading ? (
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => {
-                      setShowHorizonPicker(!showHorizonPicker);
+                      setShowLabelPicker(!showLabelPicker);
                       setShowColorPicker(false);
-                      setShowLabelPicker(false);
+                      setShowHorizonPicker(false);
                     }}
                     style={[
                       styles.keepChip,
@@ -401,238 +428,275 @@ const FutureTaskNoteEditor: React.FC<{
                       },
                     ]}
                   >
-                    <Bell size={11} color={cardStyle.subTextColor} />
+                    <Tag size={12} color={cardStyle.subTextColor} />
                     <Text
                       style={[styles.keepChipText, { color: cardStyle.textColor }]}
                       numberOfLines={1}
                     >
-                      {horizon === 'next_7_days'
-                        ? 'Next 7 Days'
-                        : horizon === 'this_month'
-                        ? 'This Month'
-                        : 'Someday'}
+                      {heading}
                     </Text>
                   </TouchableOpacity>
+                ) : null}
 
-                  {/* Effort Chip */}
-                  {estimatedTime ? (
+                {/* Horizon / Reminder Chip */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setShowHorizonPicker(!showHorizonPicker);
+                    setShowColorPicker(false);
+                    setShowLabelPicker(false);
+                  }}
+                  style={[
+                    styles.keepChip,
+                    {
+                      backgroundColor: cardStyle.chipBg,
+                      borderColor: cardStyle.chipBorder,
+                    },
+                  ]}
+                >
+                  <Bell size={12} color={cardStyle.subTextColor} />
+                  <Text
+                    style={[styles.keepChipText, { color: cardStyle.textColor }]}
+                    numberOfLines={1}
+                  >
+                    {horizon === 'next_7_days'
+                      ? 'Next 7 Days'
+                      : horizon === 'this_month'
+                      ? 'This Month'
+                      : 'Someday'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Effort Chip */}
+                {estimatedTime ? (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleCycleEffort}
+                    style={[
+                      styles.keepChip,
+                      {
+                        backgroundColor: cardStyle.chipBg,
+                        borderColor: cardStyle.chipBorder,
+                      },
+                    ]}
+                  >
+                    <Clock size={12} color={cardStyle.subTextColor} />
+                    <Text
+                      style={[styles.keepChipText, { color: cardStyle.textColor }]}
+                      numberOfLines={1}
+                    >
+                      {estimatedTime}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </ScrollView>
+            </View>
+          </ScrollView>
+
+          {/* 3. Collapsible Option Trays */}
+          {/* Color Palette Swatches */}
+          {showColorPicker && (
+            <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.colorPaletteRow}
+              >
+                {KEEP_COLORS.map((c) => {
+                  const active = color === c.id;
+                  return (
                     <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={handleCycleEffort}
+                      key={c.id}
+                      onPress={() => setColor(c.id)}
                       style={[
-                        styles.keepChip,
-                        {
+                        styles.paletteDot,
+                        { backgroundColor: c.dotColor },
+                        active && styles.paletteDotSelected,
+                      ]}
+                      accessibilityLabel={c.name}
+                    />
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Label Selector Tray */}
+          {showLabelPicker && (
+            <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trayScrollRow}
+              >
+                {QUICK_LABELS.map((lbl) => {
+                  const active = heading === lbl;
+                  return (
+                    <TouchableOpacity
+                      key={lbl}
+                      onPress={() => {
+                        setHeading(lbl);
+                        setShowLabelPicker(false);
+                      }}
+                      style={[
+                        styles.trayPill,
+                        active && {
+                          backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#EDE9FE',
+                          borderColor: '#8B5CF6',
+                        },
+                        !active && {
                           backgroundColor: cardStyle.chipBg,
                           borderColor: cardStyle.chipBorder,
                         },
                       ]}
                     >
-                      <Clock size={11} color={cardStyle.subTextColor} />
                       <Text
-                        style={[styles.keepChipText, { color: cardStyle.textColor }]}
-                        numberOfLines={1}
+                        style={[
+                          styles.trayPillText,
+                          { color: active ? '#8B5CF6' : cardStyle.textColor },
+                        ]}
                       >
-                        {estimatedTime}
+                        {lbl}
                       </Text>
                     </TouchableOpacity>
-                  ) : null}
-                </ScrollView>
+                  );
+                })}
               </ScrollView>
+            </View>
+          )}
 
-              {/* 3. Collapsible Option Trays */}
-              {/* Color Palette Swatches */}
-              {showColorPicker && (
-                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.colorPaletteRow}
-                  >
-                    {KEEP_COLORS.map((c) => {
-                      const active = color === c.id;
-                      return (
-                        <TouchableOpacity
-                          key={c.id}
-                          onPress={() => setColor(c.id)}
-                          style={[
-                            styles.paletteDot,
-                            { backgroundColor: c.dotColor },
-                            active && styles.paletteDotSelected,
-                          ]}
-                          accessibilityLabel={c.name}
-                        />
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* Label Selector Tray */}
-              {showLabelPicker && (
-                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.trayScrollRow}
-                  >
-                    {QUICK_LABELS.map((lbl) => {
-                      const active = heading === lbl;
-                      return (
-                        <TouchableOpacity
-                          key={lbl}
-                          onPress={() => {
-                            setHeading(lbl);
-                            setShowLabelPicker(false);
-                          }}
-                          style={[
-                            styles.trayPill,
-                            active && {
-                              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#EDE9FE',
-                              borderColor: '#8B5CF6',
-                            },
-                            !active && {
-                              backgroundColor: cardStyle.chipBg,
-                              borderColor: cardStyle.chipBorder,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.trayPillText,
-                              { color: active ? '#8B5CF6' : cardStyle.textColor },
-                            ]}
-                          >
-                            {lbl}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* Horizon Selector Tray */}
-              {showHorizonPicker && (
-                <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.trayScrollRow}
-                  >
-                    {HORIZON_OPTIONS.map((opt) => {
-                      const active = horizon === opt.id;
-                      return (
-                        <TouchableOpacity
-                          key={opt.id}
-                          onPress={() => {
-                            setHorizon(opt.id);
-                            setShowHorizonPicker(false);
-                          }}
-                          style={[
-                            styles.trayPill,
-                            active && {
-                              backgroundColor: theme.primary,
-                              borderColor: theme.primary,
-                            },
-                            !active && {
-                              backgroundColor: cardStyle.chipBg,
-                              borderColor: cardStyle.chipBorder,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.trayPillText,
-                              { color: active ? '#FFFFFF' : cardStyle.textColor },
-                            ]}
-                          >
-                            {opt.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* 4. Google Keep Bottom Toolbar */}
-              <View
-                style={[
-                  styles.bottomToolbar,
-                  { borderTopColor: 'rgba(150, 150, 150, 0.15)' },
-                ]}
+          {/* Horizon Selector Tray */}
+          {showHorizonPicker && (
+            <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trayScrollRow}
               >
-                <View style={styles.toolbarIconGroup}>
-                  {/* Color Palette Icon */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowColorPicker(!showColorPicker);
-                      setShowLabelPicker(false);
-                      setShowHorizonPicker(false);
-                    }}
-                    style={styles.toolbarBtn}
-                    accessibilityLabel="Note color"
-                  >
-                    <Palette size={18} color={cardStyle.subTextColor} />
-                  </TouchableOpacity>
+                {HORIZON_OPTIONS.map((opt) => {
+                  const active = horizon === opt.id;
+                  return (
+                    <TouchableOpacity
+                      key={opt.id}
+                      onPress={() => {
+                        setHorizon(opt.id);
+                        setShowHorizonPicker(false);
+                      }}
+                      style={[
+                        styles.trayPill,
+                        active && {
+                          backgroundColor: theme.primary,
+                          borderColor: theme.primary,
+                        },
+                        !active && {
+                          backgroundColor: cardStyle.chipBg,
+                          borderColor: cardStyle.chipBorder,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.trayPillText,
+                          { color: active ? '#FFFFFF' : cardStyle.textColor },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
-                  {/* Reminder / Horizon Icon */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowHorizonPicker(!showHorizonPicker);
-                      setShowColorPicker(false);
-                      setShowLabelPicker(false);
-                    }}
-                    style={styles.toolbarBtn}
-                    accessibilityLabel="Completion horizon"
-                  >
-                    <Bell size={18} color={cardStyle.subTextColor} />
-                  </TouchableOpacity>
+          {/* 4. Google Keep Bottom Toolbar */}
+          <View
+            style={[
+              styles.bottomToolbar,
+              isMobile ? styles.bottomToolbarMobile : styles.bottomToolbarDesktop,
+              {
+                borderTopColor: cardStyle.chipBorder,
+                backgroundColor: cardStyle.backgroundColor,
+              },
+            ]}
+          >
+            <View style={styles.toolbarIconGroup}>
+              {/* Color Palette Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowColorPicker(!showColorPicker);
+                  setShowLabelPicker(false);
+                  setShowHorizonPicker(false);
+                }}
+                style={styles.toolbarBtn}
+                accessibilityLabel="Note color"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Palette size={20} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
 
-                  {/* Workstream / Label Icon */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowLabelPicker(!showLabelPicker);
-                      setShowColorPicker(false);
-                      setShowHorizonPicker(false);
-                    }}
-                    style={styles.toolbarBtn}
-                    accessibilityLabel="Workstream label"
-                  >
-                    <Tag size={18} color={cardStyle.subTextColor} />
-                  </TouchableOpacity>
+              {/* Reminder / Horizon Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowHorizonPicker(!showHorizonPicker);
+                  setShowColorPicker(false);
+                  setShowLabelPicker(false);
+                }}
+                style={styles.toolbarBtn}
+                accessibilityLabel="Completion horizon"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Bell size={20} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
 
-                  {/* Add Checklist Icon */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (checklist.length === 0) {
-                        handleAddCheckItem();
-                      } else {
-                        handleAddCheckItem();
-                      }
-                    }}
-                    style={styles.toolbarBtn}
-                    accessibilityLabel="Checklist"
-                  >
-                    <CheckSquare size={18} color={cardStyle.subTextColor} />
-                  </TouchableOpacity>
-                </View>
+              {/* Workstream / Label Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowLabelPicker(!showLabelPicker);
+                  setShowColorPicker(false);
+                  setShowHorizonPicker(false);
+                }}
+                style={styles.toolbarBtn}
+                accessibilityLabel="Workstream label"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Tag size={20} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
 
-                {/* Close Button */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleSaveAndClose}
-                  style={styles.closeBtn}
-                >
-                  <Text style={[styles.closeBtnText, { color: cardStyle.textColor }]}>
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+              {/* Add Checklist Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  handleAddCheckItem();
+                }}
+                style={styles.toolbarBtn}
+                accessibilityLabel="Checklist"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <CheckSquare size={20} color={cardStyle.subTextColor} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Edited Time indicator + Close Button */}
+            <View style={styles.toolbarRightGroup}>
+              <Text
+                style={[styles.editedTimeText, { color: cardStyle.subTextColor }]}
+                numberOfLines={1}
+              >
+                {formatEditedTime(taskToEdit?.updatedAt)}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleSaveAndClose}
+                style={[styles.closeBtn, { backgroundColor: cardStyle.chipBg }]}
+              >
+                <Text style={[styles.closeBtnText, { color: cardStyle.textColor }]}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -656,36 +720,42 @@ export const FutureTaskFormModal: React.FC<FutureTaskFormModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
+    ...(Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        } as any)
+      : {}),
   },
   modalCard: {
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 25,
-    elevation: 10,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 30,
+    elevation: 16,
   },
   modalCardDesktop: {
     width: '92%',
-    maxWidth: 600,
-    maxHeight: '85%',
-    borderRadius: 16,
+    maxWidth: 640,
+    height: '88%',
+    maxHeight: 760,
+    borderRadius: 18,
+    borderWidth: 1,
   },
   modalCardMobile: {
     position: 'absolute',
+    top: 0,
     bottom: 0,
     left: 0,
     right: 0,
     width: '100%',
-    height: '92%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    height: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
   },
 
   /* Top Bar */
@@ -693,9 +763,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 14,
+    paddingTop: Platform.OS === 'ios' ? 48 : 14,
+    paddingBottom: 10,
   },
   topBarRightActions: {
     flexDirection: 'row',
@@ -703,9 +773,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   topIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -715,23 +785,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentScrollContainer: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 24,
+    paddingBottom: 32,
+    flexGrow: 1,
   },
   titleInput: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    lineHeight: 28,
-    padding: 0,
-    marginBottom: 14,
-  },
-  noteBodyInput: {
-    fontSize: 15,
-    lineHeight: 24,
-    minHeight: 140,
+    lineHeight: 30,
+    letterSpacing: -0.3,
     padding: 0,
     marginBottom: 16,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+        } as any)
+      : {}),
+  },
+  noteBodyPressable: {
+    flex: 1,
+    minHeight: 220,
+  },
+  noteBodyInput: {
+    fontSize: 16,
+    lineHeight: 26,
+    minHeight: 220,
+    padding: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+        } as any)
+      : {}),
   },
 
   /* Checklist section */
@@ -741,17 +826,22 @@ const styles = StyleSheet.create({
   checklistItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 5,
+    gap: 12,
+    paddingVertical: 6,
   },
   chkBoxBtn: {
     padding: 2,
   },
   checklistTextInput: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     padding: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+        } as any)
+      : {}),
   },
   checklistTextInputDone: {
     textDecorationLine: 'line-through',
@@ -768,11 +858,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   addCheckItemText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
   },
 
   /* Chips Row */
+  chipsSection: {
+    marginTop: 20,
+    marginBottom: 8,
+  },
   chipsScrollRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -782,20 +876,20 @@ const styles = StyleSheet.create({
   keepChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
   keepChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
 
   /* Option Trays */
   trayWrapper: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
   },
@@ -805,26 +899,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   trayPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
   trayPillText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
   colorPaletteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 2,
   },
   paletteDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.15)',
+    borderColor: 'rgba(0,0,0,0.18)',
   },
   paletteDotSelected: {
     borderColor: '#8B5CF6',
@@ -837,9 +932,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
+  },
+  bottomToolbarMobile: {
+    paddingBottom: Platform.OS === 'ios' ? 26 : 14,
+  },
+  bottomToolbarDesktop: {
+    paddingBottom: 12,
   },
   toolbarIconGroup: {
     flexDirection: 'row',
@@ -847,19 +948,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   toolbarBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  toolbarRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editedTimeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   closeBtn: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
   closeBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

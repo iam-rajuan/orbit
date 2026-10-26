@@ -1138,8 +1138,8 @@ const styles = StyleSheet.create({
   },
   topBarWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   viewSwitchContainer: {
     flexDirection: 'row',

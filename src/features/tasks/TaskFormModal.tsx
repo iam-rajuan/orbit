@@ -201,6 +201,7 @@ const TaskFormContent: React.FC<{
           value={description}
           onChangeText={setDescription}
           multiline
+          scrollEnabled={false}
           numberOfLines={3}
           textAlignVertical="top"
           style={[

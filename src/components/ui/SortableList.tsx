@@ -31,6 +31,7 @@ interface SortableListProps<T> {
   keyExtractor: (item: T) => string;
   renderItem: (props: SortableRenderItemProps<T>) => React.ReactNode;
   onReorder: (newData: T[]) => void;
+  onItemPress?: (item: T, index: number) => void;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   itemWrapperStyle?: StyleProp<ViewStyle>;
@@ -41,6 +42,7 @@ interface DragState {
   active: boolean;
   startIndex: number | null;
   targetIndex: number | null;
+  translateX: number;
   translateY: number;
 }
 
@@ -68,6 +70,7 @@ export function SortableList<T>({
   keyExtractor,
   renderItem,
   onReorder,
+  onItemPress,
   style,
   contentContainerStyle,
   itemWrapperStyle,
@@ -79,6 +82,7 @@ export function SortableList<T>({
     active: false,
     startIndex: null,
     targetIndex: null,
+    translateX: 0,
     translateY: 0,
   });
 
@@ -94,7 +98,7 @@ export function SortableList<T>({
   const isDraggingRef = useRef<boolean>(false);
   const activeStartIndexRef = useRef<number | null>(null);
   const currentTargetIndexRef = useRef<number | null>(null);
-  const itemLayouts = useRef<Record<number, { y: number; height: number }>>({});
+  const itemLayouts = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
   const autoScrollFrameRef = useRef<number | null>(null);
 
   const handleMove = useCallback(
@@ -130,20 +134,31 @@ export function SortableList<T>({
   }, [estimatedItemHeight]);
 
   const calculateTargetIndex = useCallback(
-    (fromIndex: number, deltaY: number) => {
-      const avgHeight = getAverageItemHeight();
-      const fromY = itemLayouts.current[fromIndex]?.y ?? fromIndex * avgHeight;
-      const fromH = itemLayouts.current[fromIndex]?.height ?? avgHeight;
+    (fromIndex: number, deltaX: number, deltaY: number) => {
+      const fromItem = itemLayouts.current[fromIndex];
+      const avgH = getAverageItemHeight();
+      const fromX = fromItem?.x ?? 0;
+      const fromY = fromItem?.y ?? fromIndex * avgH;
+      const fromW = fromItem?.width ?? 150;
+      const fromH = fromItem?.height ?? avgH;
+
+      const currentCenterX = fromX + fromW / 2 + deltaX;
       const currentCenterY = fromY + fromH / 2 + deltaY;
 
       let bestIndex = fromIndex;
       let minDistance = Infinity;
 
       for (let i = 0; i < data.length; i++) {
-        const itemY = itemLayouts.current[i]?.y ?? i * avgHeight;
-        const itemH = itemLayouts.current[i]?.height ?? avgHeight;
-        const itemCenter = itemY + itemH / 2;
-        const dist = Math.abs(currentCenterY - itemCenter);
+        const item = itemLayouts.current[i];
+        const itemX = item?.x ?? 0;
+        const itemY = item?.y ?? i * avgH;
+        const itemW = item?.width ?? 150;
+        const itemH = item?.height ?? avgH;
+
+        const itemCenterX = itemX + itemW / 2;
+        const itemCenterY = itemY + itemH / 2;
+
+        const dist = Math.hypot(currentCenterX - itemCenterX, currentCenterY - itemCenterY);
         if (dist < minDistance) {
           minDistance = dist;
           bestIndex = i;
@@ -196,14 +211,13 @@ export function SortableList<T>({
             window.scrollBy(0, scrollDelta);
           }
 
-          // Adjust touchStartY so the dragged card remains locked right under the thumb
           touchStartYRef.current -= scrollDelta;
 
-          // Recalculate target position with new scroll offset
           const from = activeStartIndexRef.current ?? 0;
           const currentY = clientY + (window.scrollY || window.pageYOffset || 0);
           const dy = currentY - touchStartYRef.current;
-          const target = calculateTargetIndex(from, dy);
+          const dx = touchStartXRef.current ? (touchStartXRef.current - touchStartXRef.current) : 0;
+          const target = calculateTargetIndex(from, dx, dy);
           currentTargetIndexRef.current = target;
 
           setDragState((prev) => ({
@@ -251,6 +265,7 @@ export function SortableList<T>({
         active: true,
         startIndex: index,
         targetIndex: index,
+        translateX: 0,
         translateY: 0,
       });
       startAutoScroll();
@@ -260,26 +275,27 @@ export function SortableList<T>({
   const updateDragPosition = (pageX: number, pageY: number, clientY: number) => {
     currentClientYRef.current = clientY;
     const dy = pageY - touchStartYRef.current;
-    const dx = Math.abs(pageX - touchStartXRef.current);
+    const dx = pageX - touchStartXRef.current;
 
     if (!isDraggingRef.current) {
-      // If user moved thumb noticeably before 180ms -> scroll or swipe gesture, cancel hold
-      if (Math.abs(dy) > 8 || dx > 8) {
+      // If user moved thumb noticeably before 180ms -> scroll gesture, cancel hold
+      if (Math.hypot(dx, dy) > 28) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
           holdTimerRef.current = null;
         }
       }
     } else {
-      // Drag is active: update position & target slot
+      // Drag is active: update position & target slot in 2D
       const from = activeStartIndexRef.current ?? 0;
-      const target = calculateTargetIndex(from, dy);
+      const target = calculateTargetIndex(from, dx, dy);
       currentTargetIndexRef.current = target;
 
       setDragState((prev) => ({
         ...prev,
         active: true,
         targetIndex: target,
+        translateX: dx,
         translateY: dy,
       }));
     }
@@ -312,39 +328,9 @@ export function SortableList<T>({
       active: false,
       startIndex: null,
       targetIndex: null,
+      translateX: 0,
       translateY: 0,
     });
-  };
-
-  // Calculate live displacement shift for items while another item is moving
-  const getItemShiftY = (index: number) => {
-    if (!dragState.active || dragState.startIndex === null || dragState.targetIndex === null) {
-      return 0;
-    }
-    const { startIndex, targetIndex } = dragState;
-
-    // The dragged item itself moves with thumb (translateY)
-    if (index === startIndex) {
-      return dragState.translateY;
-    }
-
-    const shiftAmount = itemHeight + 10; // card height + list gap (10px)
-
-    // Dragging DOWN: items between startIndex + 1 and targetIndex shift UP to open slot
-    if (targetIndex > startIndex) {
-      if (index > startIndex && index <= targetIndex) {
-        return -shiftAmount;
-      }
-    }
-
-    // Dragging UP: items between targetIndex and startIndex - 1 shift DOWN to open slot
-    if (targetIndex < startIndex) {
-      if (index >= targetIndex && index < startIndex) {
-        return shiftAmount;
-      }
-    }
-
-    return 0;
   };
 
   return (
@@ -357,9 +343,7 @@ export function SortableList<T>({
           dragState.targetIndex === index &&
           dragState.startIndex !== index;
 
-        const itemShiftY = getItemShiftY(index);
-
-        // Mobile touch handlers attached to the whole item wrapper
+        // Mobile touch handlers
         const touchHandlers = {
           onTouchStart: (e: any) => {
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
@@ -372,14 +356,18 @@ export function SortableList<T>({
             updateDragPosition(touch.pageX, touch.pageY, clientY);
           },
           onTouchEnd: () => {
+            const wasDragging = isDraggingRef.current;
             endDragGesture();
+            if (!wasDragging && onItemPress) {
+              onItemPress(item, index);
+            }
           },
           onTouchCancel: () => {
             endDragGesture();
           },
         };
 
-        // Web pointer handlers for seamless mouse & touch tracking on web
+        // Web pointer handlers
         const webPointerHandlers =
           Platform.OS === 'web'
             ? {
@@ -407,10 +395,15 @@ export function SortableList<T>({
                     };
 
                     const onPointerUp = () => {
+                      const wasDragging = isDraggingRef.current;
                       endDragGesture();
                       window.removeEventListener('pointermove', onPointerMove);
                       window.removeEventListener('pointerup', onPointerUp);
                       window.removeEventListener('pointercancel', onPointerUp);
+
+                      if (!wasDragging && onItemPress) {
+                        onItemPress(item, index);
+                      }
                     };
 
                     window.addEventListener('pointermove', onPointerMove, { passive: false });
@@ -425,42 +418,47 @@ export function SortableList<T>({
           <View
             key={key}
             onLayout={(e) => {
-              const h = e.nativeEvent.layout.height;
+              const { x, y, width, height: h } = e.nativeEvent.layout;
               if (h > 0 && Math.abs(h - itemHeight) > 5) {
                 setItemHeight(h);
               }
               itemLayouts.current[index] = {
-                y: e.nativeEvent.layout.y,
+                x,
+                y,
+                width,
                 height: h,
               };
             }}
             style={[
               styles.itemWrapper,
               itemWrapperStyle,
-              isDragging
-                ? [
-                    styles.itemDraggingActive,
-                    {
-                      transform: [{ translateY: itemShiftY }, { scale: 1.025 }],
-                      borderColor: '#6366F1',
-                      shadowOpacity: isDark ? 0.45 : 0.22,
-                    },
-                  ]
-                : {
-                    transform: [{ translateY: itemShiftY }],
-                  },
+              isDragging && [
+                styles.itemDraggingActive,
+                {
+                  transform: [
+                    { translateX: dragState.translateX },
+                    { translateY: dragState.translateY },
+                    { scale: 1.05 },
+                  ],
+                  borderColor: '#6366F1',
+                  zIndex: 9999,
+                  shadowOpacity: isDark ? 0.5 : 0.25,
+                },
+              ],
+              isTarget && {
+                borderColor: '#8B5CF6',
+                borderWidth: 2,
+                borderRadius: 18,
+                transform: [{ scale: 0.98 }],
+                opacity: 0.75,
+              },
               Platform.OS === 'web'
                 ? ({
                     userSelect: dragState.active ? 'none' : 'auto',
                     WebkitUserSelect: dragState.active ? 'none' : 'auto',
                     touchAction: dragState.active ? 'none' : 'pan-y',
-                    cursor: isDragging ? 'grabbing' : 'default',
-                    // Butter smooth slide transition for other shifting items; instantaneous for dragged item
-                    transition: isDragging
-                      ? 'none'
-                      : dragState.active
-                      ? 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)'
-                      : 'none',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    transition: isDragging ? 'none' : 'transform 0.16s ease, opacity 0.16s ease',
                   } as any)
                 : {},
             ]}

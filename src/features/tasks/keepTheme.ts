@@ -9,45 +9,48 @@ export interface KeepColor {
 }
 
 export const KEEP_COLORS: KeepColor[] = [
-  { id: 'default', name: 'Default', lightBg: '#FFFFFF', lightBorder: '#E2E8F0', darkBg: '#1C1C22', darkBorder: '#2E2E38', dotColor: '#94A3B8' },
-  { id: 'coral', name: 'Coral', lightBg: '#FFF1F2', lightBorder: '#FECDD3', darkBg: '#341B20', darkBorder: '#5C222C', dotColor: '#F43F5E' },
-  { id: 'peach', name: 'Peach', lightBg: '#FFFBEB', lightBorder: '#FDE68A', darkBg: '#332316', darkBorder: '#5E3E1C', dotColor: '#F59E0B' },
-  { id: 'sand', name: 'Sand', lightBg: '#FEFCE8', lightBorder: '#FEF08A', darkBg: '#302C15', darkBorder: '#58511D', dotColor: '#EAB308' },
-  { id: 'mint', name: 'Mint', lightBg: '#F0FDF4', lightBorder: '#BBF7D0', darkBg: '#172E22', darkBorder: '#23573C', dotColor: '#10B981' },
-  { id: 'sage', name: 'Sage', lightBg: '#F0FDFA', lightBorder: '#99F6E4', darkBg: '#132C2B', darkBorder: '#1F5653', dotColor: '#14B8A6' },
-  { id: 'fog', name: 'Fog', lightBg: '#F0F9FF', lightBorder: '#BAE6FD', darkBg: '#152936', darkBorder: '#1E4B65', dotColor: '#0EA5E9' },
-  { id: 'storm', name: 'Storm', lightBg: '#EEF2FF', lightBorder: '#C7D2FE', darkBg: '#182136', darkBorder: '#26375E', dotColor: '#6366F1' },
-  { id: 'dusk', name: 'Dusk', lightBg: '#FAF5FF', lightBorder: '#E9D5FF', darkBg: '#261836', darkBorder: '#48256B', dotColor: '#A855F7' },
-  { id: 'blossom', name: 'Blossom', lightBg: '#FDF2F8', lightBorder: '#FBCFE8', darkBg: '#32182B', darkBorder: '#5C234C', dotColor: '#EC4899' },
-  { id: 'clay', name: 'Clay', lightBg: '#FDF8F3', lightBorder: '#F3E5D8', darkBg: '#291F18', darkBorder: '#4C3624', dotColor: '#D97706' },
-  { id: 'chalk', name: 'Chalk', lightBg: '#F8FAFC', lightBorder: '#E2E8F0', darkBg: '#21232A', darkBorder: '#363A45', dotColor: '#94A3B8' },
+  { id: 'default', name: 'Default', lightBg: '#FFFFFF', lightBorder: '#E2E8F0', darkBg: '#202124', darkBorder: '#3C4043', dotColor: '#94A3B8' },
+  { id: 'coral', name: 'Coral', lightBg: '#FFF0F0', lightBorder: '#FECDD3', darkBg: '#5C2B29', darkBorder: '#7A3835', dotColor: '#F43F5E' },
+  { id: 'peach', name: 'Peach', lightBg: '#FEEFC3', lightBorder: '#FDE68A', darkBg: '#614A19', darkBorder: '#7C5E20', dotColor: '#F59E0B' },
+  { id: 'sand', name: 'Sand', lightBg: '#FEFCE8', lightBorder: '#FEF08A', darkBg: '#4A4618', darkBorder: '#635D19', dotColor: '#EAB308' },
+  { id: 'mint', name: 'Mint', lightBg: '#E6F4EA', lightBorder: '#BBF7D0', darkBg: '#274E35', darkBorder: '#366B49', dotColor: '#10B981' },
+  { id: 'sage', name: 'Sage', lightBg: '#E0F2F1', lightBorder: '#99F6E4', darkBg: '#1C3E3C', darkBorder: '#275653', dotColor: '#14B8A6' },
+  { id: 'fog', name: 'Fog', lightBg: '#F1F3F4', lightBorder: '#CBD5E1', darkBg: '#303134', darkBorder: '#444746', dotColor: '#64748B' },
+  { id: 'storm', name: 'Storm', lightBg: '#EEF2FF', lightBorder: '#C7D2FE', darkBg: '#2C2B54', darkBorder: '#3E3C75', dotColor: '#6366F1' },
+  { id: 'dusk', name: 'Dusk', lightBg: '#F3E8FD', lightBorder: '#E9D5FF', darkBg: '#3F2257', darkBorder: '#563077', dotColor: '#A855F7' },
+  { id: 'blossom', name: 'Blossom', lightBg: '#FCE8E6', lightBorder: '#FBCFE8', darkBg: '#4A1C35', darkBorder: '#66264A', dotColor: '#EC4899' },
+  { id: 'clay', name: 'Clay', lightBg: '#E8F0FE', lightBorder: '#BFDBFE', darkBg: '#17365D', darkBorder: '#204A80', dotColor: '#3B82F6' },
+  { id: 'chalk', name: 'Chalk', lightBg: '#E0F7FA', lightBorder: '#B2EBF2', darkBg: '#134047', darkBorder: '#1A5761', dotColor: '#06B6D4' },
 ];
 
 export function getKeepCardStyle(
   colorKey: string | undefined,
   isDark: boolean,
-  defaultSurface: string,
-  defaultBorder: string
+  defaultSurface?: string,
+  defaultBorder?: string
 ) {
   const match = KEEP_COLORS.find((c) => c.id === colorKey);
+  const solidDefaultBg = isDark ? '#202124' : '#FFFFFF';
+  const solidDefaultBorder = isDark ? '#3C4043' : '#E2E8F0';
+
   if (!match || match.id === 'default') {
     return {
-      backgroundColor: defaultSurface,
-      borderColor: defaultBorder,
+      backgroundColor: defaultSurface || solidDefaultBg,
+      borderColor: defaultBorder || solidDefaultBorder,
       cardColorId: 'default',
-      textColor: isDark ? '#F1F5F9' : '#0F172A',
-      subTextColor: isDark ? '#94A3B8' : '#64748B',
-      chipBg: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      chipBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+      textColor: isDark ? '#E8EAED' : '#202124',
+      subTextColor: isDark ? '#9AA0A6' : '#5F6368',
+      chipBg: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.06)',
+      chipBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)',
     };
   }
   return {
     backgroundColor: isDark ? match.darkBg : match.lightBg,
     borderColor: isDark ? match.darkBorder : match.lightBorder,
     cardColorId: match.id,
-    textColor: isDark ? '#F8FAFC' : '#0F172A',
-    subTextColor: isDark ? '#CBD5E1' : '#475569',
-    chipBg: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.06)',
-    chipBorder: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+    textColor: isDark ? '#F1F3F4' : '#202124',
+    subTextColor: isDark ? 'rgba(241,243,244,0.75)' : '#5F6368',
+    chipBg: isDark ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.06)',
+    chipBorder: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.10)',
   };
 }

@@ -48,7 +48,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     loadWishlist();
   }, []);
 
-  const bg = Platform.OS === 'web' ? 'transparent' : (isDark ? '#09090B' : theme.background);
+  const bg = Platform.OS === 'web' ? 'transparent' : (isDark ? '#000000' : theme.background);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>

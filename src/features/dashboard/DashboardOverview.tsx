@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -101,13 +102,13 @@ export const DashboardOverview: React.FC = () => {
           </Text>
         </View>
 
-        {/* Timeframe Pills */}
+        {/* Timeframe Pills - Authentic Apple Segmented Control */}
         <View
           style={[
             styles.pillContainer,
             {
-              backgroundColor: theme.surfaceSubtle,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(118, 118, 128, 0.12)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
             },
           ]}
         >
@@ -121,11 +122,11 @@ export const DashboardOverview: React.FC = () => {
                 style={[
                   styles.pill,
                   active && {
-                    backgroundColor: theme.surface,
-                    shadowColor: theme.shadowColor,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: isDark ? 0.4 : 0.08,
-                    shadowRadius: 4,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : '#FFFFFF',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: isDark ? 0.35 : 0.10,
+                    shadowRadius: 6,
                     elevation: 2,
                   },
                 ]}
@@ -198,8 +199,19 @@ export const DashboardOverview: React.FC = () => {
         style={[
           styles.scoreSection,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.35 : 0.05,
+            shadowRadius: 16,
+            elevation: 2,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(25px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                } as any)
+              : {}),
           },
         ]}
       >
@@ -250,8 +262,19 @@ export const DashboardOverview: React.FC = () => {
           style={[
             styles.chartCard,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isDark ? 0.35 : 0.05,
+              shadowRadius: 16,
+              elevation: 2,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(25px) saturate(190%)',
+                    WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                  } as any)
+                : {}),
             },
             (isDesktop || isTablet) && styles.chartCardHalf,
           ]}
@@ -301,8 +324,19 @@ export const DashboardOverview: React.FC = () => {
           style={[
             styles.chartCard,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isDark ? 0.35 : 0.05,
+              shadowRadius: 16,
+              elevation: 2,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(25px) saturate(190%)',
+                    WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                  } as any)
+                : {}),
             },
             (isDesktop || isTablet) && styles.chartCardHalf,
           ]}
@@ -351,8 +385,19 @@ export const DashboardOverview: React.FC = () => {
           style={[
             styles.chartCard,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
+              backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isDark ? 0.35 : 0.05,
+              shadowRadius: 16,
+              elevation: 2,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(25px) saturate(190%)',
+                    WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                  } as any)
+                : {}),
             },
           ]}
         >
@@ -645,7 +690,7 @@ const styles = StyleSheet.create({
   },
   pillContainer: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 9999,
     padding: 3,
     borderWidth: 1,
   },
@@ -653,7 +698,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 7,
     paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: 9999,
     alignItems: 'center',
   },
   pillText: {
@@ -667,7 +712,7 @@ const styles = StyleSheet.create({
   presetChip: {
     paddingVertical: 5,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
   },
   presetChipText: {
@@ -680,7 +725,7 @@ const styles = StyleSheet.create({
 
   // ── Score Section ──
   scoreSection: {
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 20,
   },
@@ -715,7 +760,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   chartCard: {
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 16,
     gap: 12,

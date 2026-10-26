@@ -27,15 +27,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       style={[
         styles.header,
         {
-          backgroundColor: isDark ? 'rgba(12, 12, 16, 0.78)' : 'rgba(255, 255, 255, 0.85)',
-          borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          backgroundColor: isDark ? 'rgba(18, 18, 22, 0.82)' : 'rgba(255, 255, 255, 0.84)',
+          borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
           paddingHorizontal: isMobile ? 12 : 20,
-          minHeight: isMobile ? 54 : 60,
+          minHeight: isMobile ? 52 : 58,
           paddingVertical: isMobile ? 8 : 10,
           ...(Platform.OS === 'web'
             ? ({
-                backdropFilter: 'blur(25px) saturate(190%)',
-                WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                backdropFilter: 'blur(30px) saturate(210%)',
+                WebkitBackdropFilter: 'blur(30px) saturate(210%)',
               } as any)
             : {}),
         },
@@ -51,27 +51,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </View>
 
       <View style={styles.actions}>
-        {/* Quick Theme Toggle Button - Harmonized with iOS Glass Surface */}
+        {/* Quick Theme Toggle Button - Circular Apple Glass */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={toggleTheme}
           style={[
             styles.themeToggleBtn,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.75)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.75)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.08)',
               shadowColor: '#000',
-              shadowOpacity: isDark ? 0.2 : 0.04,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 6,
+              shadowOpacity: isDark ? 0.25 : 0.04,
+              shadowOffset: { width: 0, height: 1 },
+              shadowRadius: 4,
             },
           ]}
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {isDark ? (
-            <Sun size={16} color="#FBBF24" />
+            <Sun size={15} color="#FBBF24" />
           ) : (
-            <Moon size={16} color="#4F46E5" />
+            <Moon size={15} color="#6366F1" />
           )}
         </TouchableOpacity>
 
@@ -124,9 +124,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   themeToggleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

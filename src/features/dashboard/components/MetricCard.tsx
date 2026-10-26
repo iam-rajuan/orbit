@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, Platform } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
@@ -46,8 +46,19 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: theme.surface,
-          borderColor: theme.border,
+          backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.35 : 0.05,
+          shadowRadius: 16,
+          elevation: 2,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(25px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+              } as any)
+            : {}),
         },
         style,
       ]}
@@ -108,7 +119,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 16,
     gap: 14,

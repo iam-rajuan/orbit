@@ -37,26 +37,22 @@ export const MobileTabBar: React.FC = () => {
 
   return (
     <>
-      <View style={styles.floatingWrapper}>
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.85)',
-              shadowColor: '#000000',
-              shadowOpacity: isDark ? 0.35 : 0.08,
-              shadowOffset: { width: 0, height: 6 },
-              shadowRadius: 18,
-              ...(Platform.OS === 'web'
-                ? ({
-                    backdropFilter: 'blur(30px) saturate(190%)',
-                    WebkitBackdropFilter: 'blur(30px) saturate(190%)',
-                  } as any)
-                : {}),
-            },
-          ]}
-        >
+      <View
+        style={[
+          styles.tabBar,
+          {
+            backgroundColor: isDark ? 'rgba(18, 18, 22, 0.82)' : 'rgba(255, 255, 255, 0.84)',
+            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(30px) saturate(210%)',
+                  WebkitBackdropFilter: 'blur(30px) saturate(210%)',
+                } as any)
+              : {}),
+          },
+        ]}
+      >
+        <View style={styles.tabsRow}>
           {tabs.map((tab) => {
             const isMenuTab = tab.path === '#menu';
             const isActive = isMenuTab
@@ -64,34 +60,30 @@ export const MobileTabBar: React.FC = () => {
               : pathname.startsWith(tab.path);
             const Icon = tab.icon;
 
+            const iconColor = isActive ? theme.primary : (isDark ? '#8E8E93' : '#8E8E93');
+
             return (
               <TouchableOpacity
                 key={tab.path}
-                activeOpacity={0.7}
+                activeOpacity={0.65}
                 onPress={() => handleTabPress(tab.path)}
-                style={[
-                  styles.tabItem,
-                  isActive && [
-                    styles.tabItemActive,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(99, 102, 241, 0.18)'
-                        : 'rgba(79, 70, 229, 0.09)',
-                    },
-                  ],
-                ]}
+                style={styles.tabItem}
                 accessibilityLabel={tab.title}
               >
-                <Icon
-                  size={18}
-                  color={isActive ? theme.primary : theme.textMuted}
-                  strokeWidth={isActive ? 2.4 : 1.9}
-                />
+                <View style={styles.iconContainer}>
+                  <Icon
+                    size={21}
+                    color={iconColor}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                </View>
                 <Text
                   style={[
                     styles.tabTitle,
-                    { color: isActive ? theme.primary : theme.textMuted },
-                    isActive && styles.tabTitleActive,
+                    {
+                      color: isActive ? theme.primary : '#8E8E93',
+                      fontWeight: isActive ? '700' : '500',
+                    },
                   ]}
                   numberOfLines={1}
                 >
@@ -113,42 +105,36 @@ export const MobileTabBar: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  floatingWrapper: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    paddingTop: 3,
-    backgroundColor: 'transparent',
+  tabBar: {
+    width: '100%',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'web' ? 18 : 26,
+    zIndex: 90,
   },
-  container: {
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1,
+  tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-    elevation: 6,
+    width: '100%',
+    paddingHorizontal: 8,
   },
   tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderRadius: 20,
-    flex: 1,
+    paddingVertical: 2,
     cursor: 'pointer' as any,
   },
-  tabItemActive: {
-    transform: [{ scale: 1.02 }],
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 24,
   },
   tabTitle: {
-    fontSize: 9.5,
-    fontWeight: '500',
-    marginTop: 2,
-    letterSpacing: -0.1,
-  },
-  tabTitleActive: {
-    fontWeight: '700',
+    fontSize: 10,
+    marginTop: 3,
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
 });

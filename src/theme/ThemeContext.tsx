@@ -85,13 +85,13 @@ export const LIGHT_THEME: ThemeColors = {
 
 export const DARK_THEME: ThemeColors = {
   isDark: true,
-  background: '#09090B', // Deep Obsidian System Grouped Background
-  surface: 'rgba(24, 24, 28, 0.78)', // Frosted Dark Glass surface
-  surfaceSubtle: 'rgba(255, 255, 255, 0.05)',
-  surfaceElevated: 'rgba(34, 34, 40, 0.88)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderSubtle: 'rgba(255, 255, 255, 0.05)',
-  borderStrong: 'rgba(255, 255, 255, 0.16)',
+  background: '#000000', // Apple True Black (OLED)
+  surface: 'rgba(28, 28, 30, 0.75)', // Apple System Gray 6 Frosted Glass
+  surfaceSubtle: 'rgba(255, 255, 255, 0.06)',
+  surfaceElevated: 'rgba(44, 44, 46, 0.85)',
+  border: 'rgba(255, 255, 255, 0.10)',
+  borderSubtle: 'rgba(255, 255, 255, 0.06)',
+  borderStrong: 'rgba(255, 255, 255, 0.18)',
   textPrimary: '#FFFFFF', // Apple primary dark text
   textSecondary: '#EBEBF5', // Apple secondary dark text
   textMuted: '#8E8E93', // Apple tertiary dark text
@@ -139,9 +139,10 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const { settings, updateSettings } = useSettingsStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
 
-  const mode = (settings.theme as ThemeMode) || 'system';
+  const mode = (settings?.theme as ThemeMode) || 'light';
 
   const isDark = useMemo(() => {
     if (mode === 'dark') return true;
@@ -155,8 +156,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      document.body.classList.remove('light-theme', 'dark-theme');
-      document.body.classList.add(isDark ? 'dark-theme' : 'light-theme');
+      const root = document.documentElement;
+      if (isDark) {
+        root.classList.add('dark');
+        root.setAttribute('data-theme', 'dark');
+        root.style.colorScheme = 'dark';
+        document.body.classList.add('dark', 'dark-theme');
+        document.body.classList.remove('light-theme');
+        document.body.style.backgroundColor = '#000000';
+      } else {
+        root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
+        root.style.colorScheme = 'light';
+        document.body.classList.remove('dark', 'dark-theme');
+        document.body.classList.add('light-theme');
+        document.body.style.backgroundColor = '#F2F2F7';
+      }
     }
   }, [isDark]);
 

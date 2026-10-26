@@ -11,27 +11,27 @@ html, body, #root {
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", 'Inter', "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   background-color: #F2F2F7;
-  background-image:
-    radial-gradient(at 10% 12%, rgba(99, 102, 241, 0.05) 0px, transparent 40%),
-    radial-gradient(at 90% 15%, rgba(56, 189, 248, 0.05) 0px, transparent 38%),
-    radial-gradient(at 50% 88%, rgba(139, 92, 246, 0.04) 0px, transparent 50%);
-  background-attachment: fixed;
+  color: #000000;
 }
 
-/* Dark mode ambient mesh background */
-.dark html, .dark body, .dark #root,
-[data-theme="dark"] html, [data-theme="dark"] body, [data-theme="dark"] #root {
-  background-color: #09090B;
-  background-image:
-    radial-gradient(at 10% 12%, rgba(99, 102, 241, 0.08) 0px, transparent 45%),
-    radial-gradient(at 90% 15%, rgba(56, 189, 248, 0.06) 0px, transparent 40%),
-    radial-gradient(at 50% 88%, rgba(139, 92, 246, 0.06) 0px, transparent 55%);
-  background-attachment: fixed;
+/* Dark mode true Apple OLED background */
+html.dark,
+html.dark body,
+html.dark #root,
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root,
+body.dark,
+body.dark-theme {
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  color-scheme: dark !important;
 }
 
 * {

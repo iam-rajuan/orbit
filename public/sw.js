@@ -1,9 +1,11 @@
 // Orbit - Service Worker
-const CACHE_NAME = 'orbit-cache-v1';
+const CACHE_NAME = 'orbit-cache-v2';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
-  '/favicon.png'
+  '/favicon.png',
+  '/apple-touch-icon.png',
+  '/icon-192.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,6 +32,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Don't intercept analytics or external requests
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {

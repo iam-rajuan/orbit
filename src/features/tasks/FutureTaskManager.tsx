@@ -21,6 +21,7 @@ import { ForwardBadge } from './ForwardBadge';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { SortableList } from '../../components/ui/SortableList';
 import {
+  Check,
   Search,
   Pin,
   Palette,
@@ -381,35 +382,8 @@ export const FutureTaskManager: React.FC = () => {
           style={[styles.cardFooter, isGrid && !isDesktop && styles.cardFooterMobile]}
           {...interactiveProps}
         >
-          {/* Left: Complete Checkbox + Do Today Chip */}
+          {/* Left: Today Chip (most left) + Checkbox */}
           <View style={styles.cardFooterLeft} {...interactiveProps}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: task.completed }}
-              {...interactiveProps}
-              onPress={(e: any) => {
-                e?.stopPropagation?.();
-                toggleTaskComplete(task.id);
-              }}
-              onPointerDown={(e: any) => e?.stopPropagation?.()}
-              onTouchStart={(e: any) => e?.stopPropagation?.()}
-              style={[
-                styles.cardCompleteBtn,
-                isGrid && !isDesktop && styles.cardCompleteBtnMobile,
-                task.completed && {
-                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
-                },
-              ]}
-              accessibilityLabel={task.completed ? 'Mark incomplete' : 'Mark complete'}
-            >
-              {task.completed ? (
-                <CheckSquare size={isGrid && !isDesktop ? 13 : 15} color="#10B981" />
-              ) : (
-                <Square size={isGrid && !isDesktop ? 13 : 15} color={cardStyle.subTextColor} />
-              )}
-            </TouchableOpacity>
-
             {!task.completed && (
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -442,6 +416,52 @@ export const FutureTaskManager: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: task.completed }}
+              {...interactiveProps}
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                toggleTaskComplete(task.id);
+              }}
+              onPointerDown={(e: any) => e?.stopPropagation?.()}
+              onTouchStart={(e: any) => e?.stopPropagation?.()}
+              style={[
+                styles.checkboxTouchTarget,
+                isGrid && !isDesktop && styles.checkboxTouchTargetMobile,
+              ]}
+              accessibilityLabel={task.completed ? 'Mark incomplete' : 'Mark complete'}
+            >
+              {task.completed ? (
+                <View style={styles.completedPill}>
+                  <View
+                    style={[
+                      styles.checkboxCircle,
+                      styles.checkboxCircleChecked,
+                      isGrid && !isDesktop && styles.checkboxCircleMobile,
+                    ]}
+                  >
+                    <Check size={isGrid && !isDesktop ? 9 : 11} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                  <Text style={[styles.completedPillText, { color: isDark ? '#34D399' : '#059669' }]}>
+                    Done
+                  </Text>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.checkboxCircle,
+                    isGrid && !isDesktop && styles.checkboxCircleMobile,
+                    {
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.32)' : 'rgba(0, 0, 0, 0.25)',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Right Action Icons: Pin + Color Palette + Edit (Desktop) + Delete */}
@@ -1558,17 +1578,46 @@ const styles = StyleSheet.create({
     gap: 5,
     flexShrink: 1,
   },
-  cardCompleteBtn: {
-    width: 26,
+  checkboxTouchTarget: {
     height: 26,
-    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  checkboxTouchTargetMobile: {
+    height: 22,
+    paddingHorizontal: 1,
+  },
+  checkboxCircle: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardCompleteBtnMobile: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
+  checkboxCircleMobile: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    borderWidth: 1.4,
+  },
+  checkboxCircleChecked: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  completedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+  },
+  completedPillText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   doTodayChip: {
     flexDirection: 'row',

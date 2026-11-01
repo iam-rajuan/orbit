@@ -17,6 +17,7 @@ import { FutureTaskFormModal } from './FutureTaskFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
 import { generateId } from '../../utils/id';
+import { offsetDateKey } from '../../utils/date';
 import { ForwardBadge } from './ForwardBadge';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { SortableList } from '../../components/ui/SortableList';
@@ -41,15 +42,6 @@ const PRIORITY_FILTERS: { id: string; label: string; priority: TaskPriority }[] 
   { id: 'priority:High', label: 'High Priority', priority: 'High' },
   { id: 'priority:Medium', label: 'Moderate', priority: 'Medium' },
   { id: 'priority:Low', label: 'Light', priority: 'Low' },
-];
-
-const HORIZON_FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'pinned', label: 'Pinned' },
-  { id: 'next_7_days', label: 'Next 7 Days' },
-  { id: 'this_month', label: 'This Month' },
-  { id: 'someday', label: 'Someday' },
-  { id: 'completed', label: 'Done' },
 ];
 
 interface ChecklistDraftItem {
@@ -117,48 +109,137 @@ export const FutureTaskManager: React.FC = () => {
     });
   }, [tasks, selectedDate]);
 
-  // Filter tasks based on search, active filter, color
+  // Dynamic count badges for each horizon filter
+  const tabCounts = useMemo(() => {
+    const next7DaysEnd = offsetDateKey(selectedDate, 7);
+    const currentMonthPrefix = selectedDate.slice(0, 7);
+
+    return {
+      all: upcomingTasks.filter((t) => !t.completed).length,
+      pinned: upcomingTasks.filter((t) => !t.completed && t.pinned).length,
+      next_7_days: upcomingTasks.filter((t) => {
+        if (t.completed) return false;
+        if (t.horizon === 'next_7_days') return true;
+        if (t.date && t.date !== 'someday') {
+          const d = t.dueDate || t.date;
+          return d >= selectedDate && d <= next7DaysEnd;
+        }
+        return false;
+      }).length,
+      this_month: upcomingTasks.filter((t) => {
+        if (t.completed) return false;
+        if (t.horizon === 'this_month') return true;
+        if (t.date && t.date !== 'someday') {
+          const d = t.dueDate || t.date;
+          return d.startsWith(currentMonthPrefix);
+        }
+        return false;
+      }).length,
+      someday: upcomingTasks.filter((t) => {
+        if (t.completed) return false;
+        return t.horizon === 'someday' || t.date === 'someday' || !t.date;
+      }).length,
+    };
+  }, [upcomingTasks, selectedDate]);
+
+  const horizonFilterTabs = useMemo(() => [
+    { id: 'all', label: `All (${tabCounts.all})` },
+    { id: 'pinned', label: `Pinned (${tabCounts.pinned})` },
+    { id: 'next_7_days', label: `Next 7 Days (${tabCounts.next_7_days})` },
+    { id: 'this_month', label: `This Month (${tabCounts.this_month})` },
+    { id: 'someday', label: `Someday (${tabCounts.someday})` },
+  ], [tabCounts]);
+
+  // Filter & sort tasks based on search, active filter, color
   const filteredTasks = useMemo(() => {
-    return upcomingTasks.filter((t) => {
-      // 1. Color filter
-      if (selectedColorFilter && (t.color || 'default') !== selectedColorFilter) {
+    const next7DaysEnd = offsetDateKey(selectedDate, 7);
+    const currentMonthPrefix = selectedDate.slice(0, 7);
+
+    const matchesHorizonFilter = (t: Task): boolean => {
+      if (activeFilter === 'completed') {
+        return !!t.completed;
+      }
+      if (t.completed) return false;
+
+      if (activeFilter === 'pinned') {
+        return !!t.pinned;
+      }
+      if (activeFilter === 'all') {
+        return true;
+      }
+      if (activeFilter === 'next_7_days') {
+        if (t.horizon === 'next_7_days') return true;
+        if (t.date && t.date !== 'someday') {
+          const d = t.dueDate || t.date;
+          return d >= selectedDate && d <= next7DaysEnd;
+        }
         return false;
       }
-
-      // 2. Horizon / Label filter
-      if (activeFilter === 'completed') {
-        if (!t.completed) return false;
-      } else if (activeFilter === 'pinned') {
-        if (t.completed || !t.pinned) return false;
-      } else if (activeFilter === 'all') {
-        if (t.completed) return false;
-      } else if (activeFilter === 'next_7_days' || activeFilter === 'this_month' || activeFilter === 'someday') {
-        if (t.completed) return false;
-        if (t.horizon !== activeFilter && t.date !== activeFilter) return false;
-      } else if (activeFilter.startsWith('priority:')) {
-        const priorityVal = activeFilter.replace('priority:', '');
-        if (t.completed) return false;
-        if (t.priority !== priorityVal) return false;
+      if (activeFilter === 'this_month') {
+        if (t.horizon === 'this_month') return true;
+        if (t.date && t.date !== 'someday') {
+          const d = t.dueDate || t.date;
+          return d.startsWith(currentMonthPrefix);
+        }
+        return false;
       }
+      if (activeFilter === 'someday') {
+        return t.horizon === 'someday' || t.date === 'someday' || !t.date;
+      }
+      if (activeFilter.startsWith('priority:')) {
+        const priorityVal = activeFilter.replace('priority:', '');
+        return t.priority === priorityVal;
+      }
+      return true;
+    };
 
-      // 3. Search query
-      if (searchQuery.trim().length > 0) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTitle = t.title.toLowerCase().includes(q);
-        const matchesHeading = (t.heading || '').toLowerCase().includes(q);
-        const matchesNotes = (t.notes || '').toLowerCase().includes(q);
-        const matchesCategory = t.category.toLowerCase().includes(q);
-        const matchesChecklist = (t.checklist || []).some((item) =>
-          item.text.toLowerCase().includes(q)
-        );
-        if (!matchesTitle && !matchesHeading && !matchesNotes && !matchesCategory && !matchesChecklist) {
+    return upcomingTasks
+      .filter((t) => {
+        // 1. Color filter
+        if (selectedColorFilter && (t.color || 'default') !== selectedColorFilter) {
           return false;
         }
-      }
 
-      return true;
-    });
-  }, [upcomingTasks, activeFilter, selectedColorFilter, searchQuery]);
+        // 2. Horizon / Status filter
+        if (!matchesHorizonFilter(t)) {
+          return false;
+        }
+
+        // 3. Search query
+        if (searchQuery.trim().length > 0) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchesTitle = t.title.toLowerCase().includes(q);
+          const matchesHeading = (t.heading || '').toLowerCase().includes(q);
+          const matchesNotes = (t.notes || '').toLowerCase().includes(q);
+          const matchesCategory = t.category.toLowerCase().includes(q);
+          const matchesChecklist = (t.checklist || []).some((item) =>
+            item.text.toLowerCase().includes(q)
+          );
+          if (!matchesTitle && !matchesHeading && !matchesNotes && !matchesCategory && !matchesChecklist) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        // Pinned tasks float to top
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+
+        // Date urgency (closest date first, someday at the bottom)
+        const aDate = a.date === 'someday' ? '9999-99-99' : (a.dueDate || a.date || '9999-99-99');
+        const bDate = b.date === 'someday' ? '9999-99-99' : (b.dueDate || b.date || '9999-99-99');
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+
+        // Priority sorting (High > Medium > Low)
+        const priorityWeight: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+        const aPrio = priorityWeight[a.priority as string] ?? 1;
+        const bPrio = priorityWeight[b.priority as string] ?? 1;
+        if (aPrio !== bPrio) return aPrio - bPrio;
+
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+  }, [upcomingTasks, activeFilter, selectedColorFilter, searchQuery, selectedDate]);
 
   // Separate pinned vs others
   const pinnedTasks = useMemo(() => {
@@ -414,7 +495,7 @@ export const FutureTaskManager: React.FC = () => {
                     isGrid && !isDesktop && styles.doTodayChipTextMobile,
                   ]}
                 >
-                  {isGrid && !isDesktop ? 'Today' : 'Do Today'}
+                  {isGrid && !isDesktop ? '+ Today' : '+ Move to Today'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -625,12 +706,17 @@ export const FutureTaskManager: React.FC = () => {
         paddingHorizontal={16}
         gap={6}
       >
-        {HORIZON_FILTERS.map((f) => {
+        {horizonFilterTabs.map((f) => {
           const active = activeFilter === f.id;
           return (
             <TouchableOpacity
               key={f.id}
-              onPress={() => setActiveFilter(f.id)}
+              onPress={() => {
+                setActiveFilter(f.id);
+                if (f.id === 'all') {
+                  setSelectedColorFilter(null);
+                }
+              }}
               style={[
                 styles.filterChip,
                 active && {
@@ -656,6 +742,34 @@ export const FutureTaskManager: React.FC = () => {
             </TouchableOpacity>
           );
         })}
+
+        {selectedColorFilter && (
+          <TouchableOpacity
+            onPress={() => setSelectedColorFilter(null)}
+            style={[
+              styles.filterChip,
+              {
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                borderColor: '#EF4444',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+              },
+            ]}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: KEEP_COLORS.find((c) => c.id === selectedColorFilter)?.dotColor || '#EF4444',
+              }}
+            />
+            <Text style={[styles.filterChipText, { color: '#EF4444', fontWeight: '700' }]}>
+              Clear Color ✕
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Priority Filter Chips */}
         {PRIORITY_FILTERS.map((pf) => {

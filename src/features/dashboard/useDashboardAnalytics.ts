@@ -15,6 +15,7 @@ import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useNutritionStore } from '../../stores/useNutritionStore';
 import {
   parseDateKey,
   formatDateKey,
@@ -42,6 +43,7 @@ export function useDashboardAnalytics(
   const { tasks } = useTaskStore();
   const { expenses } = useExpenseStore();
   const { settings } = useSettingsStore();
+  const { getDayTotals, goals, loggedEntries } = useNutritionStore();
 
   const referenceDate = useMemo(() => parseDateKey(selectedDate), [selectedDate]);
 
@@ -116,6 +118,12 @@ export function useDashboardAnalytics(
     const daySet = new Set(daysInPeriod);
     return expenses.filter((e) => daySet.has(e.date));
   }, [expenses, daysInPeriod]);
+
+  // Filter nutrition entries in period
+  const periodMealEntries = useMemo(() => {
+    const daySet = new Set(daysInPeriod);
+    return loggedEntries.filter((e) => daySet.has(e.date));
+  }, [loggedEntries, daysInPeriod]);
 
   // ─── Daily Breakdowns for Trend Charts ────────────────────────────────
 
@@ -376,6 +384,91 @@ export function useDashboardAnalytics(
     };
   }, [periodExpenses, daysInPeriod, settings.currency, buildChunkedData, timeframe]);
 
+  // ─── Nutrition / Diet Analytics ────────────────────────────────────────
+
+  const nutritionAnalytics = useMemo(() => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let loggedDaysCount = 0;
+
+    // Daily breakdown for area chart trend (chunked)
+    const trendData: AreaDataPoint[] = buildChunkedData.chunks.map((chunk) => {
+      let chunkCalories = 0;
+      let chunkLoggedDays = 0;
+
+      chunk.forEach((dayKey) => {
+        const dayTotals = getDayTotals(dayKey);
+        if (dayTotals.totalCalories > 0) {
+          chunkCalories += dayTotals.totalCalories;
+          chunkLoggedDays += 1;
+        }
+      });
+
+      const avgChunkCalories = chunkLoggedDays > 0 ? Math.round(chunkCalories / chunkLoggedDays) : chunkCalories;
+      const firstDay = parseDateKey(chunk[0]);
+
+      const label = buildChunkedData.isChunked
+        ? format(firstDay, timeframe === 'YEAR' ? 'MMM' : 'dd MMM')
+        : format(firstDay, 'EEE');
+
+      return {
+        label,
+        value: avgChunkCalories,
+        displayValue: `${avgChunkCalories} kcal`,
+      };
+    });
+
+    daysInPeriod.forEach((dayKey) => {
+      const dayTotals = getDayTotals(dayKey);
+      if (dayTotals.totalCalories > 0) {
+        totalCalories += dayTotals.totalCalories;
+        totalProtein += dayTotals.totalProtein;
+        totalCarbs += dayTotals.totalCarbs;
+        totalFat += dayTotals.totalFat;
+        loggedDaysCount += 1;
+      }
+    });
+
+    const avgCalories = loggedDaysCount > 0 ? Math.round(totalCalories / loggedDaysCount) : 0;
+    const avgProtein = loggedDaysCount > 0 ? Math.round(totalProtein / loggedDaysCount) : 0;
+    const avgCarbs = loggedDaysCount > 0 ? Math.round(totalCarbs / loggedDaysCount) : 0;
+    const avgFat = loggedDaysCount > 0 ? Math.round(totalFat / loggedDaysCount) : 0;
+
+    const targetCalories = goals.calorieTarget || 2100;
+    const adherencePct = targetCalories > 0 ? Math.min(100, Math.round((avgCalories / targetCalories) * 100)) : 0;
+
+    // Macro percentages
+    const proteinKcal = avgProtein * 4;
+    const carbsKcal = avgCarbs * 4;
+    const fatKcal = avgFat * 9;
+    const totalMacroKcal = proteinKcal + carbsKcal + fatKcal || 1;
+
+    const macroPercentages = {
+      protein: Math.round((proteinKcal / totalMacroKcal) * 100),
+      carbs: Math.round((carbsKcal / totalMacroKcal) * 100),
+      fat: Math.max(0, 100 - Math.round((proteinKcal / totalMacroKcal) * 100) - Math.round((carbsKcal / totalMacroKcal) * 100)),
+    };
+
+    const sparklineData = trendData.map((t) => t.value);
+
+    return {
+      totalCalories,
+      avgCalories,
+      targetCalories,
+      loggedDaysCount,
+      totalLoggedMeals: periodMealEntries.length,
+      avgProtein,
+      avgCarbs,
+      avgFat,
+      adherencePct,
+      macroPercentages,
+      trendData,
+      sparklineData,
+    };
+  }, [daysInPeriod, getDayTotals, goals.calorieTarget, buildChunkedData, timeframe, periodMealEntries]);
+
   // ─── Overall Score ────────────────────────────────────────────────────
 
   const overallScore = useMemo(() => {
@@ -421,6 +514,7 @@ export function useDashboardAnalytics(
     routineAnalytics,
     taskAnalytics,
     expenseAnalytics,
+    nutritionAnalytics,
     overallScore,
     multiRings,
   };

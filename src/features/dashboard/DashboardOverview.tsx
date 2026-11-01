@@ -19,6 +19,7 @@ import {
   Activity,
   Zap,
   Target,
+  UtensilsCrossed,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -57,6 +58,7 @@ export const DashboardOverview: React.FC = () => {
     routineAnalytics,
     taskAnalytics,
     expenseAnalytics,
+    nutritionAnalytics,
     overallScore,
   } = useDashboardAnalytics(timeframe, timeframe === 'CUSTOM' ? customRange : undefined);
 
@@ -239,6 +241,14 @@ export const DashboardOverview: React.FC = () => {
               color: '#F59E0B',
               displayValue: `${formatCurrency(expenseAnalytics.total, settings.currency)} • ${expenseAnalytics.needPct}% needs`,
             },
+            {
+              label: 'Diet Adherence',
+              value: nutritionAnalytics.adherencePct,
+              color: '#EA580C',
+              displayValue: nutritionAnalytics.avgCalories > 0
+                ? `${nutritionAnalytics.avgCalories} / ${nutritionAnalytics.targetCalories} kcal • ${nutritionAnalytics.adherencePct}%`
+                : `${nutritionAnalytics.targetCalories} kcal target`,
+            },
           ]}
         />
       </View>
@@ -380,7 +390,7 @@ export const DashboardOverview: React.FC = () => {
           />
         </View>
 
-        {/* Spending Trend Chart (Full Width) */}
+        {/* Spending Trend Chart */}
         <View
           style={[
             styles.chartCard,
@@ -399,6 +409,7 @@ export const DashboardOverview: React.FC = () => {
                   } as any)
                 : {}),
             },
+            (isDesktop || isTablet) && styles.chartCardHalf,
           ]}
         >
           <View style={styles.chartCardHeader}>
@@ -477,6 +488,122 @@ export const DashboardOverview: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Diet & Calorie Intake Chart */}
+        <View
+          style={[
+            styles.chartCard,
+            {
+              backgroundColor: isDark ? 'rgba(28, 28, 32, 0.75)' : 'rgba(255, 255, 255, 0.82)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.70)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isDark ? 0.35 : 0.05,
+              shadowRadius: 16,
+              elevation: 2,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(25px) saturate(190%)',
+                    WebkitBackdropFilter: 'blur(25px) saturate(190%)',
+                  } as any)
+                : {}),
+            },
+            (isDesktop || isTablet) && styles.chartCardHalf,
+          ]}
+        >
+          <View style={styles.chartCardHeader}>
+            <View style={styles.chartCardTitleRow}>
+              <View
+                style={[
+                  styles.chartIconBadge,
+                  { backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED' },
+                ]}
+              >
+                <UtensilsCrossed size={14} color="#EA580C" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chartTitle, { color: theme.textPrimary }]}>
+                  Diet & Calorie Intake
+                </Text>
+                <Text style={[styles.chartSubtitle, { color: theme.textMuted }]}>
+                  {nutritionAnalytics.avgCalories > 0
+                    ? `Avg ${nutritionAnalytics.avgCalories} kcal • Target ${nutritionAnalytics.targetCalories} kcal`
+                    : `Target: ${nutritionAnalytics.targetCalories} kcal/day`}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/nutrition' as any)}
+              style={[
+                styles.chartCta,
+                { backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED' },
+              ]}
+              accessibilityLabel="View Diet & Nutrition"
+            >
+              <ArrowRight size={14} color="#EA580C" />
+            </TouchableOpacity>
+          </View>
+
+          <AreaChart
+            data={nutritionAnalytics.trendData}
+            height={140}
+            color="#EA580C"
+            gradientOpacity={isDark ? 0.12 : 0.18}
+            yAxisSuffix=" kcal"
+          />
+
+          {/* Macro distribution inline bar */}
+          <View style={styles.needsWantsRow}>
+            <View style={styles.needsWantsBar}>
+              <View
+                style={{
+                  width: `${nutritionAnalytics.macroPercentages.protein}%`,
+                  height: '100%',
+                  backgroundColor: '#10B981',
+                  borderTopLeftRadius: 4,
+                  borderBottomLeftRadius: 4,
+                }}
+              />
+              <View
+                style={{
+                  width: `${nutritionAnalytics.macroPercentages.carbs}%`,
+                  height: '100%',
+                  backgroundColor: '#F59E0B',
+                }}
+              />
+              <View
+                style={{
+                  width: `${nutritionAnalytics.macroPercentages.fat}%`,
+                  height: '100%',
+                  backgroundColor: '#8B5CF6',
+                  borderTopRightRadius: 4,
+                  borderBottomRightRadius: 4,
+                }}
+              />
+            </View>
+            <View style={styles.needsWantsLabels}>
+              <View style={styles.needsWantsLabelItem}>
+                <View style={[styles.miniDot, { backgroundColor: '#10B981' }]} />
+                <Text style={[styles.needsWantsText, { color: theme.textSecondary }]}>
+                  Protein {nutritionAnalytics.macroPercentages.protein}%
+                </Text>
+              </View>
+              <View style={styles.needsWantsLabelItem}>
+                <View style={[styles.miniDot, { backgroundColor: '#F59E0B' }]} />
+                <Text style={[styles.needsWantsText, { color: theme.textSecondary }]}>
+                  Carbs {nutritionAnalytics.macroPercentages.carbs}%
+                </Text>
+              </View>
+              <View style={styles.needsWantsLabelItem}>
+                <View style={[styles.miniDot, { backgroundColor: '#8B5CF6' }]} />
+                <Text style={[styles.needsWantsText, { color: theme.textSecondary }]}>
+                  Fat {nutritionAnalytics.macroPercentages.fat}%
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
 
       {/* ── Section 4: Quick Metrics with Sparklines ── */}
@@ -548,6 +675,25 @@ export const DashboardOverview: React.FC = () => {
         </MetricCard>
 
         <MetricCard
+          title="Diet & Calories"
+          subtitle={`${nutritionAnalytics.loggedDaysCount} days recorded`}
+          value={nutritionAnalytics.avgCalories > 0 ? `${nutritionAnalytics.avgCalories} kcal` : `${nutritionAnalytics.targetCalories} kcal goal`}
+          icon={<UtensilsCrossed size={16} color="#EA580C" />}
+          accentColor="#EA580C"
+          footer={`Target: ${nutritionAnalytics.targetCalories} kcal • ${nutritionAnalytics.adherencePct}% adherence`}
+          onPress={() => router.push('/nutrition' as any)}
+          ctaLabel="Diet"
+          style={(isDesktop || isTablet) ? styles.metricCardHalf : undefined}
+        >
+          <Sparkline
+            data={nutritionAnalytics.sparklineData}
+            color="#EA580C"
+            width={120}
+            height={28}
+          />
+        </MetricCard>
+
+        <MetricCard
           title="Calendar Range"
           subtitle="Days explored in period"
           value={`${daysCount} Days`}
@@ -604,6 +750,16 @@ export const DashboardOverview: React.FC = () => {
             metricLabel: 'total spend',
             route: '/expenses',
             accentColor: '#F43F5E',
+          },
+          {
+            title: 'Diet & Nutrition',
+            desc: 'Calorie, macro & meal routine tracking',
+            icon: <UtensilsCrossed size={18} color="#EA580C" />,
+            iconBg: isDark ? 'rgba(234, 88, 12, 0.12)' : '#FFF7ED',
+            metric: nutritionAnalytics.avgCalories > 0 ? `${nutritionAnalytics.avgCalories} kcal` : `${nutritionAnalytics.targetCalories} kcal`,
+            metricLabel: 'daily target',
+            route: '/nutrition',
+            accentColor: '#EA580C',
           },
           {
             title: 'Calendar',

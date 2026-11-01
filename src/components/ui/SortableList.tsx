@@ -107,6 +107,7 @@ export function SortableList<T>({
   const itemLayouts = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
   const autoScrollFrameRef = useRef<number | null>(null);
   const isInteractivePressRef = useRef<boolean>(false);
+  const hasMovedRef = useRef<boolean>(false);
 
   const registerLayout = useCallback(
     (index: number, layout: { x: number; y: number; width: number; height: number }) => {
@@ -360,6 +361,7 @@ export function SortableList<T>({
     activeStartIndexRef.current = index;
     currentTargetIndexRef.current = index;
     isDraggingRef.current = false;
+    hasMovedRef.current = false;
 
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
@@ -389,10 +391,16 @@ export function SortableList<T>({
     currentClientXRef.current = pageX;
     const dy = pageY - touchStartYRef.current;
     const dx = pageX - touchStartXRef.current;
+    const dist = Math.hypot(dx, dy);
+
+    // If movement exceeds tap threshold, mark as moved so it cannot trigger onItemPress
+    if (dist > 8) {
+      hasMovedRef.current = true;
+    }
 
     if (!isDraggingRef.current) {
       // If user moved thumb noticeably before 180ms -> scroll gesture, cancel hold
-      if (Math.hypot(dx, dy) > 28) {
+      if (dist > 14) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
           holdTimerRef.current = null;
@@ -570,9 +578,22 @@ export function SortableList<T>({
               endDragGesture();
               return;
             }
+
+            const endTouch = e.nativeEvent.changedTouches?.[0] || e.nativeEvent;
+            if (endTouch && endTouch.pageX !== undefined && touchStartXRef.current !== undefined) {
+              const dx = endTouch.pageX - touchStartXRef.current;
+              const dy = endTouch.pageY - touchStartYRef.current;
+              if (Math.hypot(dx, dy) > 8) {
+                hasMovedRef.current = true;
+              }
+            }
+
             const wasDragging = isDraggingRef.current;
+            const didMove = hasMovedRef.current;
             endDragGesture();
-            if (!wasDragging && onItemPress) {
+
+            // Only trigger onItemPress if user genuinely tapped without dragging or scrolling!
+            if (!wasDragging && !didMove && onItemPress) {
               onItemPress(item, index);
             }
           },
@@ -599,12 +620,6 @@ export function SortableList<T>({
 
                   startHoldGesture(index, pageX, pageY, clientY);
 
-                  if (e.target && typeof (e.target as any).setPointerCapture === 'function') {
-                    try {
-                      (e.target as any).setPointerCapture(e.pointerId);
-                    } catch {}
-                  }
-
                   if (typeof window !== 'undefined') {
                     const onPointerMove = (evt: PointerEvent) => {
                       if (isDraggingRef.current) {
@@ -617,18 +632,31 @@ export function SortableList<T>({
                     };
 
                     const onPointerUp = (upEvt?: PointerEvent) => {
-                      const wasDragging = isDraggingRef.current;
-                      endDragGesture();
                       window.removeEventListener('pointermove', onPointerMove);
                       window.removeEventListener('pointerup', onPointerUp);
                       window.removeEventListener('pointercancel', onPointerUp);
+
+                      if (upEvt && upEvt.clientX !== undefined && touchStartXRef.current !== undefined) {
+                        const upPageX = upEvt.pageX ?? upEvt.clientX ?? 0;
+                        const upPageY = upEvt.pageY ?? (upEvt.clientY + (window.scrollY || 0));
+                        const dx = upPageX - touchStartXRef.current;
+                        const dy = upPageY - touchStartYRef.current;
+                        if (Math.hypot(dx, dy) > 8) {
+                          hasMovedRef.current = true;
+                        }
+                      }
+
+                      const wasDragging = isDraggingRef.current;
+                      const didMove = hasMovedRef.current;
+                      endDragGesture();
 
                       if (isInteractivePressRef.current || isInteractiveTarget(upEvt)) {
                         isInteractivePressRef.current = false;
                         return;
                       }
 
-                      if (!wasDragging && onItemPress) {
+                      // Only trigger onItemPress if user genuinely tapped without dragging or scrolling!
+                      if (!wasDragging && !didMove && onItemPress) {
                         onItemPress(item, index);
                       }
                     };
@@ -704,6 +732,7 @@ const styles = StyleSheet.create({
   },
   itemWrapper: {
     width: '100%',
+    ...(Platform.OS === 'web' ? { touchAction: 'pan-y' } : ({} as any)),
   },
   itemDraggingActive: {
     zIndex: 9999,

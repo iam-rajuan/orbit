@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import {
   CheckSquare,
+  Folder,
+  FileText,
   Square,
   Plus,
   Search,
@@ -354,7 +356,7 @@ export const TaskManager: React.FC = () => {
                     { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' },
                   ]}
                 >
-                  <Text style={[styles.pendingBadgeText, { color: '#059669' }]}>All done! 🎉</Text>
+                  <Text style={[styles.pendingBadgeText, { color: '#059669' }]}>All completed</Text>
                 </View>
               ) : null}
             </View>
@@ -988,7 +990,7 @@ export const TaskManager: React.FC = () => {
                                 style={[styles.mobileNotesText, { color: theme.textMuted }]}
                                 numberOfLines={1}
                               >
-                                📝 {task.notes}
+                                {task.notes}
                               </Text>
                             )}
                           </View>
@@ -1018,7 +1020,7 @@ export const TaskManager: React.FC = () => {
                                   style={[styles.projectChipText, { color: theme.textSecondary }]}
                                   numberOfLines={1}
                                 >
-                                  📁 {task.projectName}
+                                  {task.projectName}
                                 </Text>
                               </View>
                             ) : null}

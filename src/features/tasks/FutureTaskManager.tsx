@@ -57,6 +57,11 @@ interface ChecklistDraftItem {
   completed: boolean;
 }
 
+const interactiveProps = {
+  dataSet: { interactive: 'true' },
+  'data-interactive': 'true',
+} as any;
+
 export const FutureTaskManager: React.FC = () => {
   const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
@@ -249,25 +254,8 @@ export const FutureTaskManager: React.FC = () => {
           task.completed && styles.noteCardCompleted,
         ]}
       >
-        {/* Card Header: Checkbox for task done + Title + Forward badge + Pin Icon */}
+        {/* Card Header: Clean Note Title + Optional Forward Badge */}
         <View style={styles.cardHeader}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              toggleTaskComplete(task.id);
-            }}
-            style={styles.cardCompleteBtn}
-            accessibilityLabel="Mark complete"
-            {...({ 'data-interactive': 'true' } as any)}
-          >
-            {task.completed ? (
-              <CheckSquare size={16} color="#10B981" />
-            ) : (
-              <Square size={16} color={cardStyle.subTextColor} />
-            )}
-          </TouchableOpacity>
-
           <View style={styles.cardTitleArea}>
             <Text
               style={[
@@ -289,24 +277,6 @@ export const FutureTaskManager: React.FC = () => {
               size="sm"
             />
           ) : null}
-
-          {/* Pin Icon */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              togglePinTask(task.id);
-            }}
-            style={styles.pinBtn}
-            accessibilityLabel={task.pinned ? 'Unpin note' : 'Pin note'}
-            {...({ 'data-interactive': 'true' } as any)}
-          >
-            <Pin
-              size={15}
-              color={task.pinned ? '#F59E0B' : cardStyle.subTextColor}
-              fill={task.pinned ? '#F59E0B' : 'transparent'}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Card Body: Interactive Checklist OR Notes Text */}
@@ -317,12 +287,16 @@ export const FutureTaskManager: React.FC = () => {
                 <View key={chk.id} style={styles.checklistItemRow}>
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={(e) => {
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: chk.completed }}
+                    {...interactiveProps}
+                    onPress={(e: any) => {
                       e?.stopPropagation?.();
                       toggleChecklistItem(task.id, chk.id);
                     }}
+                    onPointerDown={(e: any) => e?.stopPropagation?.()}
+                    onTouchStart={(e: any) => e?.stopPropagation?.()}
                     style={styles.chkToggle}
-                    {...({ 'data-interactive': 'true' } as any)}
                   >
                     {chk.completed ? (
                       <CheckSquare size={13} color="#10B981" />
@@ -374,97 +348,178 @@ export const FutureTaskManager: React.FC = () => {
                 borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#CBD5E1',
               },
             ]}
-            {...({ 'data-interactive': 'true' } as any)}
+            {...interactiveProps}
+            onPointerDown={(e: any) => e?.stopPropagation?.()}
+            onTouchStart={(e: any) => e?.stopPropagation?.()}
           >
             {KEEP_COLORS.map((c) => (
               <TouchableOpacity
                 key={c.id}
                 activeOpacity={0.7}
-                onPress={async (e) => {
+                accessibilityRole="button"
+                {...interactiveProps}
+                onPress={async (e: any) => {
                   e?.stopPropagation?.();
                   await updateTaskColor(task.id, c.id);
                   setShowColorPickerForId(null);
                 }}
+                onPointerDown={(e: any) => e?.stopPropagation?.()}
+                onTouchStart={(e: any) => e?.stopPropagation?.()}
                 style={[
                   styles.paletteDot,
                   { backgroundColor: c.dotColor },
                   task.color === c.id && styles.paletteDotSelected,
                 ]}
                 accessibilityLabel={`Set note color to ${c.name}`}
-                {...({ 'data-interactive': 'true' } as any)}
               />
             ))}
           </View>
         )}
 
-        {/* Card Action Toolbar */}
-        <View style={styles.cardFooter} {...({ 'data-interactive': 'true' } as any)}>
-          {/* 1-Tap "Do Today" (Single Lucide Zap icon, no emoji repetition) */}
-          {!task.completed ? (
+        {/* Card Action Toolbar (Lower Bar: Checkbox + Today on Left | Pin + Color + Delete on Right) */}
+        <View
+          style={[styles.cardFooter, isGrid && !isDesktop && styles.cardFooterMobile]}
+          {...interactiveProps}
+        >
+          {/* Left: Complete Checkbox + Do Today Chip */}
+          <View style={styles.cardFooterLeft} {...interactiveProps}>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={(e) => {
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: task.completed }}
+              {...interactiveProps}
+              onPress={(e: any) => {
                 e?.stopPropagation?.();
-                setMoveToTodayTask(task);
+                toggleTaskComplete(task.id);
               }}
+              onPointerDown={(e: any) => e?.stopPropagation?.()}
+              onTouchStart={(e: any) => e?.stopPropagation?.()}
               style={[
-                styles.doTodayChip,
-                isGrid && !isDesktop && styles.doTodayChipMobile,
-                {
-                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
-                  borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
+                styles.cardCompleteBtn,
+                isGrid && !isDesktop && styles.cardCompleteBtnMobile,
+                task.completed && {
+                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
                 },
               ]}
-              accessibilityLabel="Move to today"
-              {...({ 'data-interactive': 'true' } as any)}
+              accessibilityLabel={task.completed ? 'Mark incomplete' : 'Mark complete'}
             >
-              <Zap size={isGrid && !isDesktop ? 10 : 12} color="#8B5CF6" strokeWidth={2.4} />
-              <Text
-                style={[
-                  styles.doTodayChipText,
-                  isGrid && !isDesktop && styles.doTodayChipTextMobile,
-                ]}
-              >
-                {isGrid && !isDesktop ? 'Today' : 'Do Today'}
-              </Text>
+              {task.completed ? (
+                <CheckSquare size={isGrid && !isDesktop ? 13 : 15} color="#10B981" />
+              ) : (
+                <Square size={isGrid && !isDesktop ? 13 : 15} color={cardStyle.subTextColor} />
+              )}
             </TouchableOpacity>
-          ) : (
-            <View />
-          )}
 
+            {!task.completed && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                {...interactiveProps}
+                onPress={(e: any) => {
+                  e?.stopPropagation?.();
+                  setMoveToTodayTask(task);
+                }}
+                onPointerDown={(e: any) => e?.stopPropagation?.()}
+                onTouchStart={(e: any) => e?.stopPropagation?.()}
+                style={[
+                  styles.doTodayChip,
+                  isGrid && !isDesktop && styles.doTodayChipMobile,
+                  {
+                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
+                    borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
+                  },
+                ]}
+                accessibilityLabel="Move to today"
+              >
+                <Zap size={isGrid && !isDesktop ? 9 : 11} color="#8B5CF6" strokeWidth={2.4} />
+                <Text
+                  style={[
+                    styles.doTodayChipText,
+                    isGrid && !isDesktop && styles.doTodayChipTextMobile,
+                  ]}
+                >
+                  {isGrid && !isDesktop ? 'Today' : 'Do Today'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Right Action Icons: Pin + Color Palette + Edit (Desktop) + Delete */}
           <View
             style={[
               styles.cardActionIcons,
               isGrid && !isDesktop && styles.cardActionIconsMobile,
             ]}
-            {...({ 'data-interactive': 'true' } as any)}
+            {...interactiveProps}
           >
+            {/* Pin Toggle */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              {...interactiveProps}
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                togglePinTask(task.id);
+              }}
+              onPointerDown={(e: any) => e?.stopPropagation?.()}
+              onTouchStart={(e: any) => e?.stopPropagation?.()}
+              style={[
+                styles.cardActionIconBtn,
+                isGrid && !isDesktop && styles.cardActionIconBtnMobile,
+                task.pinned && {
+                  backgroundColor: isDark ? 'rgba(245, 158, 11, 0.22)' : '#FEF3C7',
+                },
+              ]}
+              accessibilityLabel={task.pinned ? 'Unpin note' : 'Pin note'}
+            >
+              <Pin
+                size={isGrid && !isDesktop ? 12 : 13}
+                color={task.pinned ? '#F59E0B' : cardStyle.subTextColor}
+                fill={task.pinned ? '#F59E0B' : 'transparent'}
+              />
+            </TouchableOpacity>
+
             {/* Color Palette Toggle */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={(e) => {
+              accessibilityRole="button"
+              {...interactiveProps}
+              onPress={(e: any) => {
                 e?.stopPropagation?.();
                 setShowColorPickerForId(isShowingColorPicker ? null : task.id);
               }}
-              style={styles.cardActionIconBtn}
+              onPointerDown={(e: any) => e?.stopPropagation?.()}
+              onTouchStart={(e: any) => e?.stopPropagation?.()}
+              style={[
+                styles.cardActionIconBtn,
+                isGrid && !isDesktop && styles.cardActionIconBtnMobile,
+                isShowingColorPicker && {
+                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#EDE9FE',
+                },
+              ]}
               accessibilityLabel="Change note color"
-              {...({ 'data-interactive': 'true' } as any)}
             >
-              <Palette size={isGrid && !isDesktop ? 12 : 13} color={cardStyle.subTextColor} />
+              <Palette
+                size={isGrid && !isDesktop ? 12 : 13}
+                color={isShowingColorPicker ? '#8B5CF6' : cardStyle.subTextColor}
+              />
             </TouchableOpacity>
 
             {/* Edit (List & Desktop only; on mobile grid, tapping card opens editor) */}
             {(!isGrid || isDesktop) && (
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={(e) => {
+                accessibilityRole="button"
+                {...interactiveProps}
+                onPress={(e: any) => {
                   e?.stopPropagation?.();
                   setEditingTask(task);
                   setEditModalOpen(true);
                 }}
+                onPointerDown={(e: any) => e?.stopPropagation?.()}
+                onTouchStart={(e: any) => e?.stopPropagation?.()}
                 style={styles.cardActionIconBtn}
                 accessibilityLabel="Edit note"
-                {...({ 'data-interactive': 'true' } as any)}
               >
                 <Edit3 size={13} color={cardStyle.subTextColor} />
               </TouchableOpacity>
@@ -473,13 +528,19 @@ export const FutureTaskManager: React.FC = () => {
             {/* Delete */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={(e) => {
+              accessibilityRole="button"
+              {...interactiveProps}
+              onPress={(e: any) => {
                 e?.stopPropagation?.();
                 setDeleteConfirmId(task.id);
               }}
-              style={styles.cardActionIconBtn}
+              onPointerDown={(e: any) => e?.stopPropagation?.()}
+              onTouchStart={(e: any) => e?.stopPropagation?.()}
+              style={[
+                styles.cardActionIconBtn,
+                isGrid && !isDesktop && styles.cardActionIconBtnMobile,
+              ]}
               accessibilityLabel="Delete note"
-              {...({ 'data-interactive': 'true' } as any)}
             >
               <Trash2 size={isGrid && !isDesktop ? 12 : 13} color={cardStyle.subTextColor} />
             </TouchableOpacity>
@@ -1370,10 +1431,6 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     padding: 0,
   },
-  cardTitleGridMobile: {
-    fontSize: 12,
-    lineHeight: 15,
-  },
   cardNotesGridMobile: {
     fontSize: 10,
     lineHeight: 14,
@@ -1384,28 +1441,30 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: 6,
-    marginBottom: 4,
-  },
-  cardCompleteBtn: {
-    paddingTop: 1,
+    marginBottom: 6,
   },
   cardTitleArea: {
     flex: 1,
   },
   cardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+    letterSpacing: -0.2,
+  },
+  cardTitleGridMobile: {
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 17,
   },
   cardTitleCompleted: {
     textDecorationLine: 'line-through',
-  },
-  pinBtn: {
-    padding: 2,
+    opacity: 0.6,
   },
   cardBody: {
-    marginBottom: 4,
+    marginBottom: 6,
   },
   cardNotes: {
     fontSize: 11,
@@ -1490,16 +1549,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardFooterMobile: {
-    paddingTop: 4,
-    gap: 2,
+    paddingTop: 5,
+    gap: 3,
+  },
+  cardFooterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 1,
+  },
+  cardCompleteBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardCompleteBtnMobile: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
   },
   doTodayChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    gap: 3,
+    paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: 7,
     borderWidth: 1,
   },
   doTodayChipMobile: {
@@ -1523,7 +1600,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardActionIconsMobile: {
-    gap: 1,
+    gap: 2,
   },
   cardActionIconBtn: {
     width: 26,
@@ -1533,9 +1610,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardActionIconBtnMobile: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: 21,
+    height: 21,
+    borderRadius: 5,
   },
 
   /* Empty state */

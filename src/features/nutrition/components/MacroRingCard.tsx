@@ -199,7 +199,7 @@ export const MacroRingCard: React.FC<MacroRingCardProps> = ({
           <View style={[styles.metricTile, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
             <Text style={[styles.metricTileLabel, { color: theme.textMuted }]}>Deficit Status</Text>
             <Text style={[styles.metricTileValue, { color: isDark ? '#A5B4FC' : '#4F46E5' }]}>
-              {isDeficit ? '🔥 Fat Loss Pace' : '⚡ Surplus Mode'}
+              {isDeficit ? 'Fat Loss Pace' : 'Surplus Mode'}
             </Text>
           </View>
         </View>

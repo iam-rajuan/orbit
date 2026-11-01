@@ -534,7 +534,7 @@ export function SortableList<T>({
             const el = (evt?.target || evt?.nativeEvent?.target) as HTMLElement | null;
             if (el && typeof el.closest === 'function') {
               return !!el.closest(
-                'button, [role="button"], input, textarea, a, select, [data-interactive="true"], [data-no-item-press="true"]'
+                'button, [role="button"], [role="checkbox"], input, textarea, a, select, [data-interactive="true"], [data-no-item-press="true"], [tabindex="0"], [data-action]'
               );
             }
           }

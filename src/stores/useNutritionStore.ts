@@ -344,7 +344,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       deficiencies.push({
         type: 'protein',
         severity: 'success',
-        title: 'Protein Target Achieved! 💪',
+        title: 'Protein Target Achieved!',
         message: `Great job! You logged ${totalProtein}g of protein (target: ${goals.proteinTarget}g).`,
       });
     }
@@ -405,7 +405,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       deficiencies.push({
         type: 'hydration',
         severity: 'success',
-        title: 'Hydration Target Met! 💧',
+        title: 'Hydration Target Met!',
         message: `You reached ${waterIntakeMl}ml of water today. Excellent hydration habits!`,
       });
     }

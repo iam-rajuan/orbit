@@ -433,7 +433,7 @@ export const BmiCalculatorModal: React.FC<BmiCalculatorModalProps> = ({
                 <View
                   style={[
                     styles.inputFieldBox,
-                    { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                    { minWidth: 168, backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
                   ]}
                 >
                   <Text style={[styles.textInput, { color: theme.textPrimary }]}>
@@ -444,103 +444,106 @@ export const BmiCalculatorModal: React.FC<BmiCalculatorModalProps> = ({
             </View>
           </View>
 
-          {/* 3. AGE & BIOLOGICAL SEX ROW */}
-          <View style={styles.ageSexRow}>
-            {/* Age */}
-            <View style={styles.halfCol}>
-              <Text style={[styles.inputLabel, { color: theme.textPrimary, marginBottom: 6 }]}>
+          {/* 3. AGE INPUT */}
+          <View style={styles.inputRow}>
+            <View style={styles.inputLabelGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>
                 Age:
               </Text>
-              <View style={styles.stepperRow}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setAge(Math.max(10, age - 1))}
-                  style={[
-                    styles.stepBtn,
-                    { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
-                  ]}
-                >
-                  <Text style={[styles.stepBtnText, { color: theme.textPrimary }]}>-1</Text>
-                </TouchableOpacity>
-
-                <View
-                  style={[
-                    styles.inputFieldBox,
-                    { flex: 1, backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
-                  ]}
-                >
-                  <TextInput
-                    style={[styles.textInput, { color: theme.textPrimary }]}
-                    keyboardType="numeric"
-                    value={age.toString()}
-                    onChangeText={(val) => {
-                      const n = parseInt(val, 10);
-                      if (!isNaN(n)) setAge(Math.max(1, n));
-                    }}
-                  />
-                  <Text style={[styles.inputSuffix, { color: theme.textMuted }]}>yrs</Text>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setAge(age + 1)}
-                  style={[
-                    styles.stepBtn,
-                    { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
-                  ]}
-                >
-                  <Text style={[styles.stepBtnText, { color: theme.textPrimary }]}>+1</Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
-            {/* Sex Toggle */}
-            <View style={styles.halfCol}>
-              <Text style={[styles.inputLabel, { color: theme.textPrimary, marginBottom: 6 }]}>
-                Biological Sex:
-              </Text>
-              <View
+            <View style={styles.stepperRow}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setAge(Math.max(10, age - 1))}
                 style={[
-                  styles.sexToggle,
+                  styles.stepBtn,
                   { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
                 ]}
               >
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setSex('male')}
-                  style={[
-                    styles.sexBtn,
-                    sex === 'male' && { backgroundColor: theme.primary },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.sexBtnText,
-                      { color: sex === 'male' ? '#FFFFFF' : theme.textSecondary },
-                    ]}
-                  >
-                    Male
-                  </Text>
-                </TouchableOpacity>
+                <Text style={[styles.stepBtnText, { color: theme.textPrimary }]}>-1</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setSex('female')}
+              <View
+                style={[
+                  styles.inputFieldBox,
+                  { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                ]}
+              >
+                <TextInput
+                  style={[styles.textInput, { color: theme.textPrimary }]}
+                  keyboardType="numeric"
+                  value={age.toString()}
+                  onChangeText={(val) => {
+                    const n = parseInt(val, 10);
+                    if (!isNaN(n)) setAge(Math.max(1, n));
+                  }}
+                />
+                <Text style={[styles.inputSuffix, { color: theme.textMuted }]}>yrs</Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setAge(age + 1)}
+                style={[
+                  styles.stepBtn,
+                  { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.stepBtnText, { color: theme.textPrimary }]}>+1</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 4. BIOLOGICAL SEX INPUT */}
+          <View style={styles.inputRow}>
+            <View style={styles.inputLabelGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>
+                Biological Sex:
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.sexToggle,
+                { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+              ]}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setSex('male')}
+                style={[
+                  styles.sexBtn,
+                  sex === 'male' && { backgroundColor: theme.primary },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.sexBtn,
-                    sex === 'female' && { backgroundColor: theme.primary },
+                    styles.sexBtnText,
+                    { color: sex === 'male' ? '#FFFFFF' : theme.textSecondary },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.sexBtnText,
-                      { color: sex === 'female' ? '#FFFFFF' : theme.textSecondary },
-                    ]}
-                  >
-                    Female
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  Male
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setSex('female')}
+                style={[
+                  styles.sexBtn,
+                  sex === 'female' && { backgroundColor: theme.primary },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.sexBtnText,
+                    { color: sex === 'female' ? '#FFFFFF' : theme.textSecondary },
+                  ]}
+                >
+                  Female
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -763,20 +766,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginLeft: 4,
   },
-  ageSexRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  halfCol: {
-    flex: 1,
-  },
   sexToggle: {
     flexDirection: 'row',
     borderRadius: 8,
     borderWidth: 1,
     height: 36,
     padding: 2,
+    minWidth: 168,
   },
   sexBtn: {
     flex: 1,

@@ -77,7 +77,6 @@ export const FutureTaskManager: React.FC = () => {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-  const [selectedColorFilter, setSelectedColorFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Inline "Take a note / future task..." composer state
@@ -218,17 +217,12 @@ export const FutureTaskManager: React.FC = () => {
 
     return upcomingTasks
       .filter((t) => {
-        // 1. Color filter
-        if (selectedColorFilter && (t.color || 'default') !== selectedColorFilter) {
-          return false;
-        }
-
-        // 2. Horizon / Status filter
+        // 1. Horizon / Status filter
         if (!matchesHorizonFilter(t)) {
           return false;
         }
 
-        // 3. Search query
+        // 2. Search query
         if (searchQuery.trim().length > 0) {
           const q = searchQuery.toLowerCase().trim();
           const matchesTitle = t.title.toLowerCase().includes(q);
@@ -262,7 +256,7 @@ export const FutureTaskManager: React.FC = () => {
 
         return (b.createdAt || '').localeCompare(a.createdAt || '');
       });
-  }, [upcomingTasks, activeFilter, selectedColorFilter, searchQuery, selectedDate, completingTaskIds, uncompletingTaskIds]);
+  }, [upcomingTasks, activeFilter, searchQuery, selectedDate, completingTaskIds, uncompletingTaskIds]);
 
   // Separate pinned vs others
   const pinnedTasks = useMemo(() => {
@@ -772,7 +766,7 @@ export const FutureTaskManager: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 2. Filter Chips & Color Swatches */}
+      {/* 2. Filter Chips */}
       <HorizontalScrollRow
         paddingHorizontal={16}
         gap={6}
@@ -782,12 +776,7 @@ export const FutureTaskManager: React.FC = () => {
           return (
             <TouchableOpacity
               key={f.id}
-              onPress={() => {
-                setActiveFilter(f.id);
-                if (f.id === 'all') {
-                  setSelectedColorFilter(null);
-                }
-              }}
+              onPress={() => setActiveFilter(f.id)}
               style={[
                 styles.filterChip,
                 active && {
@@ -813,34 +802,6 @@ export const FutureTaskManager: React.FC = () => {
             </TouchableOpacity>
           );
         })}
-
-        {selectedColorFilter && (
-          <TouchableOpacity
-            onPress={() => setSelectedColorFilter(null)}
-            style={[
-              styles.filterChip,
-              {
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
-                borderColor: '#EF4444',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-              },
-            ]}
-          >
-            <View
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: KEEP_COLORS.find((c) => c.id === selectedColorFilter)?.dotColor || '#EF4444',
-              }}
-            />
-            <Text style={[styles.filterChipText, { color: '#EF4444', fontWeight: '700' }]}>
-              Clear Color ✕
-            </Text>
-          </TouchableOpacity>
-        )}
 
         {/* Priority Filter Chips */}
         {PRIORITY_FILTERS.map((pf) => {
@@ -872,22 +833,6 @@ export const FutureTaskManager: React.FC = () => {
                 {pf.label}
               </Text>
             </TouchableOpacity>
-          );
-        })}
-
-        {/* Color Filter Dots */}
-        {KEEP_COLORS.filter((c) => c.id !== 'default').map((c) => {
-          const active = selectedColorFilter === c.id;
-          return (
-            <TouchableOpacity
-              key={c.id}
-              onPress={() => setSelectedColorFilter(active ? null : c.id)}
-              style={[
-                styles.colorFilterDot,
-                { backgroundColor: c.dotColor },
-                active && styles.colorFilterDotActive,
-              ]}
-            />
           );
         })}
       </HorizontalScrollRow>
@@ -1453,18 +1398,6 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     fontWeight: '700',
-  },
-  colorFilterDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    marginHorizontal: 2,
-  },
-  colorFilterDotActive: {
-    borderColor: '#8B5CF6',
-    transform: [{ scale: 1.25 }],
   },
 
   /* Composer */

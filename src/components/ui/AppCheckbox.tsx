@@ -25,6 +25,7 @@ export const AppCheckbox: React.FC<AppCheckboxProps> = ({
       onPress={disabled ? undefined : onToggle}
       disabled={disabled}
       style={[styles.container, style]}
+      {...({ 'data-interactive': 'true' } as any)}
     >
       <View
         style={[

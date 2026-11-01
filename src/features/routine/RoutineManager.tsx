@@ -4,14 +4,11 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   Platform,
 } from 'react-native';
 import {
   Clock,
   Plus,
-  Trash2,
-  Edit2,
   CheckCircle2,
 } from 'lucide-react-native';
 import { useDateStore } from '../../stores/useDateStore';
@@ -21,6 +18,7 @@ import { AppCheckbox } from '../../components/ui/AppCheckbox';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppProgressBar } from '../../components/ui/AppProgressBar';
 import { SortableList } from '../../components/ui/SortableList';
+import { SwipeableRoutineCard } from './SwipeableRoutineCard';
 import { RoutineFormModal } from './RoutineFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { RoutineItem } from '../../types';
@@ -41,6 +39,7 @@ export const RoutineManager: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<RoutineItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [activeSwipedRoutineId, setActiveSwipedRoutineId] = useState<string | null>(null);
 
   const progress = getRoutineProgress(selectedDate);
 
@@ -137,6 +136,10 @@ export const RoutineManager: React.FC = () => {
           data={dayScheduledRoutines}
           keyExtractor={(r) => r.id}
           onReorder={reorderRoutines}
+          onItemPress={(routine) => {
+            setEditingRoutine(routine);
+            setModalOpen(true);
+          }}
           renderItem={({ item: routine }) => {
             const comp = completions.find(
               (c) => c.date === selectedDate && c.routineId === routine.id
@@ -144,102 +147,99 @@ export const RoutineManager: React.FC = () => {
             const isDone = !!comp?.completed;
 
             return (
-              <View
+              <SwipeableRoutineCard
                 key={routine.id}
-                style={[
-                  styles.routineCard,
-                  {
-                    backgroundColor: isDone
-                      ? isDark
-                        ? 'rgba(255,255,255,0.03)'
-                        : 'rgba(255,255,255,0.5)'
-                      : isDark
-                      ? 'rgba(24, 24, 28, 0.76)'
-                      : 'rgba(255, 255, 255, 0.85)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: isDark ? 0.25 : 0.04,
-                    shadowRadius: 10,
-                    ...(Platform.OS === 'web'
-                      ? ({
-                          backdropFilter: 'blur(20px) saturate(180%)',
-                          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                        } as any)
-                      : {}),
-                  },
-                  isDone && styles.routineCardCompleted,
-                ]}
+                isCurrentOpen={activeSwipedRoutineId === routine.id}
+                onOpen={() => setActiveSwipedRoutineId(routine.id)}
+                onClose={() => {
+                  if (activeSwipedRoutineId === routine.id) {
+                    setActiveSwipedRoutineId(null);
+                  }
+                }}
+                onSwipeStart={() => {
+                  if (activeSwipedRoutineId !== routine.id) {
+                    setActiveSwipedRoutineId(routine.id);
+                  }
+                }}
+                onEdit={() => {
+                  setEditingRoutine(routine);
+                  setModalOpen(true);
+                }}
+                onDelete={() => setDeleteConfirmId(routine.id)}
               >
-                <View style={styles.cardLeft}>
-                  <View
-                    style={[
-                      styles.timeTag,
-                      {
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5',
-                      },
-                    ]}
-                  >
-                    <Text
+                <View
+                  style={[
+                    styles.routineCard,
+                    {
+                      backgroundColor: isDone
+                        ? isDark
+                          ? 'rgba(255,255,255,0.03)'
+                          : 'rgba(255,255,255,0.5)'
+                        : isDark
+                        ? 'rgba(24, 24, 28, 0.76)'
+                        : 'rgba(255, 255, 255, 0.85)',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: isDark ? 0.25 : 0.04,
+                      shadowRadius: 10,
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            backdropFilter: 'blur(20px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                          } as any)
+                        : {}),
+                    },
+                    isDone && styles.routineCardCompleted,
+                  ]}
+                >
+                  <View style={styles.cardLeft}>
+                    <View
                       style={[
-                        styles.timeText,
-                        { color: theme.textSecondary },
-                        isDone && styles.timeTextDone,
+                        styles.timeTag,
+                        {
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5',
+                        },
                       ]}
                     >
-                      {routine.time}
-                    </Text>
-                  </View>
-
-                  <View style={styles.cardDetails}>
-                    <Text
-                      style={[
-                        styles.routineTitle,
-                        { color: theme.textPrimary },
-                        isDone && styles.routineTitleDone,
-                      ]}
-                    >
-                      {routine.title}
-                    </Text>
-                    {routine.description ? (
-                      <Text style={[styles.routineDesc, { color: theme.textMuted }]}>
-                        {routine.description}
+                      <Text
+                        style={[
+                          styles.timeText,
+                          { color: theme.textSecondary },
+                          isDone && styles.timeTextDone,
+                        ]}
+                      >
+                        {routine.time}
                       </Text>
-                    ) : null}
+                    </View>
+
+                    <View style={styles.cardDetails}>
+                      <Text
+                        style={[
+                          styles.routineTitle,
+                          { color: theme.textPrimary },
+                          isDone && styles.routineTitleDone,
+                        ]}
+                      >
+                        {routine.title}
+                      </Text>
+                      {routine.description ? (
+                        <Text style={[styles.routineDesc, { color: theme.textMuted }]}>
+                          {routine.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  <View style={styles.cardRight} {...({ 'data-interactive': 'true' } as any)}>
+                    <AppCheckbox
+                      checked={isDone}
+                      onToggle={() => toggleCompletion(selectedDate, routine.id)}
+                      size={22}
+                    />
                   </View>
                 </View>
-
-                <View style={styles.cardRight}>
-                  <AppCheckbox
-                    checked={isDone}
-                    onToggle={() => toggleCompletion(selectedDate, routine.id)}
-                    size={22}
-                  />
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setEditingRoutine(routine);
-                      setModalOpen(true);
-                    }}
-                    style={[
-                      styles.iconBtn,
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' },
-                    ]}
-                  >
-                    <Edit2 size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => setDeleteConfirmId(routine.id)}
-                    style={[
-                      styles.iconBtn,
-                      { backgroundColor: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2' },
-                    ]}
-                  >
-                    <Trash2 size={16} color="#F43F5E" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+              </SwipeableRoutineCard>
             );
           }}
         />
@@ -356,6 +356,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          transition: 'background-color 0.22s ease, border-color 0.22s ease, opacity 0.22s ease',
+        } as any)
+      : {}),
   },
   routineCardCompleted: {
     opacity: 0.75,
@@ -397,13 +402,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardRight: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  iconBtn: {
-    padding: 8,
-    borderRadius: 8,
-    cursor: 'pointer' as any,
+    justifyContent: 'center',
+    paddingLeft: 8,
   },
 });

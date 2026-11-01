@@ -49,7 +49,7 @@
     "web": "expo start --web",
     "test": "jest",
     "test:e2e": "playwright test",
-    "build:web": "expo export -p web",
+    "build:web": "node init && expo export -p web",
     "build": "node init && expo export -p web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint"

@@ -719,7 +719,11 @@ export const FutureTaskManager: React.FC = () => {
 
   return (
     <View style={styles.rootWrapper}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       {/* 1. Sleek Search & View Controls Bar */}
       <View style={styles.searchBarRow}>
         <View

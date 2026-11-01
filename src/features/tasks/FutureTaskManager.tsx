@@ -31,10 +31,8 @@ import {
   Zap,
   Trash2,
   Edit3,
-  Clock,
   Tag,
   X,
-  Bell,
   Plus,
   Maximize2,
 } from 'lucide-react-native';
@@ -49,22 +47,12 @@ const QUICK_LABELS = [
 
 const HORIZON_FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'pinned', label: '📌 Pinned' },
-  { id: 'next_7_days', label: '⚡ Next 7 Days' },
-  { id: 'this_month', label: '📅 This Month' },
-  { id: 'someday', label: '💡 Someday' },
-  { id: 'completed', label: '✅ Done' },
+  { id: 'pinned', label: 'Pinned' },
+  { id: 'next_7_days', label: 'Next 7 Days' },
+  { id: 'this_month', label: 'This Month' },
+  { id: 'someday', label: 'Someday' },
+  { id: 'completed', label: 'Done' },
 ];
-
-function formatShortHeading(heading: string): string {
-  return heading
-    .replace(' & Reliability', '')
-    .replace(' & Skill Mastery', '')
-    .replace(' & Financial Planning', '')
-    .replace(' & Health Optimization', '')
-    .replace(' (Free Time)', '')
-    .trim();
-}
 
 interface ChecklistDraftItem {
   id: string;
@@ -266,7 +254,7 @@ export const FutureTaskManager: React.FC = () => {
           task.completed && styles.noteCardCompleted,
         ]}
       >
-        {/* Card Header: Checkbox for task done + Title + Pin Icon */}
+        {/* Card Header: Checkbox for task done + Title + Forward badge + Pin Icon */}
         <View style={styles.cardHeader}>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -276,6 +264,7 @@ export const FutureTaskManager: React.FC = () => {
             }}
             style={styles.cardCompleteBtn}
             accessibilityLabel="Mark complete"
+            {...({ 'data-interactive': 'true' } as any)}
           >
             {task.completed ? (
               <CheckSquare size={16} color="#10B981" />
@@ -298,6 +287,14 @@ export const FutureTaskManager: React.FC = () => {
             </Text>
           </View>
 
+          {task.forwardCount && task.forwardCount > 0 ? (
+            <ForwardBadge
+              count={task.forwardCount}
+              originalDate={task.originalDate}
+              size="sm"
+            />
+          ) : null}
+
           {/* Pin Icon */}
           <TouchableOpacity
             activeOpacity={0.7}
@@ -307,6 +304,7 @@ export const FutureTaskManager: React.FC = () => {
             }}
             style={styles.pinBtn}
             accessibilityLabel={task.pinned ? 'Unpin note' : 'Pin note'}
+            {...({ 'data-interactive': 'true' } as any)}
           >
             <Pin
               size={15}
@@ -329,6 +327,7 @@ export const FutureTaskManager: React.FC = () => {
                       toggleChecklistItem(task.id, chk.id);
                     }}
                     style={styles.chkToggle}
+                    {...({ 'data-interactive': 'true' } as any)}
                   >
                     {chk.completed ? (
                       <CheckSquare size={13} color="#10B981" />
@@ -370,101 +369,6 @@ export const FutureTaskManager: React.FC = () => {
           ) : null}
         </View>
 
-        {/* Card Chips: Clean single horizontally scrollable line */}
-        {(task.heading || task.horizon || task.estimatedTime || (task.forwardCount && task.forwardCount > 0)) ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.cardChipsScroll}
-          >
-            {task.heading && (
-              <View
-                style={[
-                  styles.cardChip,
-                  isGrid && !isDesktop && styles.cardChipMobile,
-                  {
-                    backgroundColor: cardStyle.chipBg,
-                    borderColor: cardStyle.chipBorder,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.cardChipText,
-                    isGrid && !isDesktop && styles.cardChipTextMobile,
-                    { color: cardStyle.textColor },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {formatShortHeading(task.heading)}
-                </Text>
-              </View>
-            )}
-
-            {task.horizon && (
-              <View
-                style={[
-                  styles.cardChip,
-                  isGrid && !isDesktop && styles.cardChipMobile,
-                  {
-                    backgroundColor: cardStyle.chipBg,
-                    borderColor: cardStyle.chipBorder,
-                  },
-                ]}
-              >
-                <Bell size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
-                <Text
-                  style={[
-                    styles.cardChipText,
-                    isGrid && !isDesktop && styles.cardChipTextMobile,
-                    { color: cardStyle.textColor },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {task.horizon === 'next_7_days'
-                    ? '7 Days'
-                    : task.horizon === 'this_month'
-                    ? 'This Month'
-                    : 'Someday'}
-                </Text>
-              </View>
-            )}
-
-            {task.estimatedTime && (
-              <View
-                style={[
-                  styles.cardChip,
-                  isGrid && !isDesktop && styles.cardChipMobile,
-                  {
-                    backgroundColor: cardStyle.chipBg,
-                    borderColor: cardStyle.chipBorder,
-                  },
-                ]}
-              >
-                <Clock size={isGrid && !isDesktop ? 8 : 10} color={cardStyle.subTextColor} />
-                <Text
-                  style={[
-                    styles.cardChipText,
-                    isGrid && !isDesktop && styles.cardChipTextMobile,
-                    { color: cardStyle.textColor },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {task.estimatedTime}
-                </Text>
-              </View>
-            )}
-
-            {task.forwardCount && task.forwardCount > 0 ? (
-              <ForwardBadge
-                count={task.forwardCount}
-                originalDate={task.originalDate}
-                size="sm"
-              />
-            ) : null}
-          </ScrollView>
-        ) : null}
-
         {/* Color Palette Popover Row */}
         {isShowingColorPicker && (
           <View
@@ -472,14 +376,17 @@ export const FutureTaskManager: React.FC = () => {
               styles.palettePopover,
               {
                 backgroundColor: isDark ? '#23252A' : '#FFFFFF',
-                borderColor: theme.border,
+                borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#CBD5E1',
               },
             ]}
+            {...({ 'data-interactive': 'true' } as any)}
           >
             {KEEP_COLORS.map((c) => (
               <TouchableOpacity
                 key={c.id}
-                onPress={async () => {
+                activeOpacity={0.7}
+                onPress={async (e) => {
+                  e?.stopPropagation?.();
                   await updateTaskColor(task.id, c.id);
                   setShowColorPickerForId(null);
                 }}
@@ -488,70 +395,101 @@ export const FutureTaskManager: React.FC = () => {
                   { backgroundColor: c.dotColor },
                   task.color === c.id && styles.paletteDotSelected,
                 ]}
+                accessibilityLabel={`Set note color to ${c.name}`}
+                {...({ 'data-interactive': 'true' } as any)}
               />
             ))}
           </View>
         )}
 
-        {/* Card Action Toolbar (Only on desktop or list view to keep mobile cards neat & clean) */}
-        {(!isGrid || isDesktop) && (
-          <View style={styles.cardFooter}>
-            {/* 1-Tap "⚡ Move to Today" */}
-            {!task.completed && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setMoveToTodayTask(task)}
+        {/* Card Action Toolbar */}
+        <View style={styles.cardFooter} {...({ 'data-interactive': 'true' } as any)}>
+          {/* 1-Tap "Do Today" (Single Lucide Zap icon, no emoji repetition) */}
+          {!task.completed ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                setMoveToTodayTask(task);
+              }}
+              style={[
+                styles.doTodayChip,
+                isGrid && !isDesktop && styles.doTodayChipMobile,
+                {
+                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
+                  borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
+                },
+              ]}
+              accessibilityLabel="Move to today"
+              {...({ 'data-interactive': 'true' } as any)}
+            >
+              <Zap size={isGrid && !isDesktop ? 10 : 12} color="#8B5CF6" strokeWidth={2.4} />
+              <Text
                 style={[
-                  styles.doTodayChip,
-                  {
-                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE',
-                    borderColor: isDark ? 'rgba(139, 92, 246, 0.35)' : '#C4B5FD',
-                  },
+                  styles.doTodayChipText,
+                  isGrid && !isDesktop && styles.doTodayChipTextMobile,
                 ]}
               >
-                <Zap size={11} color="#8B5CF6" />
-                <Text style={styles.doTodayChipText}>⚡ Do Today</Text>
-              </TouchableOpacity>
-            )}
+                {isGrid && !isDesktop ? 'Today' : 'Do Today'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View />
+          )}
 
-            <View style={styles.cardActionIcons}>
-              {/* Color Palette */}
+          <View
+            style={[
+              styles.cardActionIcons,
+              isGrid && !isDesktop && styles.cardActionIconsMobile,
+            ]}
+            {...({ 'data-interactive': 'true' } as any)}
+          >
+            {/* Color Palette Toggle */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                setShowColorPickerForId(isShowingColorPicker ? null : task.id);
+              }}
+              style={styles.cardActionIconBtn}
+              accessibilityLabel="Change note color"
+              {...({ 'data-interactive': 'true' } as any)}
+            >
+              <Palette size={isGrid && !isDesktop ? 12 : 13} color={cardStyle.subTextColor} />
+            </TouchableOpacity>
+
+            {/* Edit (List & Desktop only; on mobile grid, tapping card opens editor) */}
+            {(!isGrid || isDesktop) && (
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() =>
-                  setShowColorPickerForId(isShowingColorPicker ? null : task.id)
-                }
-                style={styles.cardActionIconBtn}
-                accessibilityLabel="Change color"
-              >
-                <Palette size={13} color={cardStyle.subTextColor} />
-              </TouchableOpacity>
-
-              {/* Edit */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
+                onPress={(e) => {
+                  e?.stopPropagation?.();
                   setEditingTask(task);
                   setEditModalOpen(true);
                 }}
                 style={styles.cardActionIconBtn}
                 accessibilityLabel="Edit note"
+                {...({ 'data-interactive': 'true' } as any)}
               >
                 <Edit3 size={13} color={cardStyle.subTextColor} />
               </TouchableOpacity>
+            )}
 
-              {/* Delete */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setDeleteConfirmId(task.id)}
-                style={styles.cardActionIconBtn}
-                accessibilityLabel="Delete note"
-              >
-                <Trash2 size={13} color={cardStyle.subTextColor} />
-              </TouchableOpacity>
-            </View>
+            {/* Delete */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                setDeleteConfirmId(task.id);
+              }}
+              style={styles.cardActionIconBtn}
+              accessibilityLabel="Delete note"
+              {...({ 'data-interactive': 'true' } as any)}
+            >
+              <Trash2 size={isGrid && !isDesktop ? 12 : 13} color={cardStyle.subTextColor} />
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
       </View>
     );
   };
@@ -856,9 +794,9 @@ export const FutureTaskManager: React.FC = () => {
                 >
                   {/* Horizon pills */}
                   {[
-                    { id: 'next_7_days', label: '⚡ 7 Days' },
-                    { id: 'this_month', label: '📅 Month' },
-                    { id: 'someday', label: '💡 Someday' },
+                    { id: 'next_7_days', label: '7 Days' },
+                    { id: 'this_month', label: 'Month' },
+                    { id: 'someday', label: 'Someday' },
                   ].map((hz) => {
                     const active = newHorizon === hz.id;
                     return (
@@ -1012,7 +950,7 @@ export const FutureTaskManager: React.FC = () => {
           {pinnedTasks.length > 0 && (
             <View style={styles.sectionBlock}>
               <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                📌 PINNED
+                PINNED
               </Text>
               <SortableList
                 data={pinnedTasks}
@@ -1083,7 +1021,7 @@ export const FutureTaskManager: React.FC = () => {
       {/* Move to Today Confirmation */}
       <ConfirmDialog
         visible={!!moveToTodayTask}
-        title="⚡ Promote to Today's Tasks"
+        title="Promote to Today's Tasks"
         message={`Move "${moveToTodayTask?.title}" directly onto today's priority schedule?`}
         confirmText="Move to Today"
         destructive={false}
@@ -1422,6 +1360,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     marginBottom: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          transition: 'background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.2s ease',
+        } as any)
+      : {}),
   },
   cardGridMobile: {
     width: '48.5%',

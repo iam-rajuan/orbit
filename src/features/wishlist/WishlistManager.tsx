@@ -155,24 +155,37 @@ export const WishlistManager: React.FC = () => {
           style={[
             styles.headerMetricCard,
             {
-              backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
-              borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
+              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
+              shadowColor: theme.shadowColor,
+              shadowOpacity: theme.shadowOpacity,
+              ...(Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  } as any)
+                : {}),
             },
           ]}
         >
           <View style={styles.metricHeaderRow}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#10B981' }]}>
-              <ShieldCheck size={16} color="#FFFFFF" />
+            <View
+              style={[
+                styles.metricIconCircle,
+                { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)' },
+              ]}
+            >
+              <ShieldCheck size={16} color="#10B981" />
             </View>
-            <Text style={[styles.metricLabel, { color: isDark ? '#34D399' : '#047857' }]}>
+            <Text style={[styles.metricLabel, { color: theme.textMuted }]}>
               IMPULSE AVOIDED
             </Text>
           </View>
           <Text style={[styles.metricBigNumber, { color: isDark ? '#34D399' : '#059669' }]}>
             {formatCurrency(stats.totalAvoidedValue, settings.currency)}
           </Text>
-          <Text style={[styles.metricSub, { color: isDark ? '#A7F3D0' : '#065F46' }]}>
-            {stats.avoidedCount} purchases avoided by waiting!
+          <Text style={[styles.metricSub, { color: theme.textSecondary }]}>
+            {stats.avoidedCount} purchases avoided by waiting
           </Text>
         </View>
       </View>

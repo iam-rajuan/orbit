@@ -106,6 +106,7 @@ export function SortableList<T>({
   const currentTargetIndexRef = useRef<number | null>(null);
   const itemLayouts = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
   const autoScrollFrameRef = useRef<number | null>(null);
+  const isInteractivePressRef = useRef<boolean>(false);
 
   const registerLayout = useCallback(
     (index: number, layout: { x: number; y: number; width: number; height: number }) => {
@@ -528,14 +529,32 @@ export function SortableList<T>({
             ]
           : undefined;
 
+        const isInteractiveTarget = (evt: any): boolean => {
+          if (Platform.OS === 'web') {
+            const el = (evt?.target || evt?.nativeEvent?.target) as HTMLElement | null;
+            if (el && typeof el.closest === 'function') {
+              return !!el.closest(
+                'button, [role="button"], input, textarea, a, select, [data-interactive="true"], [data-no-item-press="true"]'
+              );
+            }
+          }
+          return false;
+        };
+
         // Mobile touch handlers
         const touchHandlers = {
           onTouchStart: (e: any) => {
+            if (isInteractiveTarget(e)) {
+              isInteractivePressRef.current = true;
+              return;
+            }
+            isInteractivePressRef.current = false;
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
             const clientY = touch.clientY || touch.pageY;
             startHoldGesture(index, touch.pageX, touch.pageY, clientY);
           },
           onTouchMove: (e: any) => {
+            if (isInteractivePressRef.current) return;
             if (isDraggingRef.current) {
               if (e.cancelable && e.preventDefault) {
                 e.preventDefault();
@@ -545,7 +564,12 @@ export function SortableList<T>({
             const clientY = touch.clientY || touch.pageY;
             updateDragPosition(touch.pageX, touch.pageY, clientY);
           },
-          onTouchEnd: () => {
+          onTouchEnd: (e: any) => {
+            if (isInteractivePressRef.current || isInteractiveTarget(e)) {
+              isInteractivePressRef.current = false;
+              endDragGesture();
+              return;
+            }
             const wasDragging = isDraggingRef.current;
             endDragGesture();
             if (!wasDragging && onItemPress) {
@@ -553,6 +577,7 @@ export function SortableList<T>({
             }
           },
           onTouchCancel: () => {
+            isInteractivePressRef.current = false;
             endDragGesture();
           },
         };
@@ -562,10 +587,11 @@ export function SortableList<T>({
           Platform.OS === 'web'
             ? {
                 onPointerDown: (e: any) => {
-                  const targetTagName = (e.target?.tagName || '').toLowerCase();
-                  if (targetTagName === 'input' || targetTagName === 'textarea') {
+                  if (isInteractiveTarget(e)) {
+                    isInteractivePressRef.current = true;
                     return;
                   }
+                  isInteractivePressRef.current = false;
 
                   const clientY = e.clientY ?? e.pageY ?? 0;
                   const pageY = e.pageY ?? (clientY + (window.scrollY || 0));
@@ -590,12 +616,17 @@ export function SortableList<T>({
                       updateDragPosition(movePageX, movePageY, moveClientY);
                     };
 
-                    const onPointerUp = () => {
+                    const onPointerUp = (upEvt?: PointerEvent) => {
                       const wasDragging = isDraggingRef.current;
                       endDragGesture();
                       window.removeEventListener('pointermove', onPointerMove);
                       window.removeEventListener('pointerup', onPointerUp);
                       window.removeEventListener('pointercancel', onPointerUp);
+
+                      if (isInteractivePressRef.current || isInteractiveTarget(upEvt)) {
+                        isInteractivePressRef.current = false;
+                        return;
+                      }
 
                       if (!wasDragging && onItemPress) {
                         onItemPress(item, index);

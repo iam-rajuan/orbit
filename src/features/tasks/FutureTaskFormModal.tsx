@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { Task, TaskHorizon } from '../../types';
+import { Task, TaskHorizon, TaskPriority } from '../../types';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useDateStore } from '../../stores/useDateStore';
 import { generateId } from '../../utils/id';
@@ -23,15 +23,15 @@ import {
   Trash2,
   Zap,
   Palette,
-  Bell,
-  Tag,
   CheckSquare,
   Square,
   Plus,
   X,
-  Clock,
+  Calendar as CalendarIcon,
 } from 'lucide-react-native';
 import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
+import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
+import { getTodayKey, offsetDateKey, getWeekdayName } from '../../utils/date';
 
 interface FutureTaskFormModalProps {
   visible: boolean;
@@ -39,22 +39,12 @@ interface FutureTaskFormModalProps {
   onClose: () => void;
 }
 
-const QUICK_LABELS = [
-  'Architecture',
-  'Deep Learning',
-  'Finance',
-  'Health',
-  'Quick Wins',
-  'Projects',
+// Clean priority options: Light (Low), Moderate (Medium), High (High)
+const PRIORITY_OPTIONS: { id: TaskPriority; label: string; activeColor: string; activeBg: string }[] = [
+  { id: 'High', label: 'High', activeColor: '#EF4444', activeBg: 'rgba(239, 68, 68, 0.16)' },
+  { id: 'Medium', label: 'Moderate', activeColor: '#F59E0B', activeBg: 'rgba(245, 158, 11, 0.16)' },
+  { id: 'Low', label: 'Light', activeColor: '#10B981', activeBg: 'rgba(16, 185, 129, 0.16)' },
 ];
-
-const HORIZON_OPTIONS: { id: TaskHorizon; label: string }[] = [
-  { id: 'next_7_days', label: '⚡ Next 7 Days' },
-  { id: 'this_month', label: '📅 This Month' },
-  { id: 'someday', label: '💡 Someday' },
-];
-
-const EFFORT_OPTIONS = ['15m', '30m', '1h', '2h+'];
 
 const formatEditedTime = (isoString?: string) => {
   if (!isoString) return 'New note';
@@ -76,7 +66,7 @@ const FutureTaskNoteEditor: React.FC<{
   taskToEdit?: Task | null;
   onClose: () => void;
 }> = ({ taskToEdit, onClose }) => {
-  const { isDark, theme } = useTheme();
+  const { isDark } = useTheme();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { selectedDate } = useDateStore();
@@ -88,21 +78,64 @@ const FutureTaskNoteEditor: React.FC<{
   // Note State directly initialized
   const [title, setTitle] = useState(taskToEdit?.title || '');
   const [notes, setNotes] = useState(taskToEdit?.notes || taskToEdit?.description || '');
-  const [heading, setHeading] = useState(taskToEdit?.heading || QUICK_LABELS[0]);
-  const [horizon, setHorizon] = useState<TaskHorizon>(taskToEdit?.horizon || 'next_7_days');
-  const [estimatedTime, setEstimatedTime] = useState(taskToEdit?.estimatedTime || '30m');
+  const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority || 'Medium');
   const [color, setColor] = useState(taskToEdit?.color || 'default');
   const [pinned, setPinned] = useState(taskToEdit?.pinned || false);
   const [checklist, setChecklist] = useState<{ id: string; text: string; completed: boolean }[]>(
     taskToEdit?.checklist || []
   );
 
-  // Tray Toggles
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showLabelPicker, setShowLabelPicker] = useState(false);
-  const [showHorizonPicker, setShowHorizonPicker] = useState(false);
+  // Dynamic schedule options based on current date
+  const todayKey = getTodayKey();
+  const scheduleOptions = useMemo(() => {
+    const tomorrow = offsetDateKey(todayKey, 1);
+    const day2 = offsetDateKey(todayKey, 2);
+    const day3 = offsetDateKey(todayKey, 3);
+    const day4 = offsetDateKey(todayKey, 4);
 
-  // Always solid opaque background for note editing to guarantee zero bleed-through
+    return [
+      { id: 'today', label: 'Today', date: todayKey, horizon: 'next_7_days' as TaskHorizon },
+      { id: 'tomorrow', label: 'Tomorrow', date: tomorrow, horizon: 'next_7_days' as TaskHorizon },
+      { id: day2, label: getWeekdayName(day2), date: day2, horizon: 'next_7_days' as TaskHorizon },
+      { id: day3, label: getWeekdayName(day3), date: day3, horizon: 'next_7_days' as TaskHorizon },
+      { id: day4, label: getWeekdayName(day4), date: day4, horizon: 'next_7_days' as TaskHorizon },
+      { id: 'next_7_days', label: '7 Days', date: todayKey, horizon: 'next_7_days' as TaskHorizon },
+      { id: 'this_month', label: 'This Month', date: todayKey, horizon: 'this_month' as TaskHorizon },
+      { id: 'someday', label: 'Someday', date: 'someday', horizon: 'someday' as TaskHorizon },
+    ];
+  }, [todayKey]);
+
+  // Initial schedule selection
+  const [scheduleSelection, setScheduleSelection] = useState<{
+    id: string;
+    horizon: TaskHorizon;
+    date: string;
+    label: string;
+  }>(() => {
+    if (taskToEdit?.date === 'someday' || taskToEdit?.horizon === 'someday') {
+      return { id: 'someday', horizon: 'someday', date: 'someday', label: 'Someday' };
+    }
+    if (taskToEdit?.horizon === 'this_month') {
+      return { id: 'this_month', horizon: 'this_month', date: taskToEdit?.date || todayKey, label: 'This Month' };
+    }
+    if (taskToEdit?.date && taskToEdit.date !== 'someday') {
+      if (taskToEdit.date === todayKey) {
+        return { id: 'today', horizon: 'next_7_days', date: todayKey, label: 'Today' };
+      }
+      return { id: taskToEdit.date, horizon: 'next_7_days', date: taskToEdit.date, label: taskToEdit.date };
+    }
+    return { id: 'today', horizon: 'next_7_days', date: todayKey, label: 'Today' };
+  });
+
+  const [customDate, setCustomDate] = useState<string>(
+    taskToEdit?.date && taskToEdit.date !== 'someday' && taskToEdit.date !== todayKey
+      ? taskToEdit.date
+      : ''
+  );
+  const [showDatePickerInput, setShowDatePickerInput] = useState<boolean>(false);
+  const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
+
+  // Solid background for clean reading without bleed-through
   const cardStyle = getKeepCardStyle(
     color,
     isDark,
@@ -123,7 +156,8 @@ const FutureTaskNoteEditor: React.FC<{
     }
 
     const now = new Date().toISOString();
-    const finalDate = horizon === 'someday' ? 'someday' : (taskToEdit?.date || selectedDate);
+    const finalDate = scheduleSelection.date;
+    const finalHorizon = scheduleSelection.horizon;
 
     if (taskToEdit) {
       const updated: Task = {
@@ -131,9 +165,8 @@ const FutureTaskNoteEditor: React.FC<{
         title: finalTitle || 'Untitled note',
         notes: finalNotes || undefined,
         description: finalNotes || undefined,
-        heading,
-        horizon,
-        estimatedTime,
+        priority,
+        horizon: finalHorizon,
         color,
         pinned,
         checklist: checklist.length > 0 ? checklist : undefined,
@@ -148,15 +181,13 @@ const FutureTaskNoteEditor: React.FC<{
         title: finalTitle || 'Untitled note',
         notes: finalNotes || undefined,
         description: finalNotes || undefined,
-        heading,
         category: 'Office',
         type: 'Project',
-        priority: 'Medium',
-        horizon,
-        estimatedTime,
+        priority,
+        horizon: finalHorizon,
         date: finalDate,
         dueDate: finalDate !== 'someday' ? finalDate : undefined,
-        isUpcoming: true,
+        isUpcoming: finalDate !== todayKey,
         pinned,
         color,
         checklist: checklist.length > 0 ? checklist : undefined,
@@ -212,13 +243,6 @@ const FutureTaskNoteEditor: React.FC<{
     onClose();
   };
 
-  // Cycle effort
-  const handleCycleEffort = () => {
-    const currentIdx = EFFORT_OPTIONS.indexOf(estimatedTime);
-    const nextIdx = (currentIdx + 1) % EFFORT_OPTIONS.length;
-    setEstimatedTime(EFFORT_OPTIONS[nextIdx]);
-  };
-
   return (
     <Modal
       visible={true}
@@ -246,7 +270,7 @@ const FutureTaskNoteEditor: React.FC<{
             },
           ]}
         >
-          {/* 1. Google Keep Top Navigation Bar */}
+          {/* 1. Top Navigation Bar */}
           <View style={styles.topBar}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -274,7 +298,7 @@ const FutureTaskNoteEditor: React.FC<{
                 />
               </TouchableOpacity>
 
-              {/* Move to today (Orbit Zap) */}
+              {/* Move to today */}
               {taskToEdit && !taskToEdit.completed && (
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -302,7 +326,7 @@ const FutureTaskNoteEditor: React.FC<{
             </View>
           </View>
 
-          {/* 2. Note Body: Google Keep Fluid Scrolling Canvas */}
+          {/* 2. Note Body Canvas */}
           <ScrollView
             style={styles.contentScroll}
             contentContainerStyle={styles.contentScrollContainer}
@@ -310,7 +334,7 @@ const FutureTaskNoteEditor: React.FC<{
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            {/* Clean Borderless Auto-Expanding Title (scrollEnabled=false delegates scrolling to parent) */}
+            {/* Clean Borderless Title */}
             <TextInput
               ref={titleInputRef}
               style={[
@@ -327,7 +351,7 @@ const FutureTaskNoteEditor: React.FC<{
               onSubmitEditing={() => noteInputRef.current?.focus()}
             />
 
-            {/* Checklist items (Google Keep style) */}
+            {/* Checklist items */}
             {checklist.length > 0 && (
               <View style={styles.checklistSection}>
                 {checklist.map((item) => (
@@ -383,7 +407,7 @@ const FutureTaskNoteEditor: React.FC<{
               </View>
             )}
 
-            {/* Note Body Area (scrollEnabled=false + tap anywhere to focus) */}
+            {/* Note Body Text */}
             <Pressable
               onPress={() => noteInputRef.current?.focus()}
               style={styles.noteBodyPressable}
@@ -403,97 +427,168 @@ const FutureTaskNoteEditor: React.FC<{
                 textAlignVertical="top"
               />
             </Pressable>
-
-            {/* Chips Area: Workstream tag, Reminder, Effort badge */}
-            <View style={styles.chipsSection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsScrollRow}
-              >
-                {/* Workstream / Label Chip */}
-                {heading ? (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setShowLabelPicker(!showLabelPicker);
-                      setShowColorPicker(false);
-                      setShowHorizonPicker(false);
-                    }}
-                    style={[
-                      styles.keepChip,
-                      {
-                        backgroundColor: cardStyle.chipBg,
-                        borderColor: cardStyle.chipBorder,
-                      },
-                    ]}
-                  >
-                    <Tag size={12} color={cardStyle.subTextColor} />
-                    <Text
-                      style={[styles.keepChipText, { color: cardStyle.textColor }]}
-                      numberOfLines={1}
-                    >
-                      {heading}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-
-                {/* Horizon / Reminder Chip */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setShowHorizonPicker(!showHorizonPicker);
-                    setShowColorPicker(false);
-                    setShowLabelPicker(false);
-                  }}
-                  style={[
-                    styles.keepChip,
-                    {
-                      backgroundColor: cardStyle.chipBg,
-                      borderColor: cardStyle.chipBorder,
-                    },
-                  ]}
-                >
-                  <Bell size={12} color={cardStyle.subTextColor} />
-                  <Text
-                    style={[styles.keepChipText, { color: cardStyle.textColor }]}
-                    numberOfLines={1}
-                  >
-                    {horizon === 'next_7_days'
-                      ? 'Next 7 Days'
-                      : horizon === 'this_month'
-                      ? 'This Month'
-                      : 'Someday'}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Effort Chip */}
-                {estimatedTime ? (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={handleCycleEffort}
-                    style={[
-                      styles.keepChip,
-                      {
-                        backgroundColor: cardStyle.chipBg,
-                        borderColor: cardStyle.chipBorder,
-                      },
-                    ]}
-                  >
-                    <Clock size={12} color={cardStyle.subTextColor} />
-                    <Text
-                      style={[styles.keepChipText, { color: cardStyle.textColor }]}
-                      numberOfLines={1}
-                    >
-                      {estimatedTime}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </ScrollView>
-            </View>
           </ScrollView>
 
-          {/* 3. Collapsible Option Trays */}
+          {/* 3. Horizontally Scrollable Options Bar: Priority & Schedule */}
+          <View style={[styles.optionsBarWrapper, { borderTopColor: cardStyle.chipBorder }]}>
+            <HorizontalScrollRow
+              edgeToEdge={false}
+              paddingHorizontal={14}
+              gap={6}
+            >
+              {/* Priority Chips */}
+              <Text style={[styles.sectionPillHeader, { color: cardStyle.subTextColor }]}>
+                PRIORITY:
+              </Text>
+              {PRIORITY_OPTIONS.map((p) => {
+                const active = priority === p.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => setPriority(p.id)}
+                    style={[
+                      styles.optionPill,
+                      {
+                        backgroundColor: active ? p.activeBg : cardStyle.chipBg,
+                        borderColor: active ? p.activeColor : cardStyle.chipBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.optionPillText,
+                        { color: active ? p.activeColor : cardStyle.textColor },
+                        active && { fontWeight: '700' },
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Subtle divider */}
+              <View style={[styles.pillDivider, { backgroundColor: cardStyle.chipBorder }]} />
+
+              {/* Schedule Chips */}
+              <Text style={[styles.sectionPillHeader, { color: cardStyle.subTextColor }]}>
+                WHEN:
+              </Text>
+              {scheduleOptions.map((opt) => {
+                const active = scheduleSelection.id === opt.id && !showDatePickerInput;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    onPress={() => {
+                      setScheduleSelection({
+                        id: opt.id,
+                        horizon: opt.horizon,
+                        date: opt.date,
+                        label: opt.label,
+                      });
+                      setShowDatePickerInput(false);
+                    }}
+                    style={[
+                      styles.optionPill,
+                      {
+                        backgroundColor: active
+                          ? isDark
+                            ? 'rgba(139, 92, 246, 0.3)'
+                            : '#EDE9FE'
+                          : cardStyle.chipBg,
+                        borderColor: active ? '#8B5CF6' : cardStyle.chipBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.optionPillText,
+                        { color: active ? '#8B5CF6' : cardStyle.textColor },
+                        active && { fontWeight: '700' },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Custom Date Pill */}
+              <TouchableOpacity
+                onPress={() => setShowDatePickerInput(!showDatePickerInput)}
+                style={[
+                  styles.optionPill,
+                  {
+                    backgroundColor: showDatePickerInput || (scheduleSelection.id === 'custom')
+                      ? isDark
+                        ? 'rgba(139, 92, 246, 0.3)'
+                        : '#EDE9FE'
+                      : cardStyle.chipBg,
+                    borderColor: showDatePickerInput || (scheduleSelection.id === 'custom')
+                      ? '#8B5CF6'
+                      : cardStyle.chipBorder,
+                  },
+                ]}
+              >
+                <CalendarIcon
+                  size={12}
+                  color={
+                    showDatePickerInput || scheduleSelection.id === 'custom'
+                      ? '#8B5CF6'
+                      : cardStyle.subTextColor
+                  }
+                />
+                <Text
+                  style={[
+                    styles.optionPillText,
+                    {
+                      color:
+                        showDatePickerInput || scheduleSelection.id === 'custom'
+                          ? '#8B5CF6'
+                          : cardStyle.textColor,
+                    },
+                    (showDatePickerInput || scheduleSelection.id === 'custom') && { fontWeight: '700' },
+                  ]}
+                >
+                  {customDate ? customDate : 'Date'}
+                </Text>
+              </TouchableOpacity>
+            </HorizontalScrollRow>
+          </View>
+
+          {/* Optional inline date input when 'Date' is active */}
+          {showDatePickerInput && (
+            <View style={[styles.customDateRow, { borderTopColor: cardStyle.chipBorder }]}>
+              <Text style={[styles.customDateLabel, { color: cardStyle.subTextColor }]}>
+                Enter Date (YYYY-MM-DD):
+              </Text>
+              <TextInput
+                style={[
+                  styles.customDateInput,
+                  {
+                    color: cardStyle.textColor,
+                    borderColor: cardStyle.chipBorder,
+                    backgroundColor: cardStyle.chipBg,
+                  },
+                ]}
+                placeholder={getTodayKey()}
+                placeholderTextColor={cardStyle.subTextColor}
+                value={customDate}
+                onChangeText={(text) => {
+                  setCustomDate(text);
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(text.trim())) {
+                    setScheduleSelection({
+                      id: 'custom',
+                      horizon: 'next_7_days',
+                      date: text.trim(),
+                      label: text.trim(),
+                    });
+                  }
+                }}
+              />
+            </View>
+          )}
+
           {/* Color Palette Swatches */}
           {showColorPicker && (
             <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
@@ -521,95 +616,7 @@ const FutureTaskNoteEditor: React.FC<{
             </View>
           )}
 
-          {/* Label Selector Tray */}
-          {showLabelPicker && (
-            <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.trayScrollRow}
-              >
-                {QUICK_LABELS.map((lbl) => {
-                  const active = heading === lbl;
-                  return (
-                    <TouchableOpacity
-                      key={lbl}
-                      onPress={() => {
-                        setHeading(lbl);
-                        setShowLabelPicker(false);
-                      }}
-                      style={[
-                        styles.trayPill,
-                        active && {
-                          backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#EDE9FE',
-                          borderColor: '#8B5CF6',
-                        },
-                        !active && {
-                          backgroundColor: cardStyle.chipBg,
-                          borderColor: cardStyle.chipBorder,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.trayPillText,
-                          { color: active ? '#8B5CF6' : cardStyle.textColor },
-                        ]}
-                      >
-                        {lbl}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Horizon Selector Tray */}
-          {showHorizonPicker && (
-            <View style={[styles.trayWrapper, { borderTopColor: cardStyle.chipBorder }]}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.trayScrollRow}
-              >
-                {HORIZON_OPTIONS.map((opt) => {
-                  const active = horizon === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      onPress={() => {
-                        setHorizon(opt.id);
-                        setShowHorizonPicker(false);
-                      }}
-                      style={[
-                        styles.trayPill,
-                        active && {
-                          backgroundColor: theme.primary,
-                          borderColor: theme.primary,
-                        },
-                        !active && {
-                          backgroundColor: cardStyle.chipBg,
-                          borderColor: cardStyle.chipBorder,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.trayPillText,
-                          { color: active ? '#FFFFFF' : cardStyle.textColor },
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* 4. Google Keep Bottom Toolbar */}
+          {/* 4. Bottom Toolbar */}
           <View
             style={[
               styles.bottomToolbar,
@@ -623,11 +630,7 @@ const FutureTaskNoteEditor: React.FC<{
             <View style={styles.toolbarIconGroup}>
               {/* Color Palette Icon */}
               <TouchableOpacity
-                onPress={() => {
-                  setShowColorPicker(!showColorPicker);
-                  setShowLabelPicker(false);
-                  setShowHorizonPicker(false);
-                }}
+                onPress={() => setShowColorPicker(!showColorPicker)}
                 style={styles.toolbarBtn}
                 accessibilityLabel="Note color"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -635,38 +638,12 @@ const FutureTaskNoteEditor: React.FC<{
                 <Palette size={20} color={cardStyle.subTextColor} />
               </TouchableOpacity>
 
-              {/* Reminder / Horizon Icon */}
+              {/* Checklist Toggle */}
               <TouchableOpacity
                 onPress={() => {
-                  setShowHorizonPicker(!showHorizonPicker);
-                  setShowColorPicker(false);
-                  setShowLabelPicker(false);
-                }}
-                style={styles.toolbarBtn}
-                accessibilityLabel="Completion horizon"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Bell size={20} color={cardStyle.subTextColor} />
-              </TouchableOpacity>
-
-              {/* Workstream / Label Icon */}
-              <TouchableOpacity
-                onPress={() => {
-                  setShowLabelPicker(!showLabelPicker);
-                  setShowColorPicker(false);
-                  setShowHorizonPicker(false);
-                }}
-                style={styles.toolbarBtn}
-                accessibilityLabel="Workstream label"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Tag size={20} color={cardStyle.subTextColor} />
-              </TouchableOpacity>
-
-              {/* Add Checklist Icon */}
-              <TouchableOpacity
-                onPress={() => {
-                  handleAddCheckItem();
+                  if (checklist.length === 0) {
+                    handleAddCheckItem();
+                  }
                 }}
                 style={styles.toolbarBtn}
                 accessibilityLabel="Checklist"
@@ -787,7 +764,7 @@ const styles = StyleSheet.create({
   contentScrollContainer: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 32,
+    paddingBottom: 24,
     flexGrow: 1,
   },
   titleInput: {
@@ -805,12 +782,12 @@ const styles = StyleSheet.create({
   },
   noteBodyPressable: {
     flex: 1,
-    minHeight: 220,
+    minHeight: 200,
   },
   noteBodyInput: {
     fontSize: 16,
     lineHeight: 26,
-    minHeight: 220,
+    minHeight: 200,
     padding: 0,
     ...(Platform.OS === 'web'
       ? ({
@@ -862,29 +839,58 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  /* Chips Row */
-  chipsSection: {
-    marginTop: 20,
-    marginBottom: 8,
+  /* Options Bar */
+  optionsBarWrapper: {
+    paddingVertical: 10,
+    borderTopWidth: 1,
   },
-  chipsScrollRow: {
+  sectionPillHeader: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    alignSelf: 'center',
+    marginRight: 2,
+  },
+  pillDivider: {
+    width: 1,
+    height: 18,
+    alignSelf: 'center',
+    marginHorizontal: 4,
+  },
+  optionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingTop: 4,
-  },
-  keepChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 4,
+    paddingHorizontal: 11,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
-  keepChipText: {
+  optionPillText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+
+  /* Custom date row */
+  customDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+  },
+  customDateLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  customDateInput: {
+    flex: 1,
+    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
   },
 
   /* Option Trays */
@@ -892,21 +898,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
-  },
-  trayScrollRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  trayPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  trayPillText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   colorPaletteRow: {
     flexDirection: 'row',

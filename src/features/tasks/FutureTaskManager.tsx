@@ -12,7 +12,7 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useTaskStore } from '../../stores/useTaskStore';
 import { useDateStore } from '../../stores/useDateStore';
-import { Task, TaskHorizon } from '../../types';
+import { Task, TaskHorizon, TaskPriority } from '../../types';
 import { FutureTaskFormModal } from './FutureTaskFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { KEEP_COLORS, getKeepCardStyle } from './keepTheme';
@@ -31,18 +31,15 @@ import {
   Zap,
   Trash2,
   Edit3,
-  Tag,
   X,
   Plus,
   Maximize2,
 } from 'lucide-react-native';
 
-const QUICK_LABELS = [
-  'Architecture',
-  'Deep Learning',
-  'Finance',
-  'Health',
-  'Quick Wins',
+const PRIORITY_FILTERS: { id: string; label: string; priority: TaskPriority }[] = [
+  { id: 'priority:High', label: 'High Priority', priority: 'High' },
+  { id: 'priority:Medium', label: 'Moderate', priority: 'Medium' },
+  { id: 'priority:Low', label: 'Light', priority: 'Low' },
 ];
 
 const HORIZON_FILTERS = [
@@ -90,7 +87,7 @@ export const FutureTaskManager: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [newChecklist, setNewChecklist] = useState<ChecklistDraftItem[]>([]);
-  const [newHeading, setNewHeading] = useState(QUICK_LABELS[0]);
+  const [newPriority, setNewPriority] = useState<TaskPriority>('Medium');
   const [newHorizon, setNewHorizon] = useState<TaskHorizon>('next_7_days');
   const [newColor, setNewColor] = useState('default');
   const [newPinned, setNewPinned] = useState(false);
@@ -132,10 +129,10 @@ export const FutureTaskManager: React.FC = () => {
       } else if (activeFilter === 'next_7_days' || activeFilter === 'this_month' || activeFilter === 'someday') {
         if (t.completed) return false;
         if (t.horizon !== activeFilter && t.date !== activeFilter) return false;
-      } else if (activeFilter.startsWith('label:')) {
-        const labelName = activeFilter.replace('label:', '');
+      } else if (activeFilter.startsWith('priority:')) {
+        const priorityVal = activeFilter.replace('priority:', '');
         if (t.completed) return false;
-        if (t.heading !== labelName && t.category !== labelName) return false;
+        if (t.priority !== priorityVal) return false;
       }
 
       // 3. Search query
@@ -180,15 +177,13 @@ export const FutureTaskManager: React.FC = () => {
 
     const created: Task = {
       id: generateId('task'),
-      heading: newHeading,
       title: newTitle.trim() || (validChecklist[0]?.text ?? 'Untitled Task'),
       notes: newNotes.trim() || undefined,
       checklist: validChecklist.length > 0 ? validChecklist : undefined,
       category: 'Office',
       type: 'Project',
-      priority: 'Medium',
+      priority: newPriority,
       horizon: newHorizon,
-      estimatedTime: '30m',
       date: newHorizon === 'someday' ? 'someday' : selectedDate,
       dueDate: newHorizon === 'someday' ? undefined : selectedDate,
       isUpcoming: true,
@@ -579,14 +574,13 @@ export const FutureTaskManager: React.FC = () => {
           );
         })}
 
-        {/* Labels / Workstreams */}
-        {QUICK_LABELS.map((label) => {
-          const filterKey = `label:${label}`;
-          const active = activeFilter === filterKey;
+        {/* Priority Filter Chips */}
+        {PRIORITY_FILTERS.map((pf) => {
+          const active = activeFilter === pf.id;
           return (
             <TouchableOpacity
-              key={label}
-              onPress={() => setActiveFilter(active ? 'all' : filterKey)}
+              key={pf.id}
+              onPress={() => setActiveFilter(active ? 'all' : pf.id)}
               style={[
                 styles.filterChip,
                 active && {
@@ -607,7 +601,7 @@ export const FutureTaskManager: React.FC = () => {
                 ]}
                 numberOfLines={1}
               >
-                {label}
+                {pf.label}
               </Text>
             </TouchableOpacity>
           );
@@ -667,18 +661,6 @@ export const FutureTaskManager: React.FC = () => {
                   accessibilityLabel="Checklist note"
                 >
                   <CheckSquare size={17} color={theme.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Quick label */}
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setIsComposerExpanded(true);
-                  }}
-                  style={styles.collapsedActionBtn}
-                  accessibilityLabel="Workstream label"
-                >
-                  <Tag size={17} color={theme.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Quick color */}
@@ -792,17 +774,17 @@ export const FutureTaskManager: React.FC = () => {
                   paddingHorizontal={0}
                   gap={5}
                 >
-                  {/* Horizon pills */}
+                  {/* Priority pills */}
                   {[
-                    { id: 'next_7_days', label: '7 Days' },
-                    { id: 'this_month', label: 'Month' },
-                    { id: 'someday', label: 'Someday' },
-                  ].map((hz) => {
-                    const active = newHorizon === hz.id;
+                    { id: 'High' as TaskPriority, label: 'High' },
+                    { id: 'Medium' as TaskPriority, label: 'Moderate' },
+                    { id: 'Low' as TaskPriority, label: 'Light' },
+                  ].map((p) => {
+                    const active = newPriority === p.id;
                     return (
                       <TouchableOpacity
-                        key={hz.id}
-                        onPress={() => setNewHorizon(active ? 'next_7_days' : hz.id as any)}
+                        key={p.id}
+                        onPress={() => setNewPriority(p.id)}
                         style={[
                           styles.composerMiniPill,
                           active && { backgroundColor: theme.primary, borderColor: theme.primary },
@@ -817,7 +799,7 @@ export const FutureTaskManager: React.FC = () => {
                           ]}
                           numberOfLines={1}
                         >
-                          {hz.label}
+                          {p.label}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -825,13 +807,17 @@ export const FutureTaskManager: React.FC = () => {
 
                   <View style={[styles.metaDivider, { backgroundColor: theme.border }]} />
 
-                  {/* Workstream / Label tags */}
-                  {QUICK_LABELS.map((h) => {
-                    const active = newHeading === h;
+                  {/* Horizon pills */}
+                  {[
+                    { id: 'next_7_days', label: '7 Days' },
+                    { id: 'this_month', label: 'Month' },
+                    { id: 'someday', label: 'Someday' },
+                  ].map((hz) => {
+                    const active = newHorizon === hz.id;
                     return (
                       <TouchableOpacity
-                        key={h}
-                        onPress={() => setNewHeading(active ? '' : h)}
+                        key={hz.id}
+                        onPress={() => setNewHorizon(active ? 'next_7_days' : hz.id as any)}
                         style={[
                           styles.composerMiniPill,
                           active && { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#EDE9FE', borderColor: '#8B5CF6' },
@@ -846,7 +832,7 @@ export const FutureTaskManager: React.FC = () => {
                           ]}
                           numberOfLines={1}
                         >
-                          {h}
+                          {hz.label}
                         </Text>
                       </TouchableOpacity>
                     );

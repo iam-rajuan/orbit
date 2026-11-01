@@ -203,7 +203,7 @@ export const ExpenseManager: React.FC = () => {
                 { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.16)' : '#FFF1F2' },
               ]}
             >
-              <Receipt size={19} color="#F43F5E" strokeWidth={2.4} />
+              <Receipt size={17} color="#F43F5E" strokeWidth={2.4} />
             </View>
             <View style={styles.titleTextCol}>
               <Text style={[styles.pageTitle, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -224,7 +224,7 @@ export const ExpenseManager: React.FC = () => {
             style={[styles.addExpenseBtn, { backgroundColor: '#F43F5E' }]}
             accessibilityLabel="Add new expense"
           >
-            <Plus size={14} color="#FFFFFF" strokeWidth={2.4} />
+            <Plus size={13} color="#FFFFFF" strokeWidth={2.4} />
             <Text style={styles.addExpenseBtnText}>Expense</Text>
           </TouchableOpacity>
         </View>
@@ -275,58 +275,26 @@ export const ExpenseManager: React.FC = () => {
           </View>
         )}
 
-        {/* Needs & Wants Breakdown Cards (Side-by-Side) */}
+        {/* Inline Needs & Wants Stats (Clean, No Bulky Boxes) */}
         <View style={styles.breakdownRow}>
-          <View
-            style={[
-              styles.breakdownCard,
-              {
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.28)' : '#A7F3D0',
-              },
-            ]}
-          >
-            <View style={styles.breakdownCardHeader}>
-              <View style={[styles.breakdownDot, { backgroundColor: '#10B981' }]} />
-              <Text style={[styles.breakdownCardTitle, { color: isDark ? '#34D399' : '#065F46' }]}>
-                Needs
-              </Text>
-              <Text style={[styles.breakdownCardPercent, { color: isDark ? '#34D399' : '#059669' }]}>
-                {needPercent}%
-              </Text>
-            </View>
-            <Text
-              style={[styles.breakdownCardValue, { color: isDark ? '#E6FFFA' : '#047857' }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
+          <View style={styles.breakdownItem}>
+            <View style={[styles.breakdownDot, { backgroundColor: '#10B981' }]} />
+            <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Needs</Text>
+            <Text style={[styles.breakdownPercent, { color: isDark ? '#34D399' : '#059669' }]}>
+              {needPercent}%
+            </Text>
+            <Text style={[styles.breakdownAmount, { color: isDark ? '#E6FFFA' : '#047857' }]}>
               {formatCurrency(summary.needTotal, settings.currency)}
             </Text>
           </View>
 
-          <View
-            style={[
-              styles.breakdownCard,
-              {
-                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.12)' : '#F5F3FF',
-                borderColor: isDark ? 'rgba(139, 92, 246, 0.28)' : '#DDD6FE',
-              },
-            ]}
-          >
-            <View style={styles.breakdownCardHeader}>
-              <View style={[styles.breakdownDot, { backgroundColor: '#8B5CF6' }]} />
-              <Text style={[styles.breakdownCardTitle, { color: isDark ? '#C4B5FD' : '#5B21B6' }]}>
-                Wants
-              </Text>
-              <Text style={[styles.breakdownCardPercent, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
-                {wantPercent}%
-              </Text>
-            </View>
-            <Text
-              style={[styles.breakdownCardValue, { color: isDark ? '#F5F3FF' : '#6D28D9' }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
+          <View style={styles.breakdownItem}>
+            <View style={[styles.breakdownDot, { backgroundColor: '#8B5CF6' }]} />
+            <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Wants</Text>
+            <Text style={[styles.breakdownPercent, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
+              {wantPercent}%
+            </Text>
+            <Text style={[styles.breakdownAmount, { color: isDark ? '#F5F3FF' : '#6D28D9' }]}>
               {formatCurrency(summary.wantTotal, settings.currency)}
             </Text>
           </View>
@@ -796,26 +764,26 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 18,
+    padding: 14,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 14,
+    shadowRadius: 10,
     elevation: 2,
-    gap: 12,
+    gap: 10,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
   },
   titleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 9,
     flex: 1,
     minWidth: 0,
   },
@@ -824,38 +792,38 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   iconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   pageSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     marginTop: 1,
   },
   addExpenseBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 3,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 9999,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 1,
   },
   addExpenseBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.1,
   },
@@ -863,31 +831,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingTop: 2,
+    paddingTop: 1,
   },
   heroTotalLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   heroTotalAmount: {
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: -0.6,
-    marginTop: 2,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginTop: 1,
   },
   itemsCountBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 9999,
   },
   itemsCountBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   meterTrack: {
-    height: 6,
+    height: 5,
     borderRadius: 9999,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -897,37 +865,31 @@ const styles = StyleSheet.create({
   },
   breakdownRow: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 1,
+    gap: 6,
   },
-  breakdownCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  breakdownCardHeader: {
+  breakdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginBottom: 4,
+    gap: 4,
   },
   breakdownDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  breakdownCardTitle: {
+  breakdownLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    flex: 1,
+    fontWeight: '600',
   },
-  breakdownCardPercent: {
-    fontSize: 11,
+  breakdownPercent: {
+    fontSize: 10,
     fontWeight: '700',
   },
-  breakdownCardValue: {
-    fontSize: 15,
+  breakdownAmount: {
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.2,
   },

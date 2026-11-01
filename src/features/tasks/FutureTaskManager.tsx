@@ -240,6 +240,8 @@ export const FutureTaskManager: React.FC = () => {
         key={task.id}
         style={[
           styles.noteCard,
+          isGrid && !isDesktop && styles.noteCardGridMobile,
+          isGrid && isDesktop && styles.noteCardGridDesktop,
           {
             width: '100%',
             padding: isGrid ? (isDesktop ? 12 : 8) : 12,
@@ -256,7 +258,7 @@ export const FutureTaskManager: React.FC = () => {
         ]}
       >
         {/* Card Header: Clean Note Title + Optional Forward Badge */}
-        <View style={styles.cardHeader}>
+        <View style={[styles.cardHeader, isGrid && !isDesktop && styles.cardHeaderMobile]}>
           <View style={styles.cardTitleArea}>
             <Text
               style={[
@@ -265,7 +267,7 @@ export const FutureTaskManager: React.FC = () => {
                 { color: cardStyle.textColor },
                 task.completed && styles.cardTitleCompleted,
               ]}
-              numberOfLines={isGrid ? 3 : 2}
+              numberOfLines={2}
             >
               {task.title}
             </Text>
@@ -281,10 +283,10 @@ export const FutureTaskManager: React.FC = () => {
         </View>
 
         {/* Card Body: Interactive Checklist OR Notes Text */}
-        <View style={styles.cardBody}>
+        <View style={[styles.cardBody, isGrid && styles.cardBodyGrid]}>
           {task.checklist && task.checklist.length > 0 ? (
             <View style={styles.checklistList}>
-              {task.checklist.slice(0, isGrid && !isDesktop ? 3 : 5).map((chk) => (
+              {task.checklist.slice(0, isGrid ? 2 : 4).map((chk) => (
                 <View key={chk.id} style={styles.checklistItemRow}>
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -332,7 +334,7 @@ export const FutureTaskManager: React.FC = () => {
                 { color: cardStyle.textColor },
                 task.completed && styles.cardNotesCompleted,
               ]}
-              numberOfLines={isGrid && !isDesktop ? 3 : 5}
+              numberOfLines={isGrid ? 2 : 4}
             >
               {task.notes}
             </Text>
@@ -438,9 +440,9 @@ export const FutureTaskManager: React.FC = () => {
                 <View style={styles.completedPill}>
                   <View
                     style={[
-                      styles.checkboxCircle,
-                      styles.checkboxCircleChecked,
-                      isGrid && !isDesktop && styles.checkboxCircleMobile,
+                      styles.checkboxSquare,
+                      styles.checkboxSquareChecked,
+                      isGrid && !isDesktop && styles.checkboxSquareMobile,
                     ]}
                   >
                     <Check size={isGrid && !isDesktop ? 9 : 11} color="#FFFFFF" strokeWidth={3} />
@@ -452,8 +454,8 @@ export const FutureTaskManager: React.FC = () => {
               ) : (
                 <View
                   style={[
-                    styles.checkboxCircle,
-                    isGrid && !isDesktop && styles.checkboxCircleMobile,
+                    styles.checkboxSquare,
+                    isGrid && !isDesktop && styles.checkboxSquareMobile,
                     {
                       borderColor: isDark ? 'rgba(255, 255, 255, 0.32)' : 'rgba(0, 0, 0, 0.25)',
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
@@ -1439,6 +1441,27 @@ const styles = StyleSheet.create({
     maxWidth: '49%',
     padding: 0,
   },
+  noteCardGridMobile: {
+    height: 146,
+    minHeight: 146,
+    maxHeight: 146,
+  },
+  noteCardGridDesktop: {
+    height: 168,
+    minHeight: 168,
+    maxHeight: 168,
+  },
+  cardHeaderMobile: {
+    minHeight: 34,
+    marginBottom: 2,
+  },
+  cardBodyGrid: {
+    flex: 1,
+    minHeight: 36,
+    overflow: 'hidden',
+    justifyContent: 'flex-start',
+    marginBottom: 4,
+  },
   cardGridDesktop: {
     width: '31.5%',
     minWidth: 240,
@@ -1562,7 +1585,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 6,
+    marginTop: 'auto',
+    paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: 'rgba(150,150,150,0.15)',
     width: '100%',
@@ -1588,21 +1612,21 @@ const styles = StyleSheet.create({
     height: 22,
     paddingHorizontal: 1,
   },
-  checkboxCircle: {
-    width: 17,
-    height: 17,
-    borderRadius: 9,
+  checkboxSquare: {
+    width: 16,
+    height: 16,
+    borderRadius: 4.5,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxCircleMobile: {
-    width: 15,
-    height: 15,
-    borderRadius: 8,
+  checkboxSquareMobile: {
+    width: 14.5,
+    height: 14.5,
+    borderRadius: 4,
     borderWidth: 1.4,
   },
-  checkboxCircleChecked: {
+  checkboxSquareChecked: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },

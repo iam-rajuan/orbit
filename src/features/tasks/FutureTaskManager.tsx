@@ -36,6 +36,7 @@ import {
   X,
   Plus,
   Maximize2,
+  RotateCcw,
 } from 'lucide-react-native';
 
 const PRIORITY_FILTERS: { id: string; label: string; priority: TaskPriority }[] = [
@@ -98,6 +99,24 @@ export const FutureTaskManager: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [moveToTodayTask, setMoveToTodayTask] = useState<Task | null>(null);
 
+  // Completion feedback & grace period states
+  const [completingTaskIds, setCompletingTaskIds] = useState<Set<string>>(new Set());
+  const [uncompletingTaskIds, setUncompletingTaskIds] = useState<Set<string>>(new Set());
+  const [completionToast, setCompletionToast] = useState<{
+    id: string;
+    title: string;
+    action: 'completed' | 'reactivated';
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (completionToast) {
+      const timer = setTimeout(() => {
+        setCompletionToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [completionToast]);
+
   // Identify all upcoming / future tasks
   const upcomingTasks = useMemo(() => {
     return tasks.filter((t) => {
@@ -139,6 +158,7 @@ export const FutureTaskManager: React.FC = () => {
         if (t.completed) return false;
         return t.horizon === 'someday' || t.date === 'someday' || !t.date;
       }).length,
+      completed: upcomingTasks.filter((t) => !!t.completed).length,
     };
   }, [upcomingTasks, selectedDate]);
 
@@ -148,6 +168,7 @@ export const FutureTaskManager: React.FC = () => {
     { id: 'next_7_days', label: `Next 7 Days (${tabCounts.next_7_days})` },
     { id: 'this_month', label: `This Month (${tabCounts.this_month})` },
     { id: 'someday', label: `Someday (${tabCounts.someday})` },
+    { id: 'completed', label: `Completed (${tabCounts.completed})` },
   ], [tabCounts]);
 
   // Filter & sort tasks based on search, active filter, color
@@ -157,9 +178,11 @@ export const FutureTaskManager: React.FC = () => {
 
     const matchesHorizonFilter = (t: Task): boolean => {
       if (activeFilter === 'completed') {
-        return !!t.completed;
+        return !!t.completed || uncompletingTaskIds.has(t.id);
       }
-      if (t.completed) return false;
+      if (t.completed && !completingTaskIds.has(t.id)) {
+        return false;
+      }
 
       if (activeFilter === 'pinned') {
         return !!t.pinned;
@@ -239,16 +262,63 @@ export const FutureTaskManager: React.FC = () => {
 
         return (b.createdAt || '').localeCompare(a.createdAt || '');
       });
-  }, [upcomingTasks, activeFilter, selectedColorFilter, searchQuery, selectedDate]);
+  }, [upcomingTasks, activeFilter, selectedColorFilter, searchQuery, selectedDate, completingTaskIds, uncompletingTaskIds]);
 
   // Separate pinned vs others
   const pinnedTasks = useMemo(() => {
+    if (activeFilter === 'completed') {
+      return []; // Completed tab displays a unified completed list
+    }
     return filteredTasks.filter((t) => t.pinned && !t.completed);
-  }, [filteredTasks]);
+  }, [filteredTasks, activeFilter]);
 
   const otherTasks = useMemo(() => {
+    if (activeFilter === 'completed') {
+      return filteredTasks; // All completed tasks
+    }
     return filteredTasks.filter((t) => !t.pinned || t.completed);
-  }, [filteredTasks]);
+  }, [filteredTasks, activeFilter]);
+
+  // Completion toggle with grace period & toast feedback
+  const handleToggleComplete = async (task: Task) => {
+    if (!task.completed) {
+      setCompletingTaskIds((prev) => new Set(prev).add(task.id));
+      await toggleTaskComplete(task.id);
+      setCompletionToast({
+        id: task.id,
+        title: task.title,
+        action: 'completed',
+      });
+      setTimeout(() => {
+        setCompletingTaskIds((prev) => {
+          const next = new Set(prev);
+          next.delete(task.id);
+          return next;
+        });
+      }, 750);
+    } else {
+      setUncompletingTaskIds((prev) => new Set(prev).add(task.id));
+      await toggleTaskComplete(task.id);
+      setCompletionToast({
+        id: task.id,
+        title: task.title,
+        action: 'reactivated',
+      });
+      setTimeout(() => {
+        setUncompletingTaskIds((prev) => {
+          const next = new Set(prev);
+          next.delete(task.id);
+          return next;
+        });
+      }, 750);
+    }
+  };
+
+  const handleUndoComplete = async () => {
+    if (!completionToast) return;
+    await toggleTaskComplete(completionToast.id);
+    setCompletionToast(null);
+  };
 
   // Quick Inline Note / Task Save
   const handleSaveInlineNote = async () => {
@@ -507,7 +577,7 @@ export const FutureTaskManager: React.FC = () => {
               {...interactiveProps}
               onPress={(e: any) => {
                 e?.stopPropagation?.();
-                toggleTaskComplete(task.id);
+                handleToggleComplete(task);
               }}
               onPointerDown={(e: any) => e?.stopPropagation?.()}
               onTouchStart={(e: any) => e?.stopPropagation?.()}
@@ -654,7 +724,8 @@ export const FutureTaskManager: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.rootWrapper}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* 1. Sleek Search & View Controls Bar */}
       <View style={styles.searchBarRow}>
         <View
@@ -1119,11 +1190,17 @@ export const FutureTaskManager: React.FC = () => {
       {filteredTasks.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyStateTitle, { color: theme.textPrimary }]}>
-            {searchQuery ? 'No matching future tasks or notes' : 'Your future task pipeline is clear'}
+            {searchQuery
+              ? 'No matching future tasks or notes'
+              : activeFilter === 'completed'
+              ? 'No completed tasks yet'
+              : 'Your future task pipeline is clear'}
           </Text>
           <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
             {searchQuery
               ? 'Try adjusting your search terms or clearing active filters.'
+              : activeFilter === 'completed'
+              ? 'When you check off upcoming tasks, they are organized here so you can review or restore them anytime.'
               : 'Use the note composer above to capture ideas, checklists, and upcoming tasks!'}
           </Text>
         </View>
@@ -1150,14 +1227,16 @@ export const FutureTaskManager: React.FC = () => {
             </View>
           )}
 
-          {/* OTHERS / ALL UPCOMING Section */}
+          {/* OTHERS / ALL UPCOMING / COMPLETED Section */}
           {otherTasks.length > 0 && (
             <View style={styles.sectionBlock}>
-              {pinnedTasks.length > 0 && (
-                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                  ALL UPCOMING
-                </Text>
-              )}
+              <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                {activeFilter === 'completed'
+                  ? `COMPLETED TASKS (${otherTasks.length})`
+                  : pinnedTasks.length > 0
+                  ? 'ALL UPCOMING'
+                  : ''}
+              </Text>
               <SortableList
                 data={otherTasks}
                 keyExtractor={(task) => task.id}
@@ -1216,11 +1295,102 @@ export const FutureTaskManager: React.FC = () => {
         }}
         onCancel={() => setMoveToTodayTask(null)}
       />
-    </ScrollView>
+      </ScrollView>
+
+      {/* Floating Completion Feedback Snackbar */}
+      {completionToast && (
+        <View
+          style={[
+            styles.floatingSnackbar,
+            {
+              backgroundColor: isDark ? '#18181B' : '#0F172A',
+            },
+          ]}
+        >
+          <View style={styles.snackbarLeft}>
+            <View
+              style={[
+                styles.snackbarIconBadge,
+                {
+                  backgroundColor:
+                    completionToast.action === 'completed'
+                      ? 'rgba(16, 185, 129, 0.16)'
+                      : 'rgba(99, 102, 241, 0.16)',
+                },
+              ]}
+            >
+              {completionToast.action === 'completed' ? (
+                <Check size={13} color="#10B981" strokeWidth={3} />
+              ) : (
+                <RotateCcw size={13} color="#818CF8" strokeWidth={2.4} />
+              )}
+            </View>
+            <View style={styles.snackbarTextCol}>
+              <Text style={styles.snackbarTitle} numberOfLines={1}>
+                {completionToast.action === 'completed' ? 'Task Completed' : 'Task Restored'}
+              </Text>
+              <Text style={styles.snackbarSub} numberOfLines={1}>
+                {completionToast.title
+                  ? `${completionToast.title} • ${
+                      completionToast.action === 'completed'
+                        ? 'Moved to Completed tab'
+                        : 'Moved to active tasks'
+                    }`
+                  : completionToast.action === 'completed'
+                  ? 'Moved to Completed tab'
+                  : 'Moved to active tasks'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.snackbarActions}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleUndoComplete}
+              style={styles.snackbarUndoBtn}
+              accessibilityLabel="Undo action"
+            >
+              <RotateCcw size={11} color="#A5B4FC" />
+              <Text style={styles.snackbarUndoText}>Undo</Text>
+            </TouchableOpacity>
+
+            {completionToast.action === 'completed' && activeFilter !== 'completed' && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setActiveFilter('completed');
+                  setCompletionToast(null);
+                }}
+                style={styles.snackbarViewBtn}
+              >
+                <Text style={styles.snackbarViewText}>View →</Text>
+              </TouchableOpacity>
+            )}
+
+            {completionToast.action === 'reactivated' && activeFilter === 'completed' && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setActiveFilter('all');
+                  setCompletionToast(null);
+                }}
+                style={styles.snackbarViewBtn}
+              >
+                <Text style={styles.snackbarViewText}>View Active →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rootWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -1818,5 +1988,86 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 320,
     lineHeight: 18,
+  },
+
+  /* Floating Toast Snackbar */
+  floatingSnackbar: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    right: 14,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 8,
+    zIndex: 9999,
+    gap: 8,
+  },
+  snackbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  snackbarIconBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  snackbarTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  snackbarTitle: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  snackbarSub: {
+    color: '#94A3B8',
+    fontSize: 10,
+    marginTop: 0.5,
+  },
+  snackbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  snackbarUndoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  snackbarUndoText: {
+    color: '#A5B4FC',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  snackbarViewBtn: {
+    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#6366F1',
+  },
+  snackbarViewText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

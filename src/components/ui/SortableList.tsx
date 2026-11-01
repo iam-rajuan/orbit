@@ -87,19 +87,50 @@ export function SortableList<T>({
   });
 
   const [itemHeight, setItemHeight] = useState<number>(estimatedItemHeight);
+  const [itemLayoutsState, setItemLayoutsState] = useState<
+    Record<number, { x: number; y: number; width: number; height: number }>
+  >({});
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
   const containerRef = useRef<View>(null);
+  const containerWidthRef = useRef<number>(0);
 
   // Mutable refs for rock-solid gesture tracking without stale closures
   const holdTimerRef = useRef<any>(null);
   const touchStartYRef = useRef<number>(0);
   const touchStartXRef = useRef<number>(0);
   const currentClientYRef = useRef<number>(0);
+  const currentClientXRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
   const activeStartIndexRef = useRef<number | null>(null);
   const currentTargetIndexRef = useRef<number | null>(null);
   const itemLayouts = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
   const autoScrollFrameRef = useRef<number | null>(null);
+
+  const registerLayout = useCallback(
+    (index: number, layout: { x: number; y: number; width: number; height: number }) => {
+      itemLayouts.current[index] = layout;
+      setItemLayoutsState((prev) => {
+        const existing = prev[index];
+        if (
+          existing &&
+          existing.x === layout.x &&
+          existing.y === layout.y &&
+          existing.width === layout.width &&
+          existing.height === layout.height
+        ) {
+          return prev;
+        }
+        return { ...prev, [index]: layout };
+      });
+    },
+    []
+  );
+
+  // Reset layout measurements ref when data length changes
+  useEffect(() => {
+    itemLayouts.current = {};
+  }, [data.length]);
 
   const handleMove = useCallback(
     (from: number, to: number) => {
@@ -133,14 +164,92 @@ export function SortableList<T>({
     return estimatedItemHeight;
   }, [estimatedItemHeight]);
 
+  const getSlotLayout = useCallback(
+    (slotIndex: number) => {
+      const existing = itemLayouts.current[slotIndex];
+      if (existing) return existing;
+
+      const avgH = getAverageItemHeight();
+      const first = itemLayouts.current[0];
+      const second = itemLayouts.current[1];
+      const isMultiCol = second && first && Math.abs(second.y - first.y) < 15;
+
+      if (isMultiCol && first) {
+        const colCount = Math.max(
+          2,
+          Math.round((containerWidthRef.current || 360) / (first.width || 160))
+        );
+        const col = slotIndex % colCount;
+        const row = Math.floor(slotIndex / colCount);
+        const colW = first.width || 160;
+        const gapX = second ? Math.max(0, second.x - (first.x + first.width)) : 10;
+        return {
+          x: col * (colW + gapX),
+          y: row * avgH,
+          width: colW,
+          height: avgH,
+        };
+      }
+
+      return {
+        x: 0,
+        y: slotIndex * avgH,
+        width: first?.width ?? 320,
+        height: avgH,
+      };
+    },
+    [getAverageItemHeight]
+  );
+
+  const getRenderSlotLayout = useCallback(
+    (slotIndex: number) => {
+      const existing = itemLayoutsState[slotIndex];
+      if (existing) return existing;
+
+      const layouts = Object.values(itemLayoutsState);
+      const avgH =
+        layouts.length > 0
+          ? Math.max(45, layouts.reduce((sum, item) => sum + item.height, 0) / layouts.length)
+          : estimatedItemHeight;
+
+      const first = itemLayoutsState[0];
+      const second = itemLayoutsState[1];
+      const isMultiCol = second && first && Math.abs(second.y - first.y) < 15;
+
+      if (isMultiCol && first) {
+        const colCount = Math.max(
+          2,
+          Math.round((containerWidth || 360) / (first.width || 160))
+        );
+        const col = slotIndex % colCount;
+        const row = Math.floor(slotIndex / colCount);
+        const colW = first.width || 160;
+        const gapX = second ? Math.max(0, second.x - (first.x + first.width)) : 10;
+        return {
+          x: col * (colW + gapX),
+          y: row * avgH,
+          width: colW,
+          height: avgH,
+        };
+      }
+
+      return {
+        x: 0,
+        y: slotIndex * avgH,
+        width: first?.width ?? 320,
+        height: avgH,
+      };
+    },
+    [itemLayoutsState, estimatedItemHeight, containerWidth]
+  );
+
   const calculateTargetIndex = useCallback(
     (fromIndex: number, deltaX: number, deltaY: number) => {
-      const fromItem = itemLayouts.current[fromIndex];
-      const avgH = getAverageItemHeight();
-      const fromX = fromItem?.x ?? 0;
-      const fromY = fromItem?.y ?? fromIndex * avgH;
-      const fromW = fromItem?.width ?? 150;
-      const fromH = fromItem?.height ?? avgH;
+      const fromItem = getSlotLayout(fromIndex);
+      const fromX = fromItem.x;
+      const fromY = fromItem.y;
+      const fromW = fromItem.width;
+      const fromH = fromItem.height;
 
       const currentCenterX = fromX + fromW / 2 + deltaX;
       const currentCenterY = fromY + fromH / 2 + deltaY;
@@ -149,14 +258,9 @@ export function SortableList<T>({
       let minDistance = Infinity;
 
       for (let i = 0; i < data.length; i++) {
-        const item = itemLayouts.current[i];
-        const itemX = item?.x ?? 0;
-        const itemY = item?.y ?? i * avgH;
-        const itemW = item?.width ?? 150;
-        const itemH = item?.height ?? avgH;
-
-        const itemCenterX = itemX + itemW / 2;
-        const itemCenterY = itemY + itemH / 2;
+        const item = getSlotLayout(i);
+        const itemCenterX = item.x + item.width / 2;
+        const itemCenterY = item.y + item.height / 2;
 
         const dist = Math.hypot(currentCenterX - itemCenterX, currentCenterY - itemCenterY);
         if (dist < minDistance) {
@@ -167,7 +271,7 @@ export function SortableList<T>({
 
       return Math.max(0, Math.min(data.length - 1, bestIndex));
     },
-    [data.length, getAverageItemHeight]
+    [data.length, getSlotLayout]
   );
 
   // Auto-scroll loop when dragging near top/bottom viewport edges
@@ -216,7 +320,7 @@ export function SortableList<T>({
           const from = activeStartIndexRef.current ?? 0;
           const currentY = clientY + (window.scrollY || window.pageYOffset || 0);
           const dy = currentY - touchStartYRef.current;
-          const dx = touchStartXRef.current ? (touchStartXRef.current - touchStartXRef.current) : 0;
+          const dx = (currentClientXRef.current || touchStartXRef.current) - touchStartXRef.current;
           const target = calculateTargetIndex(from, dx, dy);
           currentTargetIndexRef.current = target;
 
@@ -224,6 +328,7 @@ export function SortableList<T>({
             ...prev,
             active: true,
             targetIndex: target,
+            translateX: dx,
             translateY: dy,
           }));
         }
@@ -250,6 +355,7 @@ export function SortableList<T>({
     touchStartXRef.current = pageX;
     touchStartYRef.current = pageY;
     currentClientYRef.current = clientY;
+    currentClientXRef.current = pageX;
     activeStartIndexRef.current = index;
     currentTargetIndexRef.current = index;
     isDraggingRef.current = false;
@@ -261,6 +367,11 @@ export function SortableList<T>({
     // Tap-and-hold threshold (180ms)
     holdTimerRef.current = setTimeout(() => {
       isDraggingRef.current = true;
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).vibrate) {
+        try {
+          (navigator as any).vibrate(15);
+        } catch {}
+      }
       setDragState({
         active: true,
         startIndex: index,
@@ -274,6 +385,7 @@ export function SortableList<T>({
 
   const updateDragPosition = (pageX: number, pageY: number, clientY: number) => {
     currentClientYRef.current = clientY;
+    currentClientXRef.current = pageX;
     const dy = pageY - touchStartYRef.current;
     const dx = pageX - touchStartXRef.current;
 
@@ -333,15 +445,88 @@ export function SortableList<T>({
     });
   };
 
+  // Helper to compute where other cards shift while moving the selected card
+  const getDestinationSlot = (itemIndex: number, from: number | null, to: number | null) => {
+    if (from === null || to === null || from === to) return itemIndex;
+    if (from < to) {
+      if (itemIndex > from && itemIndex <= to) {
+        return itemIndex - 1;
+      }
+    } else if (from > to) {
+      if (itemIndex >= to && itemIndex < from) {
+        return itemIndex + 1;
+      }
+    }
+    return itemIndex;
+  };
+
   return (
-    <View ref={containerRef} style={[styles.container, style, contentContainerStyle]}>
+    <View
+      ref={containerRef}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        containerWidthRef.current = w;
+        setContainerWidth(w);
+      }}
+      style={[styles.container, style, contentContainerStyle]}
+    >
+      {/* Drop slot indicator / placeholder when dragging */}
+      {dragState.active && dragState.targetIndex !== null && (
+        (() => {
+          const targetLayout = getRenderSlotLayout(dragState.targetIndex);
+          return (
+            <View
+              style={[
+                styles.dropPlaceholder,
+                {
+                  position: 'absolute',
+                  left: targetLayout.x,
+                  top: targetLayout.y,
+                  width: targetLayout.width,
+                  height: targetLayout.height,
+                  borderColor: isDark ? 'rgba(139, 92, 246, 0.45)' : 'rgba(99, 102, 241, 0.45)',
+                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(99, 102, 241, 0.06)',
+                  ...(Platform.OS === 'web'
+                    ? ({
+                        transition:
+                          'top 0.24s cubic-bezier(0.2, 0, 0, 1), left 0.24s cubic-bezier(0.2, 0, 0, 1), width 0.2s ease, height 0.2s ease',
+                      } as any)
+                    : {}),
+                },
+              ]}
+              pointerEvents="none"
+            />
+          );
+        })()
+      )}
+
       {data.map((item, index) => {
         const key = keyExtractor(item);
         const isDragging = dragState.active && dragState.startIndex === index;
-        const isTarget =
-          dragState.active &&
-          dragState.targetIndex === index &&
-          dragState.startIndex !== index;
+        const destSlot = getDestinationSlot(index, dragState.startIndex, dragState.targetIndex);
+
+        let shiftX = 0;
+        let shiftY = 0;
+
+        if (!isDragging && dragState.active && destSlot !== index) {
+          const destLayout = getRenderSlotLayout(destSlot);
+          const currLayout = getRenderSlotLayout(index);
+          shiftX = destLayout.x - currLayout.x;
+          shiftY = destLayout.y - currLayout.y;
+        }
+
+        const itemTransform = isDragging
+          ? [
+              { translateX: dragState.translateX },
+              { translateY: dragState.translateY },
+              { scale: 1.05 },
+            ]
+          : shiftX !== 0 || shiftY !== 0
+          ? [
+              { translateX: shiftX },
+              { translateY: shiftY },
+            ]
+          : undefined;
 
         // Mobile touch handlers
         const touchHandlers = {
@@ -351,6 +536,11 @@ export function SortableList<T>({
             startHoldGesture(index, touch.pageX, touch.pageY, clientY);
           },
           onTouchMove: (e: any) => {
+            if (isDraggingRef.current) {
+              if (e.cancelable && e.preventDefault) {
+                e.preventDefault();
+              }
+            }
             const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
             const clientY = touch.clientY || touch.pageY;
             updateDragPosition(touch.pageX, touch.pageY, clientY);
@@ -382,6 +572,12 @@ export function SortableList<T>({
                   const pageX = e.pageX ?? e.clientX ?? 0;
 
                   startHoldGesture(index, pageX, pageY, clientY);
+
+                  if (e.target && typeof (e.target as any).setPointerCapture === 'function') {
+                    try {
+                      (e.target as any).setPointerCapture(e.pointerId);
+                    } catch {}
+                  }
 
                   if (typeof window !== 'undefined') {
                     const onPointerMove = (evt: PointerEvent) => {
@@ -418,47 +614,34 @@ export function SortableList<T>({
           <View
             key={key}
             onLayout={(e) => {
+              if (isDraggingRef.current) return;
               const { x, y, width, height: h } = e.nativeEvent.layout;
               if (h > 0 && Math.abs(h - itemHeight) > 5) {
                 setItemHeight(h);
               }
-              itemLayouts.current[index] = {
-                x,
-                y,
-                width,
-                height: h,
-              };
+              registerLayout(index, { x, y, width, height: h });
             }}
             style={[
               styles.itemWrapper,
               itemWrapperStyle,
+              itemTransform ? { transform: itemTransform } : null,
               isDragging && [
                 styles.itemDraggingActive,
                 {
-                  transform: [
-                    { translateX: dragState.translateX },
-                    { translateY: dragState.translateY },
-                    { scale: 1.05 },
-                  ],
                   borderColor: '#6366F1',
                   zIndex: 9999,
                   shadowOpacity: isDark ? 0.5 : 0.25,
                 },
               ],
-              isTarget && {
-                borderColor: '#8B5CF6',
-                borderWidth: 2,
-                borderRadius: 18,
-                transform: [{ scale: 0.98 }],
-                opacity: 0.75,
-              },
               Platform.OS === 'web'
                 ? ({
                     userSelect: dragState.active ? 'none' : 'auto',
                     WebkitUserSelect: dragState.active ? 'none' : 'auto',
                     touchAction: dragState.active ? 'none' : 'pan-y',
                     cursor: isDragging ? 'grabbing' : 'grab',
-                    transition: isDragging ? 'none' : 'transform 0.16s ease, opacity 0.16s ease',
+                    transition: isDragging
+                      ? 'none'
+                      : 'transform 0.28s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, opacity 0.2s ease',
                   } as any)
                 : {},
             ]}
@@ -470,7 +653,7 @@ export function SortableList<T>({
               index,
               total: data.length,
               isDragging,
-              isOver: isTarget,
+              isOver: dragState.active && dragState.targetIndex === index,
               dragHandle: null,
               moveUp: () => moveUp(index),
               moveDown: () => moveDown(index),
@@ -499,5 +682,12 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 20,
+  },
+  dropPlaceholder: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    zIndex: 0,
+    overflow: 'hidden',
   },
 });

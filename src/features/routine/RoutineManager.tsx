@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   Platform,
 } from 'react-native';
 import {
@@ -15,14 +16,13 @@ import { useDateStore } from '../../stores/useDateStore';
 import { useRoutineStore } from '../../stores/useRoutineStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppCheckbox } from '../../components/ui/AppCheckbox';
-import { AppButton } from '../../components/ui/AppButton';
 import { AppProgressBar } from '../../components/ui/AppProgressBar';
 import { SortableList } from '../../components/ui/SortableList';
 import { SwipeableRoutineCard } from './SwipeableRoutineCard';
 import { RoutineFormModal } from './RoutineFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { RoutineItem } from '../../types';
-import { isRoutineScheduledForDate } from '../../utils/date';
+import { isRoutineScheduledForDate, formatAdaptiveDate } from '../../utils/date';
 
 export const RoutineManager: React.FC = () => {
   const { theme, isDark } = useTheme();
@@ -58,12 +58,12 @@ export const RoutineManager: React.FC = () => {
         style={[
           styles.headerCard,
           {
-            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.72)' : 'rgba(255, 255, 255, 0.85)',
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.88)',
             borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
-            shadowColor: '#000',
+            shadowColor: theme.shadowColor,
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: isDark ? 0.25 : 0.04,
-            shadowRadius: 12,
+            shadowOpacity: theme.shadowOpacity,
+            shadowRadius: 14,
             ...(Platform.OS === 'web'
               ? ({
                   backdropFilter: 'blur(24px) saturate(190%)',
@@ -73,59 +73,86 @@ export const RoutineManager: React.FC = () => {
           },
         ]}
       >
+        {/* Top Header Row: Icon + Title/Subtitle on Left | + Habit Button on Right */}
         <View style={styles.headerTop}>
           <View style={styles.titleInfo}>
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
+                { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.16)' : '#ECFDF5' },
               ]}
             >
-              <Clock size={20} color="#059669" />
+              <Clock size={19} color="#10B981" strokeWidth={2.4} />
             </View>
-            <View>
-              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Daily Habits & Routine</Text>
-              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
-                Fixed recurring habits for {selectedDate}
+            <View style={styles.titleTextCol}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                Daily Routine
+              </Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                {formatAdaptiveDate(selectedDate, 'medium')}
               </Text>
             </View>
           </View>
-          <AppButton
-            title="Add Habit"
-            variant="primary"
-            size="sm"
-            icon={<Plus size={16} color="#ffffff" />}
+
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => {
               setEditingRoutine(null);
               setModalOpen(true);
             }}
-          />
+            style={[styles.addHabitBtn, { backgroundColor: theme.primary }]}
+            accessibilityLabel="Add new routine habit"
+          >
+            <Plus size={14} color="#FFFFFF" strokeWidth={2.4} />
+            <Text style={styles.addHabitBtnText}>Habit</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Progress Bar & Stats */}
+        {/* Progress & Stats Section */}
         <View style={styles.progressSection}>
           <View style={styles.progressLabels}>
-            <Text style={[styles.progressPercentText, { color: isDark ? '#34D399' : '#059669' }]}>
-              Routine Progress: {progress.completed} / {progress.total} ({progress.percentage}%)
-            </Text>
-            {progress.completed === progress.total && progress.total > 0 && (
+            <View style={styles.progressNumbersRow}>
+              <Text style={[styles.progressCountCurrent, { color: theme.textPrimary }]}>
+                {progress.completed}
+              </Text>
+              <Text style={[styles.progressCountTotal, { color: theme.textSecondary }]}>
+                /{progress.total}
+              </Text>
+              <Text style={[styles.progressCountLabel, { color: theme.textMuted }]}>
+                completed
+              </Text>
+            </View>
+
+            {progress.completed === progress.total && progress.total > 0 ? (
               <View
                 style={[
                   styles.completeBadge,
-                  { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
+                  { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.16)' : '#ECFDF5' },
                 ]}
               >
-                <CheckCircle2 size={14} color="#059669" />
+                <CheckCircle2 size={13} color="#10B981" strokeWidth={2.4} />
                 <Text style={[styles.completeBadgeText, { color: isDark ? '#34D399' : '#059669' }]}>
-                  All Completed
+                  100% Done
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.percentBadge,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' },
+                ]}
+              >
+                <Text style={[styles.percentBadgeText, { color: isDark ? '#34D399' : '#059669' }]}>
+                  {progress.percentage}%
                 </Text>
               </View>
             )}
           </View>
+
           <AppProgressBar
             progress={progress.percentage}
-            color="#10b981"
-            height={10}
+            color="#10B981"
+            height={6}
           />
         </View>
       </View>
@@ -280,7 +307,7 @@ const styles = StyleSheet.create({
   headerCard: {
     borderRadius: 20,
     borderWidth: 1,
-    padding: 20,
+    padding: 18,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
@@ -291,54 +318,106 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    gap: 8,
+    marginBottom: 14,
+    gap: 12,
   },
   titleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  titleTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   pageSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 1,
+  },
+  addHabitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  addHabitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   progressSection: {
-    gap: 10,
+    gap: 8,
   },
   progressLabels: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  progressPercentText: {
-    fontSize: 13,
+  progressNumbersRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+  },
+  progressCountCurrent: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  progressCountTotal: {
+    fontSize: 14,
     fontWeight: '700',
+  },
+  progressCountLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 3,
   },
   completeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 9999,
     gap: 4,
   },
   completeBadgeText: {
     fontSize: 11,
+    fontWeight: '700',
+  },
+  percentBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
+  },
+  percentBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  progressPercentText: {
+    fontSize: 13,
     fontWeight: '700',
   },
   timelineList: {

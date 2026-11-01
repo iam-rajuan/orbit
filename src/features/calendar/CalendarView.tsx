@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -71,6 +72,17 @@ export const CalendarView: React.FC = () => {
   const selectedProgress = getRoutineProgress(selectedDate);
   const selectedTasks = getTaskProgress(selectedDate);
   const selectedExpenses = getDailySummary(selectedDate);
+
+  const formatCompactCurrency = (amount: number, symbol: string) => {
+    if (amount >= 1000000) {
+      return `${symbol}${(amount / 1000000).toFixed(1)}M`;
+    }
+    if (amount >= 1000) {
+      const val = amount / 1000;
+      return `${symbol}${val >= 10 ? val.toFixed(0) : val.toFixed(1)}k`;
+    }
+    return `${symbol}${Math.round(amount)}`;
+  };
 
   return (
     <ScrollView
@@ -196,7 +208,7 @@ export const CalendarView: React.FC = () => {
 
                 {dayExpTotal > 0 && isCurrentMonth && (
                   <Text numberOfLines={1} style={styles.miniExpenseText}>
-                    {formatCurrency(dayExpTotal, settings.currency)}
+                    {formatCompactCurrency(dayExpTotal, settings.currency)}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -210,104 +222,190 @@ export const CalendarView: React.FC = () => {
         style={[
           styles.selectedDayCard,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.88)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: theme.shadowColor,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.shadowOpacity,
+            shadowRadius: 14,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                } as any)
+              : {}),
           },
         ]}
       >
         <View style={styles.selectedDayHeader}>
-          <View>
-            <Text style={[styles.selectedDayTitle, { color: theme.textPrimary }]}>
-              {formatDisplayDate(selectedDate)}
-            </Text>
-            <Text style={[styles.selectedDaySub, { color: theme.textSecondary }]}>Selected Date Overview</Text>
+          <View style={styles.headerTitleRow}>
+            <View
+              style={[
+                styles.calendarBadge,
+                { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.16)' : '#EEF2FF' },
+              ]}
+            >
+              <CalendarIcon size={16} color={theme.primary} strokeWidth={2.4} />
+            </View>
+            <View style={styles.headerTextCol}>
+              <Text style={[styles.selectedDayTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                {formatDisplayDate(selectedDate)}
+              </Text>
+              <Text style={[styles.selectedDaySub, { color: theme.textSecondary }]} numberOfLines={1}>
+                Selected Date Overview
+              </Text>
+            </View>
           </View>
-          <AppButton
-            title="Open Day Dashboard"
-            variant="primary"
-            size="sm"
-            icon={<ArrowRight size={15} color="#ffffff" />}
-            iconPosition="right"
+
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => router.push('/dashboard' as any)}
-          />
+            style={[styles.openDashboardBtn, { backgroundColor: theme.primary }]}
+          >
+            <Text style={styles.openDashboardBtnText}>Open Day</Text>
+            <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.6} />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.selectedMetricsRow}>
-          <View
+        {/* 2-Column Split: Habits & Tasks Progress Tiles */}
+        <View style={styles.splitCardsRow}>
+          {/* Habits Tile */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => router.push('/routine' as any)}
             style={[
-              styles.metricItem,
+              styles.metricTile,
               {
-                backgroundColor: theme.surfaceSubtle,
-                borderColor: theme.border,
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.05)',
+                borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.2)',
               },
             ]}
           >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' },
-              ]}
-            >
-              <Clock size={16} color="#059669" />
+            <View style={styles.tileHeaderRow}>
+              <View style={styles.tileHeaderLeft}>
+                <Clock size={12} color="#10B981" strokeWidth={2.4} />
+                <Text style={[styles.tileHeaderLabel, { color: isDark ? '#6EE7B7' : '#059669' }]}>
+                  ROUTINES
+                </Text>
+              </View>
+              <View style={[styles.percentBadge, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5' }]}>
+                <Text style={[styles.percentBadgeText, { color: isDark ? '#34D399' : '#047857' }]}>
+                  {selectedProgress.percentage}%
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Routine Habits</Text>
-              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
-                {selectedProgress.completed} / {selectedProgress.total} ({selectedProgress.percentage}%)
-              </Text>
-            </View>
-          </View>
 
-          <View
-            style={[
-              styles.metricItem,
-              {
-                backgroundColor: theme.surfaceSubtle,
-                borderColor: theme.border,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' },
-              ]}
-            >
-              <CheckSquare size={16} color={theme.primary} />
-            </View>
-            <View>
-              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Tasks Completed</Text>
-              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
-                {selectedTasks.completed} / {selectedTasks.total} ({selectedTasks.pending} pending)
-              </Text>
-            </View>
-          </View>
+            <Text style={[styles.tileHeroValue, { color: isDark ? '#34D399' : '#059669' }]}>
+              {selectedProgress.completed} / {selectedProgress.total}
+            </Text>
 
-          <View
+            {/* Mini Progress Bar */}
+            <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${Math.min(100, Math.max(0, selectedProgress.percentage))}%`,
+                    backgroundColor: '#10B981',
+                  },
+                ]}
+              />
+            </View>
+
+            <Text style={[styles.tileSubText, { color: theme.textSecondary }]} numberOfLines={1}>
+              {selectedProgress.percentage === 100
+                ? 'All completed'
+                : `${selectedProgress.total - selectedProgress.completed} remaining`}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tasks Tile */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => router.push('/tasks' as any)}
             style={[
-              styles.metricItem,
+              styles.metricTile,
               {
-                backgroundColor: theme.surfaceSubtle,
-                borderColor: theme.border,
+                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.05)',
+                borderColor: isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.2)',
               },
             ]}
           >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2' },
-              ]}
-            >
-              <Receipt size={16} color="#F43F5E" />
+            <View style={styles.tileHeaderRow}>
+              <View style={styles.tileHeaderLeft}>
+                <CheckSquare size={12} color={theme.primary} strokeWidth={2.4} />
+                <Text style={[styles.tileHeaderLabel, { color: theme.primary }]}>
+                  TASKS
+                </Text>
+              </View>
+              <View style={[styles.percentBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#EEF2FF' }]}>
+                <Text style={[styles.percentBadgeText, { color: theme.primary }]}>
+                  {selectedTasks.percentage}%
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.metricLabel, { color: theme.textMuted }]}>Daily Expenses</Text>
-              <Text style={[styles.metricVal, { color: theme.textPrimary }]}>
-                {formatCurrency(selectedExpenses.total, settings.currency)} ({selectedExpenses.count} items)
-              </Text>
+
+            <Text style={[styles.tileHeroValue, { color: theme.primary }]}>
+              {selectedTasks.completed} / {selectedTasks.total}
+            </Text>
+
+            {/* Mini Progress Bar */}
+            <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${Math.min(100, Math.max(0, selectedTasks.percentage))}%`,
+                    backgroundColor: theme.primary,
+                  },
+                ]}
+              />
             </View>
-          </View>
+
+            <Text style={[styles.tileSubText, { color: theme.textSecondary }]} numberOfLines={1}>
+              {selectedTasks.pending} pending
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Full-Width Expenses Tile */}
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={() => router.push('/expenses' as any)}
+          style={[
+            styles.expenseCard,
+            {
+              backgroundColor: isDark ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.05)',
+              borderColor: isDark ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.2)',
+            },
+          ]}
+        >
+          <View style={styles.expenseLeft}>
+            <View
+              style={[
+                styles.expenseIconCircle,
+                { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.18)' : '#FFF1F2' },
+              ]}
+            >
+              <Receipt size={16} color="#F43F5E" strokeWidth={2.4} />
+            </View>
+            <View style={styles.expenseTextCol}>
+              <Text style={[styles.expenseLabel, { color: isDark ? '#FDA4AF' : '#E11D48' }]}>
+                DAILY EXPENSES
+              </Text>
+              <Text style={[styles.expenseSub, { color: theme.textSecondary }]} numberOfLines={1}>
+                {selectedExpenses.count} items recorded • Need: {formatCurrency(selectedExpenses.needTotal, settings.currency)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.expenseRight}>
+            <Text style={[styles.expenseAmount, { color: isDark ? '#FDA4AF' : '#E11D48' }]}>
+              {formatCurrency(selectedExpenses.total, settings.currency)}
+            </Text>
+            <ChevronRight size={14} color={isDark ? '#FDA4AF' : '#E11D48'} strokeWidth={2.4} />
+          </View>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -315,13 +413,14 @@ export const CalendarView: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    gap: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
   },
   card: {
     borderRadius: 18,
     borderWidth: 1,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -406,11 +505,9 @@ const styles = StyleSheet.create({
   selectedDayCard: {
     borderRadius: 18,
     borderWidth: 1,
-    padding: 20,
-    gap: 16,
-    shadowColor: '#000000',
+    padding: 14,
+    gap: 12,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -418,48 +515,158 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
     gap: 8,
   },
-  selectedDayTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  selectedDaySub: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  selectedMetricsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  metricItem: {
-    flex: 1,
-    minWidth: 180,
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
   },
-  metricIcon: {
-    width: 36,
-    height: 36,
+  calendarBadge: {
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+  headerTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
-  metricVal: {
-    fontSize: 13,
+  selectedDayTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  selectedDaySub: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  openDashboardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    flexShrink: 0,
+    cursor: 'pointer' as any,
+  },
+  openDashboardBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
     fontWeight: '700',
-    marginTop: 2,
+    letterSpacing: 0.1,
+  },
+  splitCardsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  metricTile: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 6,
+    cursor: 'pointer' as any,
+  },
+  tileHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  tileHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  tileHeaderLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  percentBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 9999,
+  },
+  percentBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  tileHeroValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  progressBarTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  tileSubText: {
+    fontSize: 10.5,
+    fontWeight: '500',
+  },
+  expenseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+    cursor: 'pointer' as any,
+  },
+  expenseLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  expenseIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expenseTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  expenseLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  expenseSub: {
+    fontSize: 10.5,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  expenseRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  expenseAmount: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
 });

@@ -1,7 +1,7 @@
 /**
- * Formats a monetary value to standard display format, e.g. 1350 -> "৳1,350.00"
+ * Formats a monetary value to standard display format, e.g. 1350 -> "$1,350.00"
  */
-export function formatCurrency(amount: number, symbol = '৳'): string {
+export function formatCurrency(amount: number, symbol = '$'): string {
   if (isNaN(amount) || amount === null || amount === undefined) {
     return `${symbol}0.00`;
   }

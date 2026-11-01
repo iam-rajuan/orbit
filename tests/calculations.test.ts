@@ -6,15 +6,18 @@ import { SEED_TASKS, SEED_EXPENSES, SEED_ROUTINES } from '../src/data/seed/initi
 
 describe('Daily View Calculations & Logic', () => {
   describe('Expense Totals & Currency Formatting', () => {
-    test('calculates exact 2026-10-06 seed expense total as ৳1,350.00', () => {
+    test('calculates exact 2026-10-06 seed expense total as $1,350.00', () => {
       const dayExpenses = SEED_EXPENSES.filter((e) => e.date === '2026-10-06');
       expect(dayExpenses).toHaveLength(8);
 
       const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
       expect(total).toBe(1350.00);
 
-      const formatted = formatCurrency(total, '৳');
-      expect(formatted).toBe('৳1,350.00');
+      const formattedDefault = formatCurrency(total);
+      expect(formattedDefault).toBe('$1,350.00');
+
+      const formattedTaka = formatCurrency(total, '৳');
+      expect(formattedTaka).toBe('৳1,350.00');
     });
 
     test('calculates correct Need vs Want distribution for 2026-10-06', () => {

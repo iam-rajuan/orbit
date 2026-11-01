@@ -38,8 +38,8 @@ export const DEFAULT_PAYMENT_METHODS: string[] = [
 
 export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'light',
-  currency: '৳',
-  currencyCode: 'BDT',
+  currency: '$',
+  currencyCode: 'USD',
   dateFormat: 'EEEE, dd MMMM yyyy',
   timeFormat: '12h',
   taskCategories: DEFAULT_TASK_CATEGORIES,

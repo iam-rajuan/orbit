@@ -101,8 +101,8 @@ export interface Expense {
 
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
-  currency: string; // Default: '৳'
-  currencyCode: string; // Default: 'BDT'
+  currency: string; // Default: '$'
+  currencyCode: string; // Default: 'USD'
   dateFormat: string; // Default: 'EEEE, dd MMMM yyyy'
   timeFormat: '12h' | '24h';
   taskCategories: string[];

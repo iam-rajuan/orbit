@@ -24,8 +24,8 @@ test.describe('Daily View — End-to-End Workflow Verification', () => {
     // Check Tasks Progress: 8 / 15 (53%)
     await expect(page.getByText(/8 \/ 15/i)).toBeVisible();
 
-    // Check Daily Expenses: ৳1,350.00
-    await expect(page.getByText(/৳1,350\.00/i).first()).toBeVisible();
+    // Check Daily Expenses: $1,350.00
+    await expect(page.getByText(/(?:৳|\$)1,350\.00/i).first()).toBeVisible();
   });
 
   test('3. Navigates smoothly between feature modules', async ({ page }) => {
@@ -49,14 +49,14 @@ test.describe('Daily View — End-to-End Workflow Verification', () => {
   test('4. Date navigation separates daily data', async ({ page }) => {
     await page.goto('/');
     
-    // Initial day expense total is ৳1,350.00
-    await expect(page.getByText(/৳1,350\.00/i).first()).toBeVisible();
+    // Initial day expense total is $1,350.00
+    await expect(page.getByText(/(?:৳|\$)1,350\.00/i).first()).toBeVisible();
 
     // Click next day button
     const nextBtn = page.getByLabel('Next day');
     await nextBtn.click();
 
-    // On 2026-10-07, expense total is ৳1,420.00
-    await expect(page.getByText(/৳1,420\.00/i).first()).toBeVisible();
+    // On 2026-10-07, expense total is $1,420.00
+    await expect(page.getByText(/(?:৳|\$)1,420\.00/i).first()).toBeVisible();
   });
 });

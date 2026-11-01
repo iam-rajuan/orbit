@@ -11,7 +11,11 @@ const SETTINGS_KEY = 'daily_view_settings_v1';
 export class SettingsRepository {
   async getSettings(): Promise<UserSettings> {
     const data = await appStorage.getItem<UserSettings>(SETTINGS_KEY);
-    return data ? { ...DEFAULT_SETTINGS, ...data } : DEFAULT_SETTINGS;
+    if (!data) return DEFAULT_SETTINGS;
+    // Migrate legacy '৳' default to '$'
+    const currency = data.currency === '৳' ? '$' : (data.currency || '$');
+    const currencyCode = data.currencyCode === 'BDT' ? 'USD' : (data.currencyCode || 'USD');
+    return { ...DEFAULT_SETTINGS, ...data, currency, currencyCode };
   }
 
   async saveSettings(settings: UserSettings): Promise<void> {

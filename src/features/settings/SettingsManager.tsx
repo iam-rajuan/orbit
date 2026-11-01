@@ -332,11 +332,11 @@ export const SettingsManager: React.FC = () => {
             <AppSelect
               value={settings.currency}
               options={[
+                { label: '$ (USD - Dollar)', value: '$' },
                 { label: '৳ (BDT - Taka)', value: '৳' },
-                { label: '$ (USD)', value: '$' },
-                { label: '€ (EUR)', value: '€' },
-                { label: '£ (GBP)', value: '£' },
-                { label: '₹ (INR)', value: '₹' },
+                { label: '€ (EUR - Euro)', value: '€' },
+                { label: '£ (GBP - Pound)', value: '£' },
+                { label: '₹ (INR - Rupee)', value: '₹' },
               ]}
               onSelect={(val) => updateSettings({ currency: val })}
             />

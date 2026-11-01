@@ -24,9 +24,9 @@ import { useExpenseStore } from '../../stores/useExpenseStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { AppBadge } from '../../components/ui/AppBadge';
-import { AppButton } from '../../components/ui/AppButton';
 import { HorizontalScrollRow } from '../../components/ui/HorizontalScrollRow';
 import { formatCurrency } from '../../utils/currency';
+import { formatAdaptiveDate } from '../../utils/date';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { SortableList } from '../../components/ui/SortableList';
@@ -65,6 +65,8 @@ export const ExpenseManager: React.FC = () => {
 
   const filteredExpenses = getFilteredExpenses(selectedDate);
   const summary = getDailySummary(selectedDate);
+  const needPercent = summary.total > 0 ? Math.round((summary.needTotal / summary.total) * 100) : 0;
+  const wantPercent = summary.total > 0 ? Math.round((summary.wantTotal / summary.total) * 100) : 0;
 
   return (
     <View style={styles.rootWrapper}>
@@ -177,91 +179,155 @@ export const ExpenseManager: React.FC = () => {
         style={[
           styles.headerCard,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.88)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: theme.shadowColor,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.shadowOpacity,
+            shadowRadius: 14,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                } as any)
+              : {}),
           },
         ]}
       >
+        {/* Top Header Row: Icon + Title/Subtitle on Left | + Expense Button on Right */}
         <View style={styles.headerTop}>
           <View style={styles.titleInfo}>
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: isDark ? 'rgba(244,63,94,0.15)' : '#FFF1F2' },
+                { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.16)' : '#FFF1F2' },
               ]}
             >
-              <Receipt size={20} color="#F43F5E" />
+              <Receipt size={19} color="#F43F5E" strokeWidth={2.4} />
             </View>
-            <View>
-              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Daily Expenses</Text>
-              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
-                Expenditure tracking for {selectedDate}
+            <View style={styles.titleTextCol}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                Daily Expenses
+              </Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                {formatAdaptiveDate(selectedDate, 'medium')}
               </Text>
             </View>
           </View>
-          <AppButton
-            title="Add Expense"
-            variant="primary"
-            size="sm"
-            icon={<Plus size={16} color="#ffffff" />}
+
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => {
               setEditingExpense(null);
               setModalOpen(true);
             }}
-          />
+            style={[styles.addExpenseBtn, { backgroundColor: '#F43F5E' }]}
+            accessibilityLabel="Add new expense"
+          >
+            <Plus size={14} color="#FFFFFF" strokeWidth={2.4} />
+            <Text style={styles.addExpenseBtnText}>Expense</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Financial KPI Summary Cards */}
-        <View style={styles.kpiRow}>
-          <View
-            style={[
-              styles.kpiBox,
-              {
-                backgroundColor: isDark ? 'rgba(244,63,94,0.12)' : '#FFF1F2',
-                borderColor: isDark ? 'rgba(244,63,94,0.3)' : '#FECDD3',
-              },
-            ]}
-          >
-            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Daily Total</Text>
-            <Text style={[styles.kpiValue, { color: '#F43F5E' }]}>
+        {/* Hero Daily Total Row */}
+        <View style={styles.heroTotalRow}>
+          <View>
+            <Text style={[styles.heroTotalLabel, { color: theme.textMuted }]}>
+              DAILY TOTAL
+            </Text>
+            <Text style={[styles.heroTotalAmount, { color: '#F43F5E' }]}>
               {formatCurrency(summary.total, settings.currency)}
             </Text>
-            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>{summary.count} items recorded</Text>
           </View>
-
           <View
             style={[
-              styles.kpiBox,
+              styles.itemsCountBadge,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' },
+            ]}
+          >
+            <Text style={[styles.itemsCountBadgeText, { color: theme.textSecondary }]}>
+              {summary.count} {summary.count === 1 ? 'item' : 'items'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Proportional Split Meter (Needs vs Wants) */}
+        {summary.total > 0 && (
+          <View style={[styles.meterTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }]}>
+            <View
+              style={[
+                styles.meterSegment,
+                {
+                  flex: Math.max(1, needPercent),
+                  backgroundColor: '#10B981',
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.meterSegment,
+                {
+                  flex: Math.max(1, wantPercent),
+                  backgroundColor: '#8B5CF6',
+                },
+              ]}
+            />
+          </View>
+        )}
+
+        {/* Needs & Wants Breakdown Cards (Side-by-Side) */}
+        <View style={styles.breakdownRow}>
+          <View
+            style={[
+              styles.breakdownCard,
               {
-                backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
-                borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
+                borderColor: isDark ? 'rgba(16, 185, 129, 0.28)' : '#A7F3D0',
               },
             ]}
           >
-            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Needs (Essential)</Text>
-            <Text style={[styles.kpiValue, { color: isDark ? '#34D399' : '#047857' }]}>
+            <View style={styles.breakdownCardHeader}>
+              <View style={[styles.breakdownDot, { backgroundColor: '#10B981' }]} />
+              <Text style={[styles.breakdownCardTitle, { color: isDark ? '#34D399' : '#065F46' }]}>
+                Needs
+              </Text>
+              <Text style={[styles.breakdownCardPercent, { color: isDark ? '#34D399' : '#059669' }]}>
+                {needPercent}%
+              </Text>
+            </View>
+            <Text
+              style={[styles.breakdownCardValue, { color: isDark ? '#E6FFFA' : '#047857' }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {formatCurrency(summary.needTotal, settings.currency)}
             </Text>
-            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>
-              {summary.total > 0 ? `${Math.round((summary.needTotal / summary.total) * 100)}% of total` : '0%'}
-            </Text>
           </View>
 
           <View
             style={[
-              styles.kpiBox,
+              styles.breakdownCard,
               {
-                backgroundColor: isDark ? 'rgba(124,58,237,0.12)' : '#F5F3FF',
-                borderColor: isDark ? 'rgba(124,58,237,0.3)' : '#DDD6FE',
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.12)' : '#F5F3FF',
+                borderColor: isDark ? 'rgba(139, 92, 246, 0.28)' : '#DDD6FE',
               },
             ]}
           >
-            <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Wants (Discretionary)</Text>
-            <Text style={[styles.kpiValue, { color: isDark ? '#A78BFA' : '#7C3AED' }]}>
+            <View style={styles.breakdownCardHeader}>
+              <View style={[styles.breakdownDot, { backgroundColor: '#8B5CF6' }]} />
+              <Text style={[styles.breakdownCardTitle, { color: isDark ? '#C4B5FD' : '#5B21B6' }]}>
+                Wants
+              </Text>
+              <Text style={[styles.breakdownCardPercent, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
+                {wantPercent}%
+              </Text>
+            </View>
+            <Text
+              style={[styles.breakdownCardValue, { color: isDark ? '#F5F3FF' : '#6D28D9' }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {formatCurrency(summary.wantTotal, settings.currency)}
-            </Text>
-            <Text style={[styles.kpiSub, { color: theme.textMuted }]}>
-              {summary.total > 0 ? `${Math.round((summary.wantTotal / summary.total) * 100)}% of total` : '0%'}
             </Text>
           </View>
         </View>
@@ -730,73 +796,140 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   headerCard: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 20,
+    padding: 18,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
     elevation: 2,
+    gap: 12,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
   titleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  titleTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pageTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   pageSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 1,
   },
-  kpiRow: {
+  addExpenseBtn: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  kpiBox: {
-    flex: 1,
-    minWidth: 160,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
+  addExpenseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
-  kpiLabel: {
+  heroTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingTop: 2,
+  },
+  heroTotalLabel: {
     fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  kpiValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginTop: 4,
-    letterSpacing: -0.4,
+  heroTotalAmount: {
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+    marginTop: 2,
   },
-  kpiSub: {
+  itemsCountBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  itemsCountBadgeText: {
     fontSize: 11,
-    fontWeight: '500',
-    marginTop: 4,
+    fontWeight: '600',
+  },
+  meterTrack: {
+    height: 6,
+    borderRadius: 9999,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  meterSegment: {
+    height: '100%',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  breakdownCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  breakdownCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 4,
+  },
+  breakdownDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  breakdownCardTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    flex: 1,
+  },
+  breakdownCardPercent: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  breakdownCardValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   toolbarCard: {
     borderRadius: 16,

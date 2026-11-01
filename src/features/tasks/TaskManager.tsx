@@ -11,8 +11,6 @@ import {
 } from 'react-native';
 import {
   CheckSquare,
-  Folder,
-  FileText,
   Square,
   Plus,
   Search,

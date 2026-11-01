@@ -114,83 +114,113 @@ export const WishlistManager: React.FC = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 1. Header Overview Cards */}
-      <View style={styles.headerCardsRow}>
-        {/* Total Wishlist Budget */}
-        <View
-          style={[
-            styles.headerMetricCard,
-            {
-              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
-              shadowColor: theme.shadowColor,
-              shadowOpacity: theme.shadowOpacity,
-              ...(Platform.OS === 'web'
-                ? ({
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                  } as any)
-                : {}),
-            },
-          ]}
-        >
-          <View style={styles.metricHeaderRow}>
-            <View style={[styles.metricIconCircle, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
-              <Gift size={16} color="#8B5CF6" />
-            </View>
-            <Text style={[styles.metricLabel, { color: theme.textMuted }]}>
-              ACTIVE WISHLIST
-            </Text>
-          </View>
-          <Text style={[styles.metricBigNumber, { color: theme.textPrimary }]}>
-            {formatCurrency(stats.totalActiveValue, settings.currency)}
-          </Text>
-          <Text style={[styles.metricSub, { color: theme.textSecondary }]}>
-            {stats.activeCount} planned items ({stats.highPriorityCount} Needs)
-          </Text>
-        </View>
-
-        {/* Money Saved from Avoided Impulse Purchases */}
-        <View
-          style={[
-            styles.headerMetricCard,
-            {
-              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.85)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.7)',
-              shadowColor: theme.shadowColor,
-              shadowOpacity: theme.shadowOpacity,
-              ...(Platform.OS === 'web'
-                ? ({
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                  } as any)
-                : {}),
-            },
-          ]}
-        >
-          <View style={styles.metricHeaderRow}>
+      {/* 1. Header Card with Wishlist Overview Metrics */}
+      <View
+        style={[
+          styles.overviewCard,
+          {
+            backgroundColor: isDark ? 'rgba(24, 24, 28, 0.76)' : 'rgba(255, 255, 255, 0.88)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: theme.shadowColor,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.shadowOpacity,
+            shadowRadius: 14,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+                } as any)
+              : {}),
+          },
+        ]}
+      >
+        {/* Top Header Row: Icon + Title/Subtitle on Left | + Wishlist Button on Right */}
+        <View style={styles.headerTop}>
+          <View style={styles.titleInfo}>
             <View
               style={[
-                styles.metricIconCircle,
-                { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)' },
+                styles.iconCircle,
+                { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.16)' : '#F3E8FF' },
               ]}
             >
-              <ShieldCheck size={16} color="#10B981" />
+              <Gift size={17} color="#8B5CF6" strokeWidth={2.4} />
             </View>
-            <Text style={[styles.metricLabel, { color: theme.textMuted }]}>
-              IMPULSE AVOIDED
+            <View style={styles.titleTextCol}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                Wishlist & Later
+              </Text>
+              <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                Curated purchases & impulse control
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              setEditingItem(null);
+              setFormModalOpen(true);
+            }}
+            style={[styles.addWishlistBtn, { backgroundColor: '#8B5CF6' }]}
+          >
+            <Plus size={14} color="#FFFFFF" strokeWidth={2.6} />
+            <Text style={styles.addWishlistBtnText}>Wishlist</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Dual Metric Tiles: Active Planned & Impulse Saved */}
+        <View style={styles.metricsRow}>
+          {/* Active Planned Tile */}
+          <View
+            style={[
+              styles.metricTile,
+              {
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.05)',
+                borderColor: isDark ? 'rgba(139, 92, 246, 0.25)' : 'rgba(139, 92, 246, 0.18)',
+              },
+            ]}
+          >
+            <View style={styles.metricTileHeader}>
+              <View style={[styles.metricTileDot, { backgroundColor: '#8B5CF6' }]} />
+              <Text style={[styles.metricTileLabel, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
+                ACTIVE PLANNED
+              </Text>
+            </View>
+            <Text style={[styles.metricTileAmount, { color: isDark ? '#EDE9FE' : '#6D28D9' }]}>
+              {formatCurrency(stats.totalActiveValue, settings.currency)}
+            </Text>
+            <Text style={[styles.metricTileSub, { color: theme.textSecondary }]} numberOfLines={1}>
+              {stats.activeCount} planned ({stats.highPriorityCount} Need)
             </Text>
           </View>
-          <Text style={[styles.metricBigNumber, { color: isDark ? '#34D399' : '#059669' }]}>
-            {formatCurrency(stats.totalAvoidedValue, settings.currency)}
-          </Text>
-          <Text style={[styles.metricSub, { color: theme.textSecondary }]}>
-            {stats.avoidedCount} purchases avoided by waiting
-          </Text>
+
+          {/* Impulse Avoided Tile */}
+          <View
+            style={[
+              styles.metricTile,
+              {
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.05)',
+                borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.18)',
+              },
+            ]}
+          >
+            <View style={styles.metricTileHeader}>
+              <View style={[styles.metricTileDot, { backgroundColor: '#10B981' }]} />
+              <Text style={[styles.metricTileLabel, { color: isDark ? '#6EE7B7' : '#059669' }]}>
+                IMPULSE SAVED
+              </Text>
+            </View>
+            <Text style={[styles.metricTileAmount, { color: isDark ? '#34D399' : '#059669' }]}>
+              {formatCurrency(stats.totalAvoidedValue, settings.currency)}
+            </Text>
+            <Text style={[styles.metricTileSub, { color: theme.textSecondary }]} numberOfLines={1}>
+              {stats.avoidedCount} avoided by waiting
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* 2. Controls Toolbar: Status Tabs & Add Button */}
+      {/* 2. Controls Toolbar: Status Tabs */}
       <View
         style={[
           styles.toolbarCard,
@@ -211,7 +241,7 @@ export const WishlistManager: React.FC = () => {
           <HorizontalScrollRow
             edgeToEdge={false}
             gap={6}
-            style={{ flex: 1, marginRight: 8 }}
+            style={{ flex: 1 }}
           >
             {[
               { id: 'active', label: `Active (${stats.activeCount})` },
@@ -250,19 +280,6 @@ export const WishlistManager: React.FC = () => {
               );
             })}
           </HorizontalScrollRow>
-
-          {/* Add Item Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setEditingItem(null);
-              setFormModalOpen(true);
-            }}
-            style={[styles.addBtn, { backgroundColor: theme.primary }]}
-          >
-            <Plus size={15} color="#FFFFFF" />
-            <Text style={styles.addBtnText}>Add to Wishlist</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Search & Priority Filter Row */}
@@ -633,63 +650,117 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  headerCardsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  headerMetricCard: {
-    flex: 1,
-    minWidth: 160,
+  overviewCard: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
+    marginBottom: 12,
+    gap: 12,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2,
   },
-  metricHeaderRow: {
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
-    marginBottom: 6,
   },
-  metricIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+  titleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricLabel: {
-    fontSize: 10,
+  titleTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pageTitle: {
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: -0.3,
   },
-  metricBigNumber: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  metricSub: {
+  pageSubtitle: {
     fontSize: 11,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 1,
+  },
+  addWishlistBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    flexShrink: 0,
+    cursor: 'pointer' as any,
+  },
+  addWishlistBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metricTile: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 2,
+  },
+  metricTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  metricTileDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  metricTileLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
+  metricTileAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  metricTileSub: {
+    fontSize: 10.5,
+    fontWeight: '500',
+    marginTop: 1,
   },
   toolbarCard: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 16,
-    gap: 12,
+    padding: 12,
+    marginBottom: 14,
+    gap: 10,
   },
   toolbarTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
+    width: '100%',
   },
   statusTabs: {
     flexDirection: 'row',

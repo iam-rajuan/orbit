@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { CornerUpRight, RotateCcw, Calendar } from 'lucide-react-native';
+import { CornerUpRight, RotateCcw, Calendar, Plus } from 'lucide-react-native';
 import { AppModal } from '../../components/ui/AppModal';
 import { AppSelect } from '../../components/ui/AppSelect';
 import { AppButton } from '../../components/ui/AppButton';
@@ -63,6 +63,81 @@ const TaskFormContent: React.FC<{
     setOriginalDate(undefined);
   };
 
+  // Smart Bullet List Handler:
+  // - Starts typing on empty field -> auto adds "• "
+  // - User presses Enter -> creates next line with "• "
+  // - User presses Enter on an empty bullet ("• " or "•") -> cleanly exits bullet list
+  // - Pasting multiline text -> bullets every line
+  const handleDescriptionChange = (next: string) => {
+    const prev = description;
+
+    // 1. If deleting down to solitary bullet or empty, reset completely
+    if ((next === '• ' || next === '•' || next === '') && prev.length > next.length) {
+      setDescription('');
+      return;
+    }
+
+    // 2. If first character entered on empty text, prefix with bullet
+    if (prev === '' && next.length > 0 && !next.startsWith('•')) {
+      setDescription('• ' + next);
+      return;
+    }
+
+    // 3. User pasted multiline text
+    if (next.length - prev.length > 4 && next.includes('\n')) {
+      const formatted = next.split('\n').map((line) => {
+        const trimmed = line.trim();
+        if (trimmed.length > 0 && !trimmed.startsWith('•')) {
+          return '• ' + trimmed;
+        }
+        return line;
+      });
+      setDescription(formatted.join('\n'));
+      return;
+    }
+
+    // 4. User pressed Enter (newline added)
+    if (next.length > prev.length && next.includes('\n')) {
+      const prevLines = prev.split('\n');
+      const nextLines = next.split('\n');
+
+      if (nextLines.length > prevLines.length) {
+        let splitIdx = nextLines.findIndex((line, i) => i < prevLines.length && line !== prevLines[i]);
+        if (splitIdx === -1) {
+          splitIdx = nextLines.length - 2;
+        }
+
+        const lineBeforeNewline = nextLines[splitIdx];
+        // If user pressed enter on an empty bullet line -> exit bullet mode!
+        if (lineBeforeNewline && (lineBeforeNewline.trim() === '•' || lineBeforeNewline.trim() === '')) {
+          nextLines[splitIdx] = '';
+          setDescription(nextLines.join('\n'));
+          return;
+        }
+
+        // Add bullet to the newly started line if it doesn't already have one
+        const newLineIdx = splitIdx + 1;
+        if (newLineIdx < nextLines.length && !nextLines[newLineIdx].startsWith('•')) {
+          nextLines[newLineIdx] = '• ' + nextLines[newLineIdx];
+          setDescription(nextLines.join('\n'));
+          return;
+        }
+      }
+    }
+
+    setDescription(next);
+  };
+
+  const handleAddBullet = () => {
+    if (!description.trim()) {
+      setDescription('• ');
+    } else if (description.endsWith('\n')) {
+      setDescription(description + '• ');
+    } else {
+      setDescription(description + '\n• ');
+    }
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
 
@@ -117,11 +192,12 @@ const TaskFormContent: React.FC<{
 
   return (
     <View style={styles.formContainer}>
-      {/* Title Field (Borderless!) */}
+      {/* 1. Title Field */}
       <View style={styles.formGroup}>
-        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-          Task Summary / Title <Text style={{ color: '#EF4444' }}>*</Text>
-        </Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>TASK TITLE</Text>
+          <Text style={styles.requiredMark}>*</Text>
+        </View>
         <TextInput
           placeholder="e.g. Debug token expiration issue"
           placeholderTextColor={theme.textMuted}
@@ -131,10 +207,11 @@ const TaskFormContent: React.FC<{
             if (error) setError(null);
           }}
           style={[
-            styles.borderlessInput,
+            styles.inputBox,
             styles.titleInput,
             {
-              backgroundColor: theme.surfaceSubtle,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+              borderColor: error ? theme.danger : theme.border,
               color: theme.textPrimary,
             },
           ]}
@@ -142,7 +219,7 @@ const TaskFormContent: React.FC<{
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
 
-      {/* Category & Type Selects */}
+      {/* 2. Category & Type Selects */}
       <View style={styles.row}>
         <View style={styles.col}>
           <AppSelect
@@ -162,7 +239,7 @@ const TaskFormContent: React.FC<{
         </View>
       </View>
 
-      {/* Priority Select & Project Name (Borderless input!) */}
+      {/* 3. Priority Select & Project Name */}
       <View style={styles.row}>
         <View style={styles.col}>
           <AppSelect
@@ -174,16 +251,19 @@ const TaskFormContent: React.FC<{
         </View>
         <View style={styles.col}>
           <View style={styles.formGroup}>
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Project / List</Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>PROJECT / LIST</Text>
+            </View>
             <TextInput
               placeholder="e.g. Client A, Thesis"
               placeholderTextColor={theme.textMuted}
               value={projectName}
               onChangeText={setProjectName}
               style={[
-                styles.borderlessInput,
+                styles.inputBox,
                 {
-                  backgroundColor: theme.surfaceSubtle,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+                  borderColor: theme.border,
                   color: theme.textPrimary,
                 },
               ]}
@@ -192,63 +272,88 @@ const TaskFormContent: React.FC<{
         </View>
       </View>
 
-      {/* Detailed Description (Borderless textarea!) */}
+      {/* 4. Detailed Description with Smart Bullets */}
       <View style={styles.formGroup}>
-        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Detailed Description</Text>
+        <View style={styles.labelWithActionRow}>
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>DETAILED DESCRIPTION</Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleAddBullet}
+            style={[
+              styles.bulletActionBtn,
+              {
+                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
+                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
+              },
+            ]}
+          >
+            <Plus size={12} color="#4F46E5" strokeWidth={2.6} />
+            <Text style={styles.bulletActionText}>Bullet</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
-          placeholder="• Bullet points or extended notes..."
+          placeholder={'• Tap to write notes...\n• Press Enter for next bullet'}
           placeholderTextColor={theme.textMuted}
           value={description}
-          onChangeText={setDescription}
+          onChangeText={handleDescriptionChange}
           multiline
           scrollEnabled={false}
-          numberOfLines={3}
+          numberOfLines={4}
           textAlignVertical="top"
           style={[
-            styles.borderlessInput,
+            styles.inputBox,
             styles.textAreaInput,
             {
-              backgroundColor: theme.surfaceSubtle,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+              borderColor: theme.border,
               color: theme.textPrimary,
             },
           ]}
         />
       </View>
 
-      {/* Notes Field (Borderless!) */}
+      {/* 5. Quick Notes */}
       <View style={styles.formGroup}>
-        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Notes</Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>NOTES / CONTEXT</Text>
+        </View>
         <TextInput
           placeholder="e.g. Testing needed, Stakeholder alignment"
           placeholderTextColor={theme.textMuted}
           value={notes}
           onChangeText={setNotes}
           style={[
-            styles.borderlessInput,
+            styles.inputBox,
             {
-              backgroundColor: theme.surfaceSubtle,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+              borderColor: theme.border,
               color: theme.textPrimary,
             },
           ]}
         />
       </View>
 
-      {/* Date & Forwarding Controls */}
+      {/* 6. Scheduled Date & Deferral Controls */}
       <View
         style={[
           styles.deferralCard,
           {
             backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : '#F5F3FF',
-            borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#DDD6FE',
+            borderColor: isDark ? 'rgba(99, 102, 241, 0.22)' : '#DDD6FE',
           },
         ]}
       >
         <View style={styles.deferralTopRow}>
           <View style={styles.deferralDateInfo}>
-            <Calendar size={14} color="#8B5CF6" />
-            <Text style={[styles.deferralDateLabel, { color: theme.textSecondary }]}>
-              Scheduled Date: <Text style={{ fontWeight: '700', color: theme.textPrimary }}>{formatAdaptiveDate(taskDate, 'medium')}</Text>
-            </Text>
+            <View style={styles.calendarIconCircle}>
+              <Calendar size={14} color="#7C3AED" strokeWidth={2.2} />
+            </View>
+            <View>
+              <Text style={[styles.deferralSubLabel, { color: theme.textMuted }]}>SCHEDULED DATE</Text>
+              <Text style={[styles.deferralDateText, { color: theme.textPrimary }]}>
+                {formatAdaptiveDate(taskDate, 'medium')}
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -257,7 +362,8 @@ const TaskFormContent: React.FC<{
             style={[styles.forwardTomorrowBtn, { backgroundColor: theme.primary }]}
             accessibilityLabel="Forward to tomorrow"
           >
-            <CornerUpRight size={14} color="#FFFFFF" strokeWidth={2.4} />
+            <CornerUpRight size={13} color="#FFFFFF" strokeWidth={2.4} />
+            <Text style={styles.forwardTomorrowText}>+1 Day</Text>
           </TouchableOpacity>
         </View>
 
@@ -281,7 +387,7 @@ const TaskFormContent: React.FC<{
         ) : null}
       </View>
 
-      {/* Footer Buttons */}
+      {/* 7. Action Buttons */}
       <View style={styles.buttonRow}>
         <AppButton
           title="Cancel"
@@ -332,26 +438,61 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: 14,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  labelWithActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  requiredMark: {
+    color: '#EF4444',
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 6,
-    letterSpacing: -0.1,
   },
-  borderlessInput: {
-    borderWidth: 0,
+  bulletActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  bulletActionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  inputBox: {
+    borderWidth: 1.5,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
+    minHeight: 44,
     outlineStyle: 'none' as any,
   },
   titleInput: {
     fontSize: 14,
     fontWeight: '600',
+    minHeight: 46,
   },
   textAreaInput: {
-    minHeight: 75,
+    minHeight: 90,
+    lineHeight: 20,
+    paddingTop: 10,
   },
   errorText: {
     fontSize: 12,
@@ -370,7 +511,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-    marginTop: 16,
+    marginTop: 14,
   },
   btn: {
     minWidth: 110,
@@ -387,23 +528,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    flexWrap: 'wrap',
   },
   deferralDateInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
-  deferralDateLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  forwardTomorrowBtn: {
+  calendarIconCircle: {
     width: 32,
     height: 32,
     borderRadius: 8,
+    backgroundColor: 'rgba(124, 58, 237, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  deferralSubLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  deferralDateText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  forwardTomorrowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+  },
+  forwardTomorrowText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   deferralHistoryRow: {
     flexDirection: 'row',

@@ -54,7 +54,7 @@ export const AppModal: React.FC<AppModalProps> = ({
                 styles.modalCard,
                 {
                   maxWidth: isMobile ? '100%' : maxWidth,
-                  backgroundColor: theme.surface,
+                  backgroundColor: theme.isDark ? '#1C1C1E' : '#FFFFFF',
                   shadowColor: theme.shadowColor,
                   borderWidth: theme.isDark ? 1 : 0,
                   borderColor: theme.border,

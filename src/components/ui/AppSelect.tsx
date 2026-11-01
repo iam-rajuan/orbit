@@ -84,7 +84,7 @@ export const AppSelect: React.FC<AppSelectProps> = ({
                 style={[
                   styles.modalContent,
                   {
-                    backgroundColor: theme.surface,
+                    backgroundColor: theme.isDark ? '#1C1C1E' : '#FFFFFF',
                     borderColor: theme.border,
                     borderWidth: theme.isDark ? 1 : 0,
                     shadowColor: theme.shadowColor,
